@@ -30,6 +30,7 @@ import {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useActiveNode } from "@/context/ActiveNodeContext";
+import ThoughtPanel from "@/components/ThoughtPanel";
 
 export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
@@ -41,6 +42,7 @@ export default function GraphCanvas() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [nodeCount, setNodeCount] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSaved, setIsSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 📥 Graph laden
@@ -92,10 +94,12 @@ export default function GraphCanvas() {
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
       void localforage.setItem("noion-graph", { nodes: n, edges: e });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 1200);
     }, 300);
   }, []);
 
-  // 🔄 Handlers
+  // 🔄 Node & Edge Handlers
   const onNodesChange: OnNodesChange = useCallback(
     (changes: NodeChange[]) => {
       setNodes((nds) => {
@@ -129,9 +133,7 @@ export default function GraphCanvas() {
   );
 
   const onNodeClick: NodeMouseHandler = useCallback(
-    (_event, node) => {
-      setActiveNodeId(node.id);
-    },
+    (_event, node) => setActiveNodeId(node.id),
     [setActiveNodeId]
   );
 
@@ -140,15 +142,7 @@ export default function GraphCanvas() {
     (nodeId: string, note: string) => {
       setNodes((nds) => {
         const updated = nds.map((n) =>
-          n.id === nodeId
-            ? {
-                ...n,
-                data: {
-                  ...n.data,
-                  note,
-                },
-              }
-            : n
+          n.id === nodeId ? { ...n, data: { ...n.data, note } } : n
         );
         saveGraph(updated, edges);
         return updated;
@@ -180,16 +174,15 @@ export default function GraphCanvas() {
     setNodeCount((n) => n + 1);
   }, [edges, nodeCount, saveGraph]);
 
-  // 🧹 Alles löschen (Graph + Notizen)
+  // 🧹 Graph löschen
   const clearGraph = useCallback(async () => {
     setNodes([]);
     setEdges([]);
     setNodeCount(1);
     await localforage.removeItem("noion-graph");
     const keys = await localforage.keys();
-    for (const key of keys) {
+    for (const key of keys)
       if (key.startsWith("note-")) await localforage.removeItem(key);
-    }
   }, []);
 
   // 🔍 Suchfunktion
@@ -197,13 +190,43 @@ export default function GraphCanvas() {
     node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 💾 Globales Badge (Portal in <body>)
+  useEffect(() => {
+    const existing = document.getElementById("noion-badge");
+    if (existing) existing.remove();
+
+    const badge = document.createElement("div");
+    badge.id = "noion-badge";
+    badge.textContent = "💾 Gespeichert!";
+    Object.assign(badge.style, {
+      position: "fixed",
+      bottom: "24px",
+      right: "24px",
+      background: "#059669",
+      color: "white",
+      padding: "8px 14px",
+      borderRadius: "9999px",
+      fontSize: "14px",
+      fontWeight: "600",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+      opacity: isSaved ? "1" : "0",
+      transform: isSaved ? "translateY(0)" : "translateY(8px)",
+      transition: "all 0.3s ease",
+      pointerEvents: "none",
+      zIndex: "2147483647",
+    });
+    document.body.appendChild(badge);
+
+    return () => badge.remove();
+  }, [isSaved]);
+
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
       <div
         className="relative border border-zinc-700 rounded-2xl bg-[#111827] overflow-hidden"
         style={{ width: "100%", height: "80vh", minHeight: "400px" }}
       >
-        {/* Toolbar */}
+        {/* 🔧 Toolbar */}
         <div className="absolute top-2 left-2 z-10 flex gap-2">
           <input
             type="text"
@@ -226,6 +249,7 @@ export default function GraphCanvas() {
           </button>
         </div>
 
+        {/* 🧠 React Flow Graph */}
         <ReactFlowProvider>
           <ReactFlow
             nodes={filteredNodes}
@@ -241,6 +265,9 @@ export default function GraphCanvas() {
             <Background color="#334155" gap={16} />
           </ReactFlow>
         </ReactFlowProvider>
+
+        {/* 🔹 Rechtes Notiz-Panel */}
+        <ThoughtPanel />
       </div>
     </GraphContext.Provider>
   );

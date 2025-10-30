@@ -2,10 +2,20 @@
 @import "tailwindcss/preflight";
 @tailwind utilities;
 
+/* --- Sichtbarkeit fixen ohne Layout zu zerstören --- */
+html,
+body,
+#__next {
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+  min-height: 100%;
+}
+
 /* --- Noion Farb- & Fontvariablen --- */
 :root {
-  --background: #fafafa; /* Light mode background  */
-  --foreground: #0e0f12; /* Light mode text color  */
+  --background: #0e0f12;
+  --foreground: #fafafa;
   --accent: #00c2ff;
   --muted: #1a1b1e;
   --glow: #38bdf8;
@@ -19,14 +29,6 @@
   --color-muted: var(--muted);
   --color-glow: var(--glow);
   --font-sans: "Inter", system-ui, sans-serif;
-}
-
-/* --- Dark Mode --- */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0e0f12;
-    --foreground: #fafafa;
-  }
 }
 
 /* --- Global Styles --- */
@@ -53,4 +55,42 @@ button {
 button:focus-visible {
   outline: 2px solid var(--color-glow);
   outline-offset: 2px;
+}
+
+/* --- Animation --- */
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInOut {
+  animation: fadeInOut 1.5s ease-in-out;
+}
+
+/* --- ReactFlow fix: keine Z-Clipping-Probleme --- */
+.react-flow {
+  z-index: 1 !important;
+  isolation: isolate !important;
+}
+/* --- ReactFlow Layer Fix: Panels & Overlays sichtbar machen --- */
+.react-flow,
+.react-flow__renderer,
+.react-flow__viewport {
+  z-index: 0 !important;
+  isolation: isolate !important;
+}
+
+#noion-global-ui,
+aside,
+[data-portal-root] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
 }

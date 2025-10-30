@@ -11,7 +11,7 @@ const GraphCanvas = dynamic(
 export default function Page() {
   return (
     <ActiveNodeProvider>
-      <main className="min-h-screen bg-noion-dark text-white p-4 grid grid-cols-1 gap-6">
+      <main className="min-h-screen bg-noion-dark text-white p-4 flex flex-col gap-6">
         <GraphCanvas />
       </main>
     </ActiveNodeProvider>
