@@ -1,26 +1,56 @@
 @import "tailwindcss";
+@import "tailwindcss/preflight";
+@tailwind utilities;
 
+/* --- Noion Farb- & Fontvariablen --- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa; /* Light mode background  */
+  --foreground: #0e0f12; /* Light mode text color  */
+  --accent: #00c2ff;
+  --muted: #1a1b1e;
+  --glow: #38bdf8;
 }
 
+/* Inline Theme (Tailwind 4 Syntax) */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-glow: var(--glow);
+  --font-sans: "Inter", system-ui, sans-serif;
 }
 
+/* --- Dark Mode --- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0e0f12;
+    --foreground: #fafafa;
   }
 }
 
+/* --- Global Styles --- */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- Interaktive Elemente --- */
+a {
+  color: var(--color-accent);
+  transition: color 0.2s ease;
+}
+a:hover {
+  color: var(--color-glow);
+}
+
+button {
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+button:focus-visible {
+  outline: 2px solid var(--color-glow);
+  outline-offset: 2px;
 }
