@@ -34,18 +34,27 @@ import "reactflow/dist/style.css";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 import ThoughtPanel from "@/components/ThoughtPanel";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
+import SessionBadge from "@/components/SessionBadge";
 import NodeVisual from "@/components/NodeVisual";
 import {
   saveGraphRemote,
   loadGraphSync,
   syncAndResolve,
 } from "@/lib/syncAdapter";
+import {
+  saveSession,
+  loadSession,
+  saveGraphState,
+  loadGraphState,
+} from "@/lib/sessionManager";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
 } | null>(null);
 
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
+type ToastType = "restore" | "save" | "recovery" | null;
 
 export default function GraphCanvas() {
   const { setActiveNodeId } = useActiveNode();
@@ -58,12 +67,33 @@ export default function GraphCanvas() {
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [lastActiveId, setLastActiveId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [toast, setToast] = useState<{
+    type: ToastType;
+    message: string;
+  } | null>(null);
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const hasUnsavedChangesRef = useRef(false);
 
-  // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution)
+  // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
   useEffect(() => {
     (async () => {
+      // Try to restore from session manager first
+      const savedGraphState = await loadGraphState();
+      if (savedGraphState) {
+        setNodes(savedGraphState.nodes ?? []);
+        setEdges(savedGraphState.edges ?? []);
+        setNodeCount((savedGraphState.nodes?.length ?? 0) + 1);
+        setToast({
+          type: "recovery",
+          message: `📦 Vorheriger Zustand wiederhergestellt (${
+            savedGraphState.nodes?.length ?? 0
+          } Nodes)`,
+        });
+        setTimeout(() => setToast(null), 4000);
+      }
+
+      // Then sync with remote (CRDT-Sync)
       const result = await syncAndResolve("mergeProps");
       if (result?.merged) {
         setNodes(result.merged.nodes ?? []);
@@ -78,11 +108,8 @@ export default function GraphCanvas() {
         }
       }
 
-      // 🧠 Session restore
-      const restoredSession = await localforage.getItem<{
-        activeId: string | null;
-        panel: boolean;
-      }>("filon-session");
+      // 🧠 Session restore (UI state)
+      const restoredSession = await loadSession();
       if (restoredSession) {
         if (restoredSession.activeId) setActiveNodeId(restoredSession.activeId);
         if (restoredSession.panel) setPanelOpen(true);
@@ -92,17 +119,38 @@ export default function GraphCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 💾 Autosave (debounced 800ms) + Status
+  // 🚨 Browser-Warnung bei ungespeicherten Änderungen
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChangesRef.current) {
+        e.preventDefault();
+        e.returnValue =
+          "Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // 💾 Autosave (debounced 800ms) + Status + Session Persistence
   const saveGraph = useCallback((n: Node[], e: Edge[]) => {
     if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
     setSaveState("saving");
+    hasUnsavedChangesRef.current = true;
 
     saveDebounceRef.current = setTimeout(async () => {
       try {
         const when = Date.now();
         await saveGraphRemote({ nodes: n, edges: e });
+
+        // Also save to session manager for crash recovery
+        await saveGraphState({ nodes: n, edges: e });
+
         setLastSavedAt(when);
         setSaveState("saved");
+        hasUnsavedChangesRef.current = false;
 
         // nach kurzer Zeit wieder in idle übergehen
         setTimeout(
@@ -112,7 +160,10 @@ export default function GraphCanvas() {
       } catch (err) {
         console.warn("Remote save failed, local only", err);
         await localforage.setItem("noion-graph", { nodes: n, edges: e });
+        // Still save to session manager for recovery
+        await saveGraphState({ nodes: n, edges: e });
         setSaveState("error");
+        hasUnsavedChangesRef.current = false;
       }
     }, 800);
   }, []);
@@ -173,7 +224,7 @@ export default function GraphCanvas() {
       setActiveNodeId(node.id);
       setLastActiveId(node.id);
       setPanelOpen(true);
-      void localforage.setItem("filon-session", {
+      void saveSession({
         activeId: node.id,
         panel: true,
       });
@@ -187,7 +238,7 @@ export default function GraphCanvas() {
     setNodes((nds) => nds.map((n) => withGlow(n, false)));
     setActiveNodeId(null);
     setPanelOpen(false);
-    void localforage.setItem("filon-session", { activeId: null, panel: false });
+    void saveSession({ activeId: null, panel: false });
   }, [setNodes, setActiveNodeId, withGlow]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(() => {
@@ -497,6 +548,19 @@ export default function GraphCanvas() {
           <SaveStatusBadge state={saveState} />
         </div>
 
+        {/* 🔵 Session Badge */}
+        <div className="absolute top-2 right-2 z-50">
+          <SessionBadge
+            status={
+              saveState === "saving"
+                ? "saving"
+                : saveState === "saved"
+                ? "active"
+                : "idle"
+            }
+          />
+        </div>
+
         {/* 🧠 React Flow Graph */}
         <ReactFlowProvider>
           <GraphFlowWithHotkeys
@@ -521,12 +585,29 @@ export default function GraphCanvas() {
           isForcedOpen={panelOpen}
           onPanelClose={() => {
             setPanelOpen(false);
-            void localforage.setItem("filon-session", {
+            void saveSession({
               activeId: null,
               panel: false,
             });
           }}
         />
+
+        {/* 🔔 Toast Notifications */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: -50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+              className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] 
+                         bg-zinc-800 text-white px-4 py-3 rounded-lg shadow-2xl
+                         border border-zinc-700 min-w-[300px] text-center"
+            >
+              <p className="text-sm font-medium">{toast.message}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </GraphContext.Provider>
   );
