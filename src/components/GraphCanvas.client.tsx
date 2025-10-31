@@ -35,6 +35,7 @@ import { useActiveNode } from "@/context/ActiveNodeContext";
 import ThoughtPanel from "@/components/ThoughtPanel";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import SessionBadge from "@/components/SessionBadge";
+import SnapshotPanel from "@/components/SnapshotPanel";
 import NodeVisual from "@/components/NodeVisual";
 import {
   saveGraphRemote,
@@ -47,6 +48,11 @@ import {
   saveGraphState,
   loadGraphState,
 } from "@/lib/sessionManager";
+import {
+  saveSnapshot,
+  clearSnapshots,
+  // listSnapshots and loadSnapshot reserved for future Version History UI
+} from "@/lib/versionManager";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const GraphContext = createContext<{
@@ -67,6 +73,7 @@ export default function GraphCanvas() {
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [lastActiveId, setLastActiveId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [snapshotPanelOpen, setSnapshotPanelOpen] = useState(false);
   const [toast, setToast] = useState<{
     type: ToastType;
     message: string;
@@ -74,10 +81,15 @@ export default function GraphCanvas() {
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
   const hasUnsavedChangesRef = useRef(false);
+  const lastSnapshotRef = useRef<number>(0);
+  const nodeChangeCountRef = useRef<number>(0);
 
   // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
   useEffect(() => {
     (async () => {
+      // Clean up expired snapshots on mount
+      await clearSnapshots();
+
       // Try to restore from session manager first
       const savedGraphState = await loadGraphState();
       if (savedGraphState) {
@@ -134,7 +146,7 @@ export default function GraphCanvas() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
-  // 💾 Autosave (debounced 800ms) + Status + Session Persistence
+  // 💾 Autosave (debounced 800ms) + Status + Session Persistence + Snapshot
   const saveGraph = useCallback((n: Node[], e: Edge[]) => {
     if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
     setSaveState("saving");
@@ -147,6 +159,25 @@ export default function GraphCanvas() {
 
         // Also save to session manager for crash recovery
         await saveGraphState({ nodes: n, edges: e });
+
+        // Create version snapshot conditionally: every ~5 min or 20+ node changes
+        const timeSinceLastSnapshot = when - lastSnapshotRef.current;
+        const shouldSnapshot =
+          timeSinceLastSnapshot > 5 * 60 * 1000 ||
+          nodeChangeCountRef.current >= 20;
+
+        if (shouldSnapshot) {
+          await saveSnapshot({ nodes: n, edges: e });
+          lastSnapshotRef.current = when;
+          nodeChangeCountRef.current = 0;
+          setToast({
+            type: "save",
+            message: "📜 Snapshot created",
+          });
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          nodeChangeCountRef.current++;
+        }
 
         setLastSavedAt(when);
         setSaveState("saved");
@@ -162,6 +193,25 @@ export default function GraphCanvas() {
         await localforage.setItem("noion-graph", { nodes: n, edges: e });
         // Still save to session manager for recovery
         await saveGraphState({ nodes: n, edges: e });
+        // Create snapshot even if remote save fails (same conditional logic)
+        const timeSinceLastSnapshot = Date.now() - lastSnapshotRef.current;
+        const shouldSnapshot =
+          timeSinceLastSnapshot > 5 * 60 * 1000 ||
+          nodeChangeCountRef.current >= 20;
+
+        if (shouldSnapshot) {
+          await saveSnapshot({ nodes: n, edges: e });
+          lastSnapshotRef.current = Date.now();
+          nodeChangeCountRef.current = 0;
+          setToast({
+            type: "save",
+            message: "📜 Snapshot created",
+          });
+          setTimeout(() => setToast(null), 3000);
+        } else {
+          nodeChangeCountRef.current++;
+        }
+
         setSaveState("error");
         hasUnsavedChangesRef.current = false;
       }
@@ -541,6 +591,23 @@ export default function GraphCanvas() {
           >
             📥 Load DB
           </button>
+          <button
+            onClick={() => setSnapshotPanelOpen(!snapshotPanelOpen)}
+            role="button"
+            aria-label={
+              snapshotPanelOpen ? "Close Snapshot Panel" : "Open Snapshot Panel"
+            }
+            className={`px-3 py-1 rounded-lg text-white text-sm font-medium shadow-md transition-all ${
+              snapshotPanelOpen
+                ? "bg-purple-700 hover:bg-purple-600 border-2 border-purple-400"
+                : "bg-purple-600 hover:bg-purple-500"
+            }`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-base">🕒</span>
+              <span>{snapshotPanelOpen ? "Close Snapshots" : "Snapshots"}</span>
+            </span>
+          </button>
         </div>
 
         {/* 💾 Status Badge */}
@@ -560,6 +627,26 @@ export default function GraphCanvas() {
             }
           />
         </div>
+
+        {/* 📜 Snapshot Panel */}
+        <AnimatePresence>
+          {snapshotPanelOpen && (
+            <SnapshotPanel
+              onRestore={(restoredNodes, restoredEdges) => {
+                setNodes(restoredNodes);
+                setEdges(restoredEdges);
+                setNodeCount(restoredNodes.length + 1);
+                setToast({
+                  type: "restore",
+                  message: "✅ Snapshot restored",
+                });
+                setTimeout(() => setToast(null), 3000);
+                // Optionally close panel after restore
+                setSnapshotPanelOpen(false);
+              }}
+            />
+          )}
+        </AnimatePresence>
 
         {/* 🧠 React Flow Graph */}
         <ReactFlowProvider>
