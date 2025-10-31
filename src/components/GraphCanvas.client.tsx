@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  createContext,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useRef, useState, createContext } from "react";
 import localforage from "localforage";
 import {
   ReactFlowProvider,
@@ -132,10 +125,41 @@ export default function GraphCanvas() {
     [nodes, saveGraph]
   );
 
-  const onNodeClick: NodeMouseHandler = useCallback(
-    (_event, node) => setActiveNodeId(node.id),
-    [setActiveNodeId]
+  // Selektions-Glow als Helper (keine globalen Styles anfassen)
+  const withGlow = useCallback(
+    (n: Node, active: boolean) => ({
+      ...n,
+      selected: active,
+      style: {
+        ...n.style,
+        // sanfter, risikoarmer Glow
+        boxShadow: active ? "0 0 14px rgba(47,243,255,0.9)" : undefined,
+        // optional leichtes Outline als Fallback
+        outline: active ? "2px solid #2FF3FF" : undefined,
+        outlineOffset: active ? "2px" : undefined,
+        // niemals Größe/Position ändern
+      },
+    }),
+    []
   );
+
+  const onNodeClick: NodeMouseHandler = useCallback(
+    (_event, node) => {
+      setActiveNodeId(node.id);
+      // Selektion auf genau diesen Node setzen
+      setNodes((nds) => nds.map((n) => withGlow(n, n.id === node.id)));
+    },
+    [setActiveNodeId, setNodes, withGlow]
+  );
+
+  const onPaneClick = useCallback(() => {
+    setNodes((nds) => nds.map((n) => withGlow(n, false)));
+    setActiveNodeId(null);
+  }, [setNodes, setActiveNodeId, withGlow]);
+
+  const onNodeDragStop: NodeMouseHandler = useCallback(() => {
+    // Nichts tun → Selektion/Glow bleibt erhalten
+  }, []);
 
   // 🧠 Node-Notiz aktualisieren
   const updateNodeNote = useCallback(
@@ -258,6 +282,8 @@ export default function GraphCanvas() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            onNodeDragStop={onNodeDragStop}
             fitView
           >
             <MiniMap />
