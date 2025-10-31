@@ -38,6 +38,7 @@ import SessionBadge from "@/components/SessionBadge";
 import SnapshotPanel from "@/components/SnapshotPanel";
 import BranchPanel from "@/components/BranchPanel";
 import TimelinePlayer from "@/components/TimelinePlayer";
+import LearningSummaryPanel from "@/components/LearningSummaryPanel";
 import NodeVisual from "@/components/NodeVisual";
 import {
   saveGraphRemote,
@@ -62,6 +63,12 @@ import {
 import { getActiveBranch, getBranch, type Branch } from "@/lib/branchManager";
 import { diffGraphs, type DiffResult } from "@/lib/diffEngine";
 import { generateSnapshotSummary } from "@/lib/aiSummarizer";
+import {
+  addFeedbackEvent,
+  cleanupOldFeedback,
+} from "@/lib/feedback/FeedbackStore";
+import { getMostRelevantInsight } from "@/lib/feedback/FeedbackEngine";
+import { generateLearningSummary } from "@/lib/ai/generateLearningSummary";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const GraphContext = createContext<{
@@ -102,12 +109,14 @@ export default function GraphCanvas() {
   const hasUnsavedChangesRef = useRef(false);
   const lastSnapshotRef = useRef<number>(0);
   const nodeChangeCountRef = useRef<number>(0);
+  const lastInsightCheckRef = useRef<number>(0);
 
   // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
   useEffect(() => {
     (async () => {
-      // Clean up expired snapshots on mount
+      // Clean up expired snapshots and feedback events on mount
       await clearSnapshots();
+      await cleanupOldFeedback();
 
       // Try to restore from session manager first
       const savedGraphState = await loadGraphState();
@@ -174,6 +183,19 @@ export default function GraphCanvas() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
+  // 🧠 Periodic Learning Summary Generation (every 10 minutes)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("🧠 Generating periodic learning summary...");
+      generateLearningSummary().then((summary) => {
+        if (summary) {
+          console.log("📊 Learning Summary:", summary);
+        }
+      });
+    }, 10 * 60 * 1000); // 10 minutes
+    return () => clearInterval(interval);
+  }, []);
+
   // 💾 Autosave (debounced 800ms) + Status + Session Persistence + Snapshot
   const saveGraph = useCallback(
     (n: Node[], e: Edge[]) => {
@@ -182,12 +204,22 @@ export default function GraphCanvas() {
       hasUnsavedChangesRef.current = true;
 
       saveDebounceRef.current = setTimeout(async () => {
+        const saveStartTime = Date.now();
         try {
           const when = Date.now();
           await saveGraphRemote({ nodes: n, edges: e });
 
           // Also save to session manager for crash recovery
           await saveGraphState({ nodes: n, edges: e });
+
+          // Log successful save
+          await addFeedbackEvent({
+            timestamp: when,
+            type: "save",
+            details: { nodeCount: n.length, edgeCount: e.length },
+            success: true,
+            duration: Date.now() - saveStartTime,
+          });
 
           // Create version snapshot conditionally: every ~5 min or 20+ node changes
           const timeSinceLastSnapshot = when - lastSnapshotRef.current;
@@ -210,6 +242,18 @@ export default function GraphCanvas() {
 
             // Generate AI summary if snapshot was created successfully
             if (snapshotId) {
+              // Log successful snapshot
+              await addFeedbackEvent({
+                timestamp: when,
+                type: "snapshot",
+                details: {
+                  snapshotId,
+                  nodeCount: n.length,
+                  edgeCount: e.length,
+                },
+                success: true,
+              });
+
               setToast({
                 type: "save",
                 message: "🤖 Analyzing snapshot changes...",
@@ -253,6 +297,20 @@ export default function GraphCanvas() {
           setSaveState("saved");
           hasUnsavedChangesRef.current = false;
 
+          // Check for insights occasionally (every 30 seconds max)
+          const timeSinceLastInsight = Date.now() - lastInsightCheckRef.current;
+          if (timeSinceLastInsight > 30 * 1000) {
+            lastInsightCheckRef.current = Date.now();
+            const insight = await getMostRelevantInsight();
+            if (insight) {
+              setToast({
+                type: "save",
+                message: `🧩 ${insight}`,
+              });
+              setTimeout(() => setToast(null), 5000);
+            }
+          }
+
           // nach kurzer Zeit wieder in idle übergehen
           setTimeout(
             () => setSaveState((s) => (s === "saved" ? "idle" : s)),
@@ -260,6 +318,19 @@ export default function GraphCanvas() {
           );
         } catch (err) {
           console.warn("Remote save failed, local only", err);
+
+          // Log error
+          await addFeedbackEvent({
+            timestamp: Date.now(),
+            type: "error",
+            details: {
+              error: "save_failed",
+              nodeCount: n.length,
+              edgeCount: e.length,
+            },
+            success: false,
+          });
+
           await localforage.setItem("noion-graph", { nodes: n, edges: e });
           // Still save to session manager for recovery
           await saveGraphState({ nodes: n, edges: e });
@@ -284,6 +355,18 @@ export default function GraphCanvas() {
 
             // Generate AI summary if snapshot was created successfully
             if (snapshotId) {
+              // Log successful snapshot
+              await addFeedbackEvent({
+                timestamp: Date.now(),
+                type: "snapshot",
+                details: {
+                  snapshotId,
+                  nodeCount: n.length,
+                  edgeCount: e.length,
+                },
+                success: true,
+              });
+
               setToast({
                 type: "save",
                 message: "🤖 Analyzing snapshot changes...",
@@ -1008,6 +1091,9 @@ export default function GraphCanvas() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 🧠 Learning Summary Panel */}
+        <LearningSummaryPanel />
       </div>
     </GraphContext.Provider>
   );
