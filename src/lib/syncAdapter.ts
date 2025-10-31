@@ -6,6 +6,8 @@ import {
   persistGraphDoc,
   mergeRemoteDoc,
 } from "./automergeAdapter";
+import { mergeWithStrategy } from "./conflictResolver";
+import { SilverbulletCore } from "./silverbullet/core";
 
 export interface GraphData {
   nodes: Node[];
@@ -52,19 +54,38 @@ export async function loadGraphSync(): Promise<GraphData> {
   }
 }
 
-export async function syncWithAutomerge() {
+export async function syncAndResolve(
+  strategy: "preferLocal" | "preferRemote" | "mergeProps" = "mergeProps"
+) {
   try {
     const localDoc = await initGraphDoc();
-
-    // Remote holen (binär)
     const res = await fetch("/api/graph");
     const remoteJson = await res.json();
     const remoteBinary = new Uint8Array(remoteJson.automerge ?? []);
+    const remoteDoc = Automerge.load(remoteBinary);
 
-    // Mergen
-    const merged = await mergeRemoteDoc(localDoc, remoteBinary);
+    const { merged, conflicts } = mergeWithStrategy(
+      localDoc,
+      remoteDoc,
+      strategy
+    );
+    await persistGraphDoc(merged);
 
-    // Remote aktualisieren
+    // Silverbullet Event loggen
+    if (conflicts.length > 0) {
+      SilverbulletCore.log({
+        type: "conflict",
+        payload: { count: conflicts.length, strategy },
+        timestamp: Date.now(),
+      });
+    } else {
+      SilverbulletCore.log({
+        type: "merge",
+        payload: { strategy },
+        timestamp: Date.now(),
+      });
+    }
+
     await fetch("/api/graph", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,8 +96,9 @@ export async function syncWithAutomerge() {
       }),
     });
 
-    return merged;
+    return { merged, conflicts };
   } catch (err) {
-    console.error("Automerge sync failed:", err);
+    console.error("Sync + Conflict Resolution failed:", err);
+    return null;
   }
 }

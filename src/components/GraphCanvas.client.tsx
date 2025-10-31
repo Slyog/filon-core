@@ -33,7 +33,7 @@ import {
 import "reactflow/dist/style.css";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 import ThoughtPanel from "@/components/ThoughtPanel";
-import { saveGraphRemote, loadGraphSync } from "@/lib/syncAdapter";
+import { saveGraphRemote, loadGraphSync, syncAndResolve } from "@/lib/syncAdapter";
 
 export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
@@ -55,13 +55,20 @@ export default function GraphCanvas() {
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
-  // 📥 Graph laden (Sync: Server + Local)
+  // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution)
   useEffect(() => {
     (async () => {
-      const synced = await loadGraphSync();
-      setNodes(synced.nodes ?? []);
-      setEdges(synced.edges ?? []);
-      setNodeCount((synced.nodes?.length ?? 0) + 1);
+      const result = await syncAndResolve("mergeProps");
+      if (result?.merged) {
+        setNodes(result.merged.nodes ?? []);
+        setEdges(result.merged.edges ?? []);
+        setNodeCount((result.merged.nodes?.length ?? 0) + 1);
+        
+        // Konflikte loggen
+        if (result.conflicts.length > 0) {
+          console.warn(`⚠️ ${result.conflicts.length} Konflikte automatisch aufgelöst`);
+        }
+      }
 
       // 🧠 Session restore
       const restoredSession = await localforage.getItem<{
