@@ -36,6 +36,8 @@ import ThoughtPanel from "@/components/ThoughtPanel";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import SessionBadge from "@/components/SessionBadge";
 import SnapshotPanel from "@/components/SnapshotPanel";
+import BranchPanel from "@/components/BranchPanel";
+import TimelinePlayer from "@/components/TimelinePlayer";
 import NodeVisual from "@/components/NodeVisual";
 import {
   saveGraphRemote,
@@ -47,12 +49,15 @@ import {
   loadSession,
   saveGraphState,
   loadGraphState,
+  type GraphState,
 } from "@/lib/sessionManager";
 import {
   saveSnapshot,
   clearSnapshots,
   // listSnapshots and loadSnapshot reserved for future Version History UI
 } from "@/lib/versionManager";
+import { getActiveBranch, getBranch, type Branch } from "@/lib/branchManager";
+import type { DiffResult } from "@/lib/diffEngine";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const GraphContext = createContext<{
@@ -74,6 +79,16 @@ export default function GraphCanvas() {
   const [lastActiveId, setLastActiveId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [snapshotPanelOpen, setSnapshotPanelOpen] = useState(false);
+  const [branchPanelOpen, setBranchPanelOpen] = useState(false);
+  const [visualizerOpen, setVisualizerOpen] = useState(false);
+  const [playbackPanelOpen, setPlaybackPanelOpen] = useState(false);
+  const [activeBranch, setActiveBranch] = useState<Branch | null>(null);
+  const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
+  const [playbackActive, setPlaybackActive] = useState(false);
+  const [originalGraphState, setOriginalGraphState] = useState<{
+    nodes: Node[];
+    edges: Edge[];
+  } | null>(null);
   const [toast, setToast] = useState<{
     type: ToastType;
     message: string;
@@ -127,6 +142,15 @@ export default function GraphCanvas() {
         if (restoredSession.panel) setPanelOpen(true);
         setLastActiveId(restoredSession.activeId);
       }
+
+      // 🌿 Load active branch
+      const activeBranchId = await getActiveBranch();
+      if (activeBranchId) {
+        const branch = await getBranch(activeBranchId);
+        if (branch) {
+          setActiveBranch(branch);
+        }
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -147,76 +171,95 @@ export default function GraphCanvas() {
   }, []);
 
   // 💾 Autosave (debounced 800ms) + Status + Session Persistence + Snapshot
-  const saveGraph = useCallback((n: Node[], e: Edge[]) => {
-    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
-    setSaveState("saving");
-    hasUnsavedChangesRef.current = true;
+  const saveGraph = useCallback(
+    (n: Node[], e: Edge[]) => {
+      if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+      setSaveState("saving");
+      hasUnsavedChangesRef.current = true;
 
-    saveDebounceRef.current = setTimeout(async () => {
-      try {
-        const when = Date.now();
-        await saveGraphRemote({ nodes: n, edges: e });
+      saveDebounceRef.current = setTimeout(async () => {
+        try {
+          const when = Date.now();
+          await saveGraphRemote({ nodes: n, edges: e });
 
-        // Also save to session manager for crash recovery
-        await saveGraphState({ nodes: n, edges: e });
+          // Also save to session manager for crash recovery
+          await saveGraphState({ nodes: n, edges: e });
 
-        // Create version snapshot conditionally: every ~5 min or 20+ node changes
-        const timeSinceLastSnapshot = when - lastSnapshotRef.current;
-        const shouldSnapshot =
-          timeSinceLastSnapshot > 5 * 60 * 1000 ||
-          nodeChangeCountRef.current >= 20;
+          // Create version snapshot conditionally: every ~5 min or 20+ node changes
+          const timeSinceLastSnapshot = when - lastSnapshotRef.current;
+          const shouldSnapshot =
+            timeSinceLastSnapshot > 5 * 60 * 1000 ||
+            nodeChangeCountRef.current >= 20;
 
-        if (shouldSnapshot) {
-          await saveSnapshot({ nodes: n, edges: e });
-          lastSnapshotRef.current = when;
-          nodeChangeCountRef.current = 0;
-          setToast({
-            type: "save",
-            message: "📜 Snapshot created",
-          });
-          setTimeout(() => setToast(null), 3000);
-        } else {
-          nodeChangeCountRef.current++;
+          if (shouldSnapshot) {
+            await saveSnapshot(
+              { nodes: n, edges: e },
+              activeBranch
+                ? {
+                    branchId: activeBranch.id,
+                    branchName: activeBranch.name,
+                  }
+                : undefined
+            );
+            lastSnapshotRef.current = when;
+            nodeChangeCountRef.current = 0;
+            setToast({
+              type: "save",
+              message: "📜 Snapshot created",
+            });
+            setTimeout(() => setToast(null), 3000);
+          } else {
+            nodeChangeCountRef.current++;
+          }
+
+          setLastSavedAt(when);
+          setSaveState("saved");
+          hasUnsavedChangesRef.current = false;
+
+          // nach kurzer Zeit wieder in idle übergehen
+          setTimeout(
+            () => setSaveState((s) => (s === "saved" ? "idle" : s)),
+            1000
+          );
+        } catch (err) {
+          console.warn("Remote save failed, local only", err);
+          await localforage.setItem("noion-graph", { nodes: n, edges: e });
+          // Still save to session manager for recovery
+          await saveGraphState({ nodes: n, edges: e });
+          // Create snapshot even if remote save fails (same conditional logic)
+          const timeSinceLastSnapshot = Date.now() - lastSnapshotRef.current;
+          const shouldSnapshot =
+            timeSinceLastSnapshot > 5 * 60 * 1000 ||
+            nodeChangeCountRef.current >= 20;
+
+          if (shouldSnapshot) {
+            await saveSnapshot(
+              { nodes: n, edges: e },
+              activeBranch
+                ? {
+                    branchId: activeBranch.id,
+                    branchName: activeBranch.name,
+                  }
+                : undefined
+            );
+            lastSnapshotRef.current = Date.now();
+            nodeChangeCountRef.current = 0;
+            setToast({
+              type: "save",
+              message: "📜 Snapshot created",
+            });
+            setTimeout(() => setToast(null), 3000);
+          } else {
+            nodeChangeCountRef.current++;
+          }
+
+          setSaveState("error");
+          hasUnsavedChangesRef.current = false;
         }
-
-        setLastSavedAt(when);
-        setSaveState("saved");
-        hasUnsavedChangesRef.current = false;
-
-        // nach kurzer Zeit wieder in idle übergehen
-        setTimeout(
-          () => setSaveState((s) => (s === "saved" ? "idle" : s)),
-          1000
-        );
-      } catch (err) {
-        console.warn("Remote save failed, local only", err);
-        await localforage.setItem("noion-graph", { nodes: n, edges: e });
-        // Still save to session manager for recovery
-        await saveGraphState({ nodes: n, edges: e });
-        // Create snapshot even if remote save fails (same conditional logic)
-        const timeSinceLastSnapshot = Date.now() - lastSnapshotRef.current;
-        const shouldSnapshot =
-          timeSinceLastSnapshot > 5 * 60 * 1000 ||
-          nodeChangeCountRef.current >= 20;
-
-        if (shouldSnapshot) {
-          await saveSnapshot({ nodes: n, edges: e });
-          lastSnapshotRef.current = Date.now();
-          nodeChangeCountRef.current = 0;
-          setToast({
-            type: "save",
-            message: "📜 Snapshot created",
-          });
-          setTimeout(() => setToast(null), 3000);
-        } else {
-          nodeChangeCountRef.current++;
-        }
-
-        setSaveState("error");
-        hasUnsavedChangesRef.current = false;
-      }
-    }, 800);
-  }, []);
+      }, 800);
+    },
+    [activeBranch]
+  );
 
   // 🔄 Node & Edge Handlers
   const onNodesChange: OnNodesChange = useCallback(
@@ -267,6 +310,116 @@ export default function GraphCanvas() {
       },
     }),
     []
+  );
+
+  // Visualizer Dim Helper
+  const withVisualizerDim = useCallback(
+    (n: Node) => {
+      if (!visualizerOpen || !activeBranch) return n;
+
+      // Check if node belongs to active branch (would need branch metadata on nodes)
+      // For now, just apply dimming to all nodes when visualizer is open
+      // This is a simplified version - could be enhanced with branch tracking per node
+      return {
+        ...n,
+        style: {
+          ...n.style,
+          opacity: 0.7,
+        },
+      };
+    },
+    [visualizerOpen, activeBranch]
+  );
+
+  // Playback Handler
+  const handlePlaybackSnapshotChange = useCallback(
+    async (snapshot: GraphState | null) => {
+      if (!snapshot) return;
+
+      // Store original state before first playback change if not already stored
+      if (!originalGraphState && !playbackActive) {
+        setOriginalGraphState({ nodes, edges });
+        setPlaybackActive(true);
+        setToast({
+          type: "restore",
+          message: "⏳ Playback started",
+        });
+        setTimeout(() => setToast(null), 3000);
+      }
+
+      // Animate to snapshot state
+      setNodes(snapshot.nodes ?? []);
+      setEdges(snapshot.edges ?? []);
+    },
+    [nodes, edges, originalGraphState, playbackActive]
+  );
+
+  const handlePlaybackClose = useCallback(() => {
+    setPlaybackPanelOpen(false);
+    setPlaybackActive(false);
+
+    // Restore original state if exists
+    if (originalGraphState) {
+      setNodes(originalGraphState.nodes);
+      setEdges(originalGraphState.edges);
+      setOriginalGraphState(null);
+
+      setToast({
+        type: "restore",
+        message: "⏹ Playback stopped",
+      });
+      setTimeout(() => setToast(null), 3000);
+    }
+  }, [originalGraphState]);
+
+  // Diff Highlight als Helper
+  const withDiffHighlight = useCallback(
+    (n: Node) => {
+      if (!diffResult) return n;
+
+      const isAdded = diffResult.addedNodes.some((node) => node.id === n.id);
+      const isRemoved = diffResult.removedNodes.some(
+        (node) => node.id === n.id
+      );
+      const isChanged = diffResult.changedNodes.some(
+        (change) => change.id === n.id
+      );
+
+      if (!isAdded && !isRemoved && !isChanged) return n;
+
+      // Determine highlight color and animation
+      let borderColor: string;
+      let glowColor: string;
+      let shouldPulse = false;
+
+      if (isAdded) {
+        borderColor = "rgb(74, 222, 128)"; // green-400
+        glowColor = "rgba(74, 222, 128, 0.5)";
+      } else if (isRemoved) {
+        borderColor = "rgb(239, 68, 68)"; // red-500
+        glowColor = "rgba(239, 68, 68, 0.5)";
+      } else if (isChanged) {
+        borderColor = "rgb(251, 191, 36)"; // yellow-400
+        glowColor = "rgba(251, 191, 36, 0.5)";
+        shouldPulse = true;
+      } else {
+        return n;
+      }
+
+      return {
+        ...n,
+        style: {
+          ...n.style,
+          border: `2px solid ${borderColor}`,
+          boxShadow: shouldPulse
+            ? `0 0 20px ${glowColor}, 0 0 40px ${glowColor}`
+            : `0 0 20px ${glowColor}`,
+          outline: `2px solid ${borderColor}`,
+          outlineOffset: "2px",
+        },
+      };
+    },
+    [diffResult]
   );
 
   const onNodeClick: NodeMouseHandler = useCallback(
@@ -367,10 +520,13 @@ export default function GraphCanvas() {
   // 🔍 Suchfunktion (memoized, um infinite loops zu vermeiden)
   const filteredNodes = useMemo(
     () =>
-      nodes.filter((node) =>
-        node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [nodes, searchTerm]
+      nodes
+        .filter((node) =>
+          node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .map((node) => withDiffHighlight(node))
+        .map((node) => withVisualizerDim(node)),
+    [nodes, searchTerm, withDiffHighlight, withVisualizerDim]
   );
 
   // Helper: editierbare Targets erkennen, damit Hotkeys beim Tippen nicht stören
@@ -608,6 +764,23 @@ export default function GraphCanvas() {
               <span>{snapshotPanelOpen ? "Close Snapshots" : "Snapshots"}</span>
             </span>
           </button>
+          <button
+            onClick={() => setBranchPanelOpen(!branchPanelOpen)}
+            role="button"
+            aria-label={
+              branchPanelOpen ? "Close Branch Panel" : "Open Branch Panel"
+            }
+            className={`px-3 py-1 rounded-lg text-white text-sm font-medium shadow-md transition-all ${
+              branchPanelOpen
+                ? "bg-green-700 hover:bg-green-600 border-2 border-green-400"
+                : "bg-green-600 hover:bg-green-500"
+            }`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-base">🌿</span>
+              <span>{branchPanelOpen ? "Close Branches" : "Branches"}</span>
+            </span>
+          </button>
         </div>
 
         {/* 💾 Status Badge */}
@@ -628,10 +801,31 @@ export default function GraphCanvas() {
           />
         </div>
 
+        {/* 🌿 Branch Badge */}
+        {activeBranch && (
+          <div className="absolute top-2 left-2 z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="px-3 py-1.5 rounded-full bg-green-900/80 backdrop-blur-sm border border-green-400/50"
+              style={{ boxShadow: "0 0 12px rgba(74, 222, 128, 0.3)" }}
+            >
+              <span className="text-xs font-semibold text-green-300 flex items-center gap-1.5">
+                <span>🌿</span>
+                <span className="truncate max-w-[120px]">
+                  {activeBranch.name}
+                </span>
+              </span>
+            </motion.div>
+          </div>
+        )}
+
         {/* 📜 Snapshot Panel */}
         <AnimatePresence>
           {snapshotPanelOpen && (
             <SnapshotPanel
+              currentGraphState={{ nodes, edges }}
               onRestore={(restoredNodes, restoredEdges) => {
                 setNodes(restoredNodes);
                 setEdges(restoredEdges);
@@ -644,7 +838,56 @@ export default function GraphCanvas() {
                 // Optionally close panel after restore
                 setSnapshotPanelOpen(false);
               }}
+              onDiffChange={setDiffResult}
             />
+          )}
+        </AnimatePresence>
+
+        {/* 🌿 Branch Panel */}
+        <AnimatePresence>
+          {branchPanelOpen && (
+            <BranchPanel
+              currentGraphState={{ nodes, edges }}
+              onRestore={(restoredNodes, restoredEdges) => {
+                setNodes(restoredNodes);
+                setEdges(restoredEdges);
+                setNodeCount(restoredNodes.length + 1);
+                setToast({
+                  type: "restore",
+                  message: "✅ Branch switched",
+                });
+                setTimeout(() => setToast(null), 3000);
+              }}
+              onBranchSwitch={(branch) => {
+                setActiveBranch(branch);
+                if (branch) {
+                  setToast({
+                    type: "restore",
+                    message: `🌿 Branch: ${branch.name}`,
+                  });
+                } else {
+                  setToast({
+                    type: "restore",
+                    message: "🌿 Main branch",
+                  });
+                }
+                setTimeout(() => setToast(null), 3000);
+              }}
+              onVisualizerToggle={setVisualizerOpen}
+              onPlaybackClick={() => setPlaybackPanelOpen(true)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ⏳ Timeline Playback Panel */}
+        <AnimatePresence>
+          {playbackPanelOpen && (
+            <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <TimelinePlayer
+                onSnapshotChange={handlePlaybackSnapshotChange}
+                onClose={handlePlaybackClose}
+              />
+            </div>
           )}
         </AnimatePresence>
 

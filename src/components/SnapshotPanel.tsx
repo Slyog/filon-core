@@ -1,31 +1,54 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   listSnapshots,
   loadSnapshot,
   type SnapshotMeta,
 } from "@/lib/versionManager";
+import { diffGraphs, mergeGraphs, type DiffResult } from "@/lib/diffEngine";
+import DiffModal from "@/components/DiffModal";
 import type { Node, Edge } from "reactflow";
 
 interface SnapshotPanelProps {
   onRestore?: (nodes: Node[], edges: Edge[]) => void;
+  currentGraphState?: { nodes: Node[]; edges: Edge[] };
+  onDiffChange?: (diff: DiffResult | null) => void;
 }
 
-export default function SnapshotPanel({ onRestore }: SnapshotPanelProps) {
+export default function SnapshotPanel({
+  onRestore,
+  currentGraphState,
+  onDiffChange,
+}: SnapshotPanelProps) {
   const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showDiffPanel, setShowDiffPanel] = useState(false);
+  const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
+  const [selectedSnapshotData, setSelectedSnapshotData] = useState<{
+    nodes: Node[];
+    edges: Edge[];
+  } | null>(null);
+  const [currentTime] = useState(() => Date.now());
 
-  useEffect(() => {
-    loadSnapshotsList();
-  }, []);
-
-  const loadSnapshotsList = async () => {
+  const loadSnapshotsList = useCallback(async () => {
     setLoading(true);
     const list = await listSnapshots(5);
     setSnapshots(list);
     setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSnapshotsList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Clear diff highlighting when component unmounts
+  useEffect(() => {
+    return () => {
+      onDiffChange?.(null);
+    };
+  }, [onDiffChange]);
 
   const handleRestore = async (id: string) => {
     const snapshotData = await loadSnapshot(id);
@@ -36,9 +59,37 @@ export default function SnapshotPanel({ onRestore }: SnapshotPanelProps) {
     }
   };
 
+  const handleCompare = async (id: string) => {
+    try {
+      const snapshotData = await loadSnapshot(id);
+      if (!snapshotData || !currentGraphState) {
+        console.warn("Cannot compare: missing snapshot or current state");
+        return;
+      }
+
+      // Store snapshot data for merge
+      setSelectedSnapshotData({
+        nodes: snapshotData.nodes ?? [],
+        edges: snapshotData.edges ?? [],
+      });
+
+      // Compare snapshot to current state (what changed since snapshot)
+      const diff = diffGraphs(
+        { nodes: snapshotData.nodes ?? [], edges: snapshotData.edges ?? [] },
+        currentGraphState
+      );
+
+      setDiffResult(diff);
+      setShowDiffPanel(true);
+      // Notify parent to apply diff highlighting
+      onDiffChange?.(diff);
+    } catch (err) {
+      console.error("Failed to calculate diff:", err);
+    }
+  };
+
   const formatTimeAgo = (timestamp: number) => {
-    const now = Date.now();
-    const diff = now - timestamp;
+    const diff = currentTime - timestamp;
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
@@ -105,12 +156,25 @@ export default function SnapshotPanel({ onRestore }: SnapshotPanelProps) {
                       {snapshot.nodeCount} nodes • {snapshot.edgeCount} edges
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleRestore(snapshot.id)}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm shrink-0"
-                  >
-                    Restore
-                  </button>
+                  <div className="flex gap-2 shrink-0">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleCompare(snapshot.id)}
+                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                      disabled={!currentGraphState}
+                    >
+                      Compare
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleRestore(snapshot.id)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                    >
+                      Restore
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -126,6 +190,35 @@ export default function SnapshotPanel({ onRestore }: SnapshotPanelProps) {
           🔄 Refresh
         </button>
       </div>
+
+      {/* Diff Modal */}
+      {showDiffPanel && diffResult && (
+        <DiffModal
+          diff={diffResult}
+          onClose={() => {
+            setShowDiffPanel(false);
+            setDiffResult(null);
+            setSelectedSnapshotData(null);
+            onDiffChange?.(null);
+          }}
+          onMerge={() => {
+            if (
+              onRestore &&
+              currentGraphState &&
+              selectedSnapshotData &&
+              diffResult
+            ) {
+              // Merge snapshot changes into current state
+              const merged = mergeGraphs(currentGraphState, diffResult);
+              onRestore(merged.nodes ?? [], merged.edges ?? []);
+              setShowDiffPanel(false);
+              setDiffResult(null);
+              setSelectedSnapshotData(null);
+              onDiffChange?.(null);
+            }
+          }}
+        />
+      )}
     </motion.div>
   );
 }

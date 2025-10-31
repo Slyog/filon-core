@@ -7,6 +7,10 @@ export interface SnapshotMeta {
   timestamp: number;
   nodeCount: number;
   edgeCount: number;
+  // Branching support (Step 26)
+  branchId?: string;
+  parentId?: string;
+  branchName?: string;
 }
 
 export interface Snapshot {
@@ -15,6 +19,10 @@ export interface Snapshot {
   nodeCount: number;
   edgeCount: number;
   data: GraphState;
+  // Branching support (Step 26)
+  branchId?: string;
+  parentId?: string;
+  branchName?: string;
 }
 
 const SNAPSHOTS_KEYSPACE = "filon-snapshots";
@@ -24,8 +32,16 @@ const SNAPSHOT_METADATA_KEY = "filon-snapshot-metadata";
 /**
  * Saves a snapshot of the current graph state
  * @param state - Graph state to snapshot
+ * @param options - Optional branch info
  */
-export async function saveSnapshot(state: GraphState): Promise<void> {
+export async function saveSnapshot(
+  state: GraphState,
+  options?: {
+    branchId?: string;
+    branchName?: string;
+    parentId?: string;
+  }
+): Promise<void> {
   try {
     const id = crypto.randomUUID();
     const timestamp = Date.now();
@@ -36,6 +52,9 @@ export async function saveSnapshot(state: GraphState): Promise<void> {
       nodeCount: state.nodes?.length ?? 0,
       edgeCount: state.edges?.length ?? 0,
       data: state,
+      branchId: options?.branchId,
+      branchName: options?.branchName,
+      parentId: options?.parentId,
     };
 
     // Save snapshot
@@ -50,6 +69,9 @@ export async function saveSnapshot(state: GraphState): Promise<void> {
       timestamp,
       nodeCount: snapshot.nodeCount,
       edgeCount: snapshot.edgeCount,
+      branchId: options?.branchId,
+      branchName: options?.branchName,
+      parentId: options?.parentId,
     };
 
     const updatedMeta = metaList ? [newMeta, ...metaList] : [newMeta];
