@@ -28,7 +28,15 @@ export async function GET() {
       animated: true,
     }));
 
-    return NextResponse.json({ nodes, edges, meta }, { status: 200 });
+    return NextResponse.json(
+      {
+        nodes,
+        edges,
+        meta,
+        automerge: meta?.automerge ? Array.from(meta.automerge) : [],
+      },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Graph GET error:", error);
     return NextResponse.json(
@@ -40,7 +48,11 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { nodes, edges }: { nodes: Node[]; edges: Edge[] } =
+    const {
+      nodes,
+      edges,
+      automerge,
+    }: { nodes: Node[]; edges: Edge[]; automerge?: number[] } =
       await request.json();
 
     // Transaction: Alles oder nichts (Array-Syntax für bessere Performance)
@@ -70,6 +82,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Meta-Infos speichern
+      const automergeBuffer = automerge ? Buffer.from(automerge) : null;
       await tx.meta.upsert({
         where: { id: 1 },
         create: {
@@ -77,11 +90,13 @@ export async function POST(request: NextRequest) {
           lastSavedAt: new Date(),
           nodeCount: nodes.length,
           edgeCount: edges.length,
+          automerge: automergeBuffer,
         },
         update: {
           lastSavedAt: new Date(),
           nodeCount: nodes.length,
           edgeCount: edges.length,
+          automerge: automergeBuffer,
         },
       });
     });

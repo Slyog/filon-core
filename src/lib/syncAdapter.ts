@@ -1,5 +1,11 @@
 import localforage from "localforage";
 import type { Node, Edge } from "reactflow";
+import * as Automerge from "@automerge/automerge";
+import {
+  initGraphDoc,
+  persistGraphDoc,
+  mergeRemoteDoc,
+} from "./automergeAdapter";
 
 export interface GraphData {
   nodes: Node[];
@@ -43,5 +49,34 @@ export async function loadGraphSync(): Promise<GraphData> {
     return (
       (await localforage.getItem("noion-graph")) ?? { nodes: [], edges: [] }
     );
+  }
+}
+
+export async function syncWithAutomerge() {
+  try {
+    const localDoc = await initGraphDoc();
+
+    // Remote holen (binär)
+    const res = await fetch("/api/graph");
+    const remoteJson = await res.json();
+    const remoteBinary = new Uint8Array(remoteJson.automerge ?? []);
+
+    // Mergen
+    const merged = await mergeRemoteDoc(localDoc, remoteBinary);
+
+    // Remote aktualisieren
+    await fetch("/api/graph", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        automerge: Array.from(Automerge.save(merged)),
+        nodes: merged.nodes,
+        edges: merged.edges,
+      }),
+    });
+
+    return merged;
+  } catch (err) {
+    console.error("Automerge sync failed:", err);
   }
 }

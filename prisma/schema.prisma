@@ -33,4 +33,5 @@ model Meta {
   lastSavedAt  DateTime?
   nodeCount    Int?
   edgeCount    Int?
+  automerge    Bytes?
 }

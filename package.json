@@ -11,6 +11,7 @@
     "test:watch": "jest --watch --config jest.config.ts"
   },
   "dependencies": {
+    "@automerge/automerge": "^3.2.0",
     "@prisma/client": "^6.18.0",
     "dotenv": "^17.2.3",
     "localforage": "^1.10.0",
