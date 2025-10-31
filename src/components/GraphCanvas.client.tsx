@@ -270,6 +270,65 @@ export default function GraphCanvas() {
             placeholder="🔍 Suchbegriff eingeben..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter → Suche "ausführen" = einfach sicherstellen, dass der Filter aktiv bleibt
+              if (e.key === "Enter") {
+                e.preventDefault();
+                // optional: ersten Treffer selektieren (ohne Panel zu öffnen)
+                setNodes((nds) =>
+                  nds.map((n) => ({
+                    ...n,
+                    selected:
+                      n.data.label
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()) &&
+                      searchTerm !== "",
+                    style: {
+                      ...n.style,
+                      boxShadow:
+                        n.data.label
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase()) &&
+                        searchTerm !== ""
+                          ? "0 0 14px rgba(47,243,255,0.9)"
+                          : undefined,
+                      outline:
+                        n.data.label
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase()) &&
+                        searchTerm !== ""
+                          ? "2px solid #2FF3FF"
+                          : undefined,
+                      outlineOffset:
+                        n.data.label
+                          .toLowerCase()
+                          .includes(searchTerm.toLowerCase()) &&
+                        searchTerm !== ""
+                          ? "2px"
+                          : undefined,
+                    },
+                  }))
+                );
+              }
+
+              // Esc → Suchfeld leeren + Filter aufheben
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setSearchTerm("");
+                setNodes((nds) =>
+                  nds.map((n) => ({
+                    ...n,
+                    selected: false,
+                    style: {
+                      ...n.style,
+                      boxShadow: undefined,
+                      outline: undefined,
+                      outlineOffset: undefined,
+                    },
+                  }))
+                );
+              }
+            }}
             className="px-3 py-1 rounded-lg bg-[#2a2a2a] text-white text-sm outline-none"
           />
           <button
