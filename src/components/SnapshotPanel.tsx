@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   listSnapshots,
   loadSnapshot,
+  addTag,
+  removeTag,
   type SnapshotMeta,
 } from "@/lib/versionManager";
 import { diffGraphs, mergeGraphs, type DiffResult } from "@/lib/diffEngine";
 import DiffModal from "@/components/DiffModal";
+import SnapshotTagEditor from "@/components/SnapshotTagEditor";
 import type { Node, Edge } from "reactflow";
 
 interface SnapshotPanelProps {
@@ -88,6 +91,28 @@ export default function SnapshotPanel({
     }
   };
 
+  const handleTagsChange = async (snapshotId: string, newTags: string[]) => {
+    const snapshot = snapshots.find((s) => s.id === snapshotId);
+    if (!snapshot) return;
+
+    const oldTags = snapshot.tags || [];
+
+    // Find added and removed tags
+    const added = newTags.filter((tag) => !oldTags.includes(tag));
+    const removed = oldTags.filter((tag) => !newTags.includes(tag));
+
+    // Apply changes
+    for (const tag of added) {
+      await addTag(snapshotId, tag);
+    }
+    for (const tag of removed) {
+      await removeTag(snapshotId, tag);
+    }
+
+    // Reload snapshots to reflect changes
+    await loadSnapshotsList();
+  };
+
   const formatTimeAgo = (timestamp: number) => {
     const diff = currentTime - timestamp;
     const minutes = Math.floor(diff / 60000);
@@ -144,36 +169,46 @@ export default function SnapshotPanel({
                 transition={{ duration: 0.2, delay: index * 0.05 }}
                 className="border-b border-zinc-800 last:border-b-0 hover:bg-zinc-800/50 transition-colors"
               >
-                <div className="p-3 flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-zinc-400 text-xs">🕒</span>
-                      <span className="text-white text-xs font-medium">
-                        {formatTimeAgo(snapshot.timestamp)}
-                      </span>
+                <div className="p-3 flex flex-col gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-zinc-400 text-xs">🕒</span>
+                        <span className="text-white text-xs font-medium">
+                          {formatTimeAgo(snapshot.timestamp)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-zinc-500">
+                        {snapshot.nodeCount} nodes • {snapshot.edgeCount} edges
+                      </div>
                     </div>
-                    <div className="text-xs text-zinc-500">
-                      {snapshot.nodeCount} nodes • {snapshot.edgeCount} edges
+                    <div className="flex gap-2 shrink-0">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleCompare(snapshot.id)}
+                        className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                        disabled={!currentGraphState}
+                      >
+                        Compare
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleRestore(snapshot.id)}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                      >
+                        Restore
+                      </motion.button>
                     </div>
                   </div>
-                  <div className="flex gap-2 shrink-0">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleCompare(snapshot.id)}
-                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
-                      disabled={!currentGraphState}
-                    >
-                      Compare
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => handleRestore(snapshot.id)}
-                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
-                    >
-                      Restore
-                    </motion.button>
+                  {/* Tag Editor */}
+                  <div className="mt-1 pt-2 border-t border-zinc-800">
+                    <SnapshotTagEditor
+                      snapshotId={snapshot.id}
+                      tags={snapshot.tags || []}
+                      onChange={(tags) => handleTagsChange(snapshot.id, tags)}
+                    />
                   </div>
                 </div>
               </motion.div>
