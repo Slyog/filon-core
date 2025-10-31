@@ -263,6 +263,34 @@ export default function GraphCanvas() {
       if (key.startsWith("note-")) await localforage.removeItem(key);
   }, []);
 
+  // 🧪 Test-Funktionen für Prisma API
+  const saveToServer = async () => {
+    try {
+      await fetch("/api/graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nodes, edges }),
+      });
+      console.log("✅ Saved to Prisma DB");
+    } catch (err) {
+      console.error("❌ Save failed:", err);
+    }
+  };
+
+  const loadFromServer = async () => {
+    try {
+      const res = await fetch("/api/graph");
+      const data = await res.json();
+      if (data.nodes && data.edges) {
+        setNodes(data.nodes);
+        setEdges(data.edges);
+        console.log("✅ Loaded from Prisma DB", { meta: data.meta });
+      }
+    } catch (err) {
+      console.error("❌ Load failed:", err);
+    }
+  };
+
   // 🔍 Suchfunktion (memoized, um infinite loops zu vermeiden)
   const filteredNodes = useMemo(
     () =>
@@ -477,6 +505,18 @@ export default function GraphCanvas() {
             className="px-3 py-1 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium shadow-md"
           >
             Clear
+          </button>
+          <button
+            onClick={saveToServer}
+            className="px-3 py-1 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium shadow-md"
+          >
+            💾 Save DB
+          </button>
+          <button
+            onClick={loadFromServer}
+            className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium shadow-md"
+          >
+            📥 Load DB
           </button>
         </div>
 
