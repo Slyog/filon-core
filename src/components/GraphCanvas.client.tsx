@@ -33,6 +33,7 @@ import {
 import "reactflow/dist/style.css";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 import ThoughtPanel from "@/components/ThoughtPanel";
+import { saveGraphRemote, loadGraphSync } from "@/lib/syncAdapter";
 
 export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
@@ -54,47 +55,13 @@ export default function GraphCanvas() {
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
-  // 📥 Graph laden
+  // 📥 Graph laden (Sync: Server + Local)
   useEffect(() => {
     (async () => {
-      const saved = await localforage.getItem<{ nodes: Node[]; edges: Edge[] }>(
-        "noion-graph"
-      );
-      if (saved) {
-        setNodes(saved.nodes);
-        setEdges(saved.edges);
-        setNodeCount(saved.nodes.length + 1);
-      } else {
-        const defaultNodes: Node[] = [
-          {
-            id: "1",
-            position: { x: 100, y: 100 },
-            data: { label: "💡 Idee 1", note: "" },
-            style: {
-              background: "#1e293b",
-              color: "white",
-              padding: 10,
-              borderRadius: 8,
-              cursor: "pointer",
-            },
-          },
-          {
-            id: "2",
-            position: { x: 300, y: 200 },
-            data: { label: "💭 Idee 2", note: "" },
-            style: {
-              background: "#334155",
-              color: "white",
-              padding: 10,
-              borderRadius: 8,
-              cursor: "pointer",
-            },
-          },
-        ];
-        setNodes(defaultNodes);
-        setEdges([{ id: "e1-2", source: "1", target: "2" }]);
-        setNodeCount(3);
-      }
+      const synced = await loadGraphSync();
+      setNodes(synced.nodes ?? []);
+      setEdges(synced.edges ?? []);
+      setNodeCount((synced.nodes?.length ?? 0) + 1);
 
       // 🧠 Session restore
       const restoredSession = await localforage.getItem<{
@@ -118,11 +85,7 @@ export default function GraphCanvas() {
     saveDebounceRef.current = setTimeout(async () => {
       try {
         const when = Date.now();
-        await localforage.setItem("noion-graph", {
-          nodes: n,
-          edges: e,
-          meta: { lastSavedAt: when, nodeCount: n.length, edgeCount: e.length },
-        });
+        await saveGraphRemote({ nodes: n, edges: e });
         setLastSavedAt(when);
         setSaveState("saved");
 
@@ -132,7 +95,8 @@ export default function GraphCanvas() {
           1000
         );
       } catch (err) {
-        console.error("Autosave failed:", err);
+        console.warn("Remote save failed, local only", err);
+        await localforage.setItem("noion-graph", { nodes: n, edges: e });
         setSaveState("error");
       }
     }, 800);
@@ -263,29 +227,22 @@ export default function GraphCanvas() {
       if (key.startsWith("note-")) await localforage.removeItem(key);
   }, []);
 
-  // 🧪 Test-Funktionen für Prisma API
+  // 🔄 Sync-Funktionen (Prisma + localforage)
   const saveToServer = async () => {
     try {
-      await fetch("/api/graph", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nodes, edges }),
-      });
-      console.log("✅ Saved to Prisma DB");
+      await saveGraphRemote({ nodes, edges });
+      console.log("✅ Synced to Prisma DB");
     } catch (err) {
-      console.error("❌ Save failed:", err);
+      console.error("❌ Sync failed:", err);
     }
   };
 
   const loadFromServer = async () => {
     try {
-      const res = await fetch("/api/graph");
-      const data = await res.json();
-      if (data.nodes && data.edges) {
-        setNodes(data.nodes);
-        setEdges(data.edges);
-        console.log("✅ Loaded from Prisma DB", { meta: data.meta });
-      }
+      const data = await loadGraphSync();
+      setNodes(data.nodes);
+      setEdges(data.edges);
+      console.log("✅ Synced from server", { meta: data.meta });
     } catch (err) {
       console.error("❌ Load failed:", err);
     }
