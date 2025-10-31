@@ -75,6 +75,53 @@ button:focus-visible {
   animation: fadeInOut 1.5s ease-in-out;
 }
 
+/* --- Glow Pulse Animation für Sync-States --- */
+@keyframes glowPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px var(--accent));
+  }
+  50% {
+    filter: drop-shadow(0 0 8px var(--accent));
+  }
+}
+
+[data-state="syncing"] {
+  --accent: #2ff3ff;
+  animation: glowPulse 2s infinite ease-in-out;
+}
+
+[data-state="conflict"] {
+  --accent: #facc15;
+  animation: glowPulse 3s infinite ease-in-out;
+}
+
+/* --- Node Merge Glow Animations --- */
+@keyframes mergeGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--merge-color);
+  }
+  50% {
+    box-shadow: 0 0 12px var(--merge-color);
+  }
+}
+
+.node[data-state="merged"] {
+  --merge-color: #34d399;
+  animation: mergeGlow 1.6s ease-in-out;
+}
+
+.node[data-state="conflict"] {
+  --merge-color: #facc15;
+  animation: mergeGlow 2s ease-in-out;
+}
+
+.node[data-state="syncing"] {
+  --merge-color: #2ff3ff;
+  animation: mergeGlow 1.2s ease-in-out infinite;
+}
+
 /* --- ReactFlow fix: keine Z-Clipping-Probleme --- */
 .react-flow {
   z-index: 1 !important;

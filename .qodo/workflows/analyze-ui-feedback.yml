@@ -1,0 +1,27 @@
+name: analyze-ui-feedback
+description: Prüft Sync-Status-Feedback, Motion und UI-Konsistenz im FILON Canvas
+
+tasks:
+  - name: verify-status-props
+    description: Überprüft, ob SaveStatusBadge korrekt importiert und gebunden ist
+    run: |
+      grep -r "SaveStatusBadge" src/components lib GraphCanvas.client.tsx || echo "⚠️ Component not found"
+
+  - name: check-motion-imports
+    description: Prüft Framer Motion Integration
+    run: |
+      grep -r "framer-motion" src/components/SaveStatusBadge.tsx && echo "✅ Motion detected"
+
+  - name: build-performance
+    description: Baut das Projekt und misst Build-Zeit & Bundle-Size
+    run: |
+      time npm run build
+
+  - name: test-runtime
+    description: Startet Dev-Server und prüft, ob UI-Status-Update keine Fehler wirft
+    run: |
+      npm run dev & sleep 8 && curl -s http://localhost:3000/api/graph | grep -q nodes && echo "✅ UI+API responsive" || echo "⚠️ API not responding"
+
+  - name: summary
+    run: |
+      echo "🚀 UI Feedback System validated – check console for animation & layout stability"

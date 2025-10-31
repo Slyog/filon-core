@@ -33,13 +33,19 @@ import {
 import "reactflow/dist/style.css";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 import ThoughtPanel from "@/components/ThoughtPanel";
-import { saveGraphRemote, loadGraphSync, syncAndResolve } from "@/lib/syncAdapter";
+import SaveStatusBadge from "@/components/SaveStatusBadge";
+import NodeVisual from "@/components/NodeVisual";
+import {
+  saveGraphRemote,
+  loadGraphSync,
+  syncAndResolve,
+} from "@/lib/syncAdapter";
 
 export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
 } | null>(null);
 
-type SaveState = "idle" | "saving" | "saved" | "error";
+type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
 
 export default function GraphCanvas() {
   const { setActiveNodeId } = useActiveNode();
@@ -63,10 +69,12 @@ export default function GraphCanvas() {
         setNodes(result.merged.nodes ?? []);
         setEdges(result.merged.edges ?? []);
         setNodeCount((result.merged.nodes?.length ?? 0) + 1);
-        
+
         // Konflikte loggen
         if (result.conflicts.length > 0) {
-          console.warn(`⚠️ ${result.conflicts.length} Konflikte automatisch aufgelöst`);
+          console.warn(
+            `⚠️ ${result.conflicts.length} Konflikte automatisch aufgelöst`
+          );
         }
       }
 
@@ -482,6 +490,11 @@ export default function GraphCanvas() {
           >
             📥 Load DB
           </button>
+        </div>
+
+        {/* 💾 Status Badge */}
+        <div className="absolute top-3 right-4 z-50">
+          <SaveStatusBadge state={saveState} />
         </div>
 
         {/* 🧠 React Flow Graph */}
