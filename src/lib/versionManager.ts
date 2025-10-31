@@ -44,7 +44,7 @@ export async function saveSnapshot(
     branchName?: string;
     parentId?: string;
   }
-): Promise<void> {
+): Promise<string | null> {
   try {
     const id = crypto.randomUUID();
     const timestamp = Date.now();
@@ -83,8 +83,11 @@ export async function saveSnapshot(
     console.log(
       `💾 Snapshot saved: ${id} (${snapshot.nodeCount} nodes, ${snapshot.edgeCount} edges)`
     );
+
+    return id;
   } catch (err) {
     console.warn("Failed to save snapshot:", err);
+    return null;
   }
 }
 

@@ -54,10 +54,14 @@ import {
 import {
   saveSnapshot,
   clearSnapshots,
+  updateSummary,
+  listSnapshots,
+  loadSnapshot,
   // listSnapshots and loadSnapshot reserved for future Version History UI
 } from "@/lib/versionManager";
 import { getActiveBranch, getBranch, type Branch } from "@/lib/branchManager";
-import type { DiffResult } from "@/lib/diffEngine";
+import { diffGraphs, type DiffResult } from "@/lib/diffEngine";
+import { generateSnapshotSummary } from "@/lib/aiSummarizer";
 import { motion, AnimatePresence } from "framer-motion";
 
 export const GraphContext = createContext<{
@@ -192,7 +196,7 @@ export default function GraphCanvas() {
             nodeChangeCountRef.current >= 20;
 
           if (shouldSnapshot) {
-            await saveSnapshot(
+            const snapshotId = await saveSnapshot(
               { nodes: n, edges: e },
               activeBranch
                 ? {
@@ -203,11 +207,44 @@ export default function GraphCanvas() {
             );
             lastSnapshotRef.current = when;
             nodeChangeCountRef.current = 0;
-            setToast({
-              type: "save",
-              message: "📜 Snapshot created",
-            });
-            setTimeout(() => setToast(null), 3000);
+
+            // Generate AI summary if snapshot was created successfully
+            if (snapshotId) {
+              setToast({
+                type: "save",
+                message: "🤖 Analyzing snapshot changes...",
+              });
+
+              // Get previous snapshot for comparison
+              const allSnapshots = await listSnapshots(2);
+              if (allSnapshots.length > 1) {
+                const previousSnapshot = allSnapshots[1]; // Second most recent
+                const previousState = await loadSnapshot(previousSnapshot.id);
+
+                if (previousState) {
+                  const diff = diffGraphs(previousState, {
+                    nodes: n,
+                    edges: e,
+                  });
+                  const summary = await generateSnapshotSummary(diff);
+
+                  if (summary) {
+                    await updateSummary(snapshotId, summary);
+                    setToast({
+                      type: "save",
+                      message: "🧠 Summary generated",
+                    });
+                    setTimeout(() => setToast(null), 3000);
+                  }
+                }
+              }
+            } else {
+              setToast({
+                type: "save",
+                message: "📜 Snapshot created",
+              });
+              setTimeout(() => setToast(null), 3000);
+            }
           } else {
             nodeChangeCountRef.current++;
           }
@@ -233,7 +270,7 @@ export default function GraphCanvas() {
             nodeChangeCountRef.current >= 20;
 
           if (shouldSnapshot) {
-            await saveSnapshot(
+            const snapshotId = await saveSnapshot(
               { nodes: n, edges: e },
               activeBranch
                 ? {
@@ -244,11 +281,44 @@ export default function GraphCanvas() {
             );
             lastSnapshotRef.current = Date.now();
             nodeChangeCountRef.current = 0;
-            setToast({
-              type: "save",
-              message: "📜 Snapshot created",
-            });
-            setTimeout(() => setToast(null), 3000);
+
+            // Generate AI summary if snapshot was created successfully
+            if (snapshotId) {
+              setToast({
+                type: "save",
+                message: "🤖 Analyzing snapshot changes...",
+              });
+
+              // Get previous snapshot for comparison
+              const allSnapshots = await listSnapshots(2);
+              if (allSnapshots.length > 1) {
+                const previousSnapshot = allSnapshots[1]; // Second most recent
+                const previousState = await loadSnapshot(previousSnapshot.id);
+
+                if (previousState) {
+                  const diff = diffGraphs(previousState, {
+                    nodes: n,
+                    edges: e,
+                  });
+                  const summary = await generateSnapshotSummary(diff);
+
+                  if (summary) {
+                    await updateSummary(snapshotId, summary);
+                    setToast({
+                      type: "save",
+                      message: "🧠 Summary generated",
+                    });
+                    setTimeout(() => setToast(null), 3000);
+                  }
+                }
+              }
+            } else {
+              setToast({
+                type: "save",
+                message: "📜 Snapshot created",
+              });
+              setTimeout(() => setToast(null), 3000);
+            }
           } else {
             nodeChangeCountRef.current++;
           }
