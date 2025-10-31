@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import localforage from "localforage";
 import ReactMarkdown from "react-markdown";
 import { useActiveNode } from "@/context/ActiveNodeContext";
@@ -9,6 +9,7 @@ export default function ThoughtPanel() {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const [note, setNote] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
 
   // --- Notiz laden ---
   useEffect(() => {
@@ -55,6 +56,15 @@ export default function ThoughtPanel() {
     return () => window.removeEventListener("keydown", onKey);
   }, [activeNodeId, note, setActiveNodeId, saveNote]);
 
+  // --- Autofokus: Editor fokussieren, wenn Panel geöffnet wird ---
+  useEffect(() => {
+    if (activeNodeId && editorRef.current && !showPreview) {
+      // Leichter Delay, damit Animation zuerst läuft
+      const t = setTimeout(() => editorRef.current?.focus(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [activeNodeId, showPreview]);
+
   if (!activeNodeId) return null;
 
   return (
@@ -75,6 +85,7 @@ export default function ThoughtPanel() {
         </div>
       ) : (
         <textarea
+          ref={editorRef}
           value={note}
           onChange={handleChange}
           placeholder="✏️ Schreibe deine Gedanken hier … (Markdown unterstützt)"
