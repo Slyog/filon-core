@@ -49,6 +49,8 @@ export default function GraphCanvas() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [lastActiveId, setLastActiveId] = useState<string | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
@@ -93,7 +95,19 @@ export default function GraphCanvas() {
         setEdges([{ id: "e1-2", source: "1", target: "2" }]);
         setNodeCount(3);
       }
+
+      // 🧠 Session restore
+      const restoredSession = await localforage.getItem<{
+        activeId: string | null;
+        panel: boolean;
+      }>("filon-session");
+      if (restoredSession) {
+        if (restoredSession.activeId) setActiveNodeId(restoredSession.activeId);
+        if (restoredSession.panel) setPanelOpen(true);
+        setLastActiveId(restoredSession.activeId);
+      }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 💾 Autosave (debounced 800ms) + Status
@@ -178,6 +192,12 @@ export default function GraphCanvas() {
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
       setActiveNodeId(node.id);
+      setLastActiveId(node.id);
+      setPanelOpen(true);
+      void localforage.setItem("filon-session", {
+        activeId: node.id,
+        panel: true,
+      });
       // Selektion auf genau diesen Node setzen
       setNodes((nds) => nds.map((n) => withGlow(n, n.id === node.id)));
     },
@@ -187,6 +207,8 @@ export default function GraphCanvas() {
   const onPaneClick = useCallback(() => {
     setNodes((nds) => nds.map((n) => withGlow(n, false)));
     setActiveNodeId(null);
+    setPanelOpen(false);
+    void localforage.setItem("filon-session", { activeId: null, panel: false });
   }, [setNodes, setActiveNodeId, withGlow]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(() => {
@@ -478,7 +500,16 @@ export default function GraphCanvas() {
         </ReactFlowProvider>
 
         {/* 🔹 Rechtes Notiz-Panel */}
-        <ThoughtPanel />
+        <ThoughtPanel
+          isForcedOpen={panelOpen}
+          onPanelClose={() => {
+            setPanelOpen(false);
+            void localforage.setItem("filon-session", {
+              activeId: null,
+              panel: false,
+            });
+          }}
+        />
       </div>
     </GraphContext.Provider>
   );

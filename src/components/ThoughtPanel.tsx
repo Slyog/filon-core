@@ -5,7 +5,13 @@ import localforage from "localforage";
 import ReactMarkdown from "react-markdown";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 
-export default function ThoughtPanel() {
+export default function ThoughtPanel({
+  isForcedOpen,
+  onPanelClose,
+}: {
+  isForcedOpen?: boolean;
+  onPanelClose?: () => void;
+} = {}) {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const [note, setNote] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -36,6 +42,10 @@ export default function ThoughtPanel() {
     saveNote(value);
   };
 
+  const handleClose = useCallback(() => {
+    onPanelClose?.();
+  }, [onPanelClose]);
+
   // --- Hotkeys: Esc schließt Panel, Ctrl+S/Cmd+S speichert ---
   useEffect(() => {
     if (!activeNodeId) return;
@@ -44,6 +54,7 @@ export default function ThoughtPanel() {
       if (e.key === "Escape") {
         e.preventDefault();
         setActiveNodeId(null);
+        handleClose();
         return;
       }
       // Ctrl+S / Cmd+S speichert (Browser-Save verhindern)
@@ -54,7 +65,7 @@ export default function ThoughtPanel() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [activeNodeId, note, setActiveNodeId, saveNote]);
+  }, [activeNodeId, note, setActiveNodeId, saveNote, handleClose]);
 
   // --- Autofokus: Editor fokussieren, wenn Panel geöffnet wird ---
   useEffect(() => {
