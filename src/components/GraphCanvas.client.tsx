@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, createContext } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  createContext,
+  useMemo,
+} from "react";
 import localforage from "localforage";
 import {
   ReactFlowProvider,
@@ -37,6 +44,7 @@ export default function GraphCanvas() {
   const [edges, setEdges] = useState<Edge[]>([]);
   const [nodeCount, setNodeCount] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isSaved, setIsSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -212,9 +220,13 @@ export default function GraphCanvas() {
       if (key.startsWith("note-")) await localforage.removeItem(key);
   }, []);
 
-  // 🔍 Suchfunktion
-  const filteredNodes = nodes.filter((node) =>
-    node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
+  // 🔍 Suchfunktion (memoized, um infinite loops zu vermeiden)
+  const filteredNodes = useMemo(
+    () =>
+      nodes.filter((node) =>
+        node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [nodes, searchTerm]
   );
 
   // Helper: editierbare Targets erkennen, damit Hotkeys beim Tippen nicht stören
@@ -225,6 +237,42 @@ export default function GraphCanvas() {
     if (e.isContentEditable) return true; // z.B. Markdown-Editor
     return false;
   };
+
+  // 🔍 Highlight aktualisieren bei Indexwechsel (nur bei Pfeiltasten, nicht bei jedem Render)
+  useEffect(() => {
+    // Keine Nodes verändern, wenn kein Treffer vorhanden
+    if (searchTerm === "" || filteredNodes.length === 0) return;
+
+    const activeNodeId =
+      selectedIndex >= 0 && selectedIndex < filteredNodes.length
+        ? filteredNodes[selectedIndex].id
+        : null;
+
+    // Nur visuellen Zustand aktualisieren (einmal pro Indexwechsel)
+    setNodes((nds) =>
+      nds.map((n) => {
+        const isMatch = n.data.label
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const isActive = n.id === activeNodeId;
+        return {
+          ...n,
+          selected: isActive,
+          style: {
+            ...n.style,
+            boxShadow: isActive
+              ? "0 0 14px rgba(47,243,255,0.9)"
+              : isMatch
+              ? "0 0 8px rgba(47,243,255,0.4)"
+              : undefined,
+            outline: isActive ? "2px solid #2FF3FF" : undefined,
+            outlineOffset: isActive ? "2px" : undefined,
+          },
+        };
+      })
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedIndex]); // 👈 nur bei Indexwechsel ausführen, nicht bei jedem Render
 
   // 💾 Globales Badge (Portal in <body>)
   useEffect(() => {
@@ -269,52 +317,69 @@ export default function GraphCanvas() {
             type="text"
             placeholder="🔍 Suchbegriff eingeben..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setSelectedIndex(-1); // reset navigation
+            }}
             onKeyDown={(e) => {
-              // Enter → Suche "ausführen" = einfach sicherstellen, dass der Filter aktiv bleibt
-              if (e.key === "Enter") {
+              const matching = nodes.filter((n) =>
+                n.data.label.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+
+              // ↓ nächster Treffer
+              if (e.key === "ArrowDown" && matching.length > 0) {
                 e.preventDefault();
-                // optional: ersten Treffer selektieren (ohne Panel zu öffnen)
-                setNodes((nds) =>
-                  nds.map((n) => ({
-                    ...n,
-                    selected:
-                      n.data.label
-                        .toLowerCase()
-                        .includes(searchTerm.toLowerCase()) &&
-                      searchTerm !== "",
-                    style: {
-                      ...n.style,
-                      boxShadow:
-                        n.data.label
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase()) &&
-                        searchTerm !== ""
-                          ? "0 0 14px rgba(47,243,255,0.9)"
-                          : undefined,
-                      outline:
-                        n.data.label
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase()) &&
-                        searchTerm !== ""
-                          ? "2px solid #2FF3FF"
-                          : undefined,
-                      outlineOffset:
-                        n.data.label
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase()) &&
-                        searchTerm !== ""
-                          ? "2px"
-                          : undefined,
-                    },
-                  }))
+                setSelectedIndex((prev) =>
+                  prev + 1 < matching.length ? prev + 1 : 0
                 );
+                return;
               }
 
-              // Esc → Suchfeld leeren + Filter aufheben
+              // ↑ vorheriger Treffer
+              if (e.key === "ArrowUp" && matching.length > 0) {
+                e.preventDefault();
+                setSelectedIndex((prev) =>
+                  prev - 1 >= 0 ? prev - 1 : matching.length - 1
+                );
+                return;
+              }
+
+              // Enter → Panel für aktuellen Node öffnen
+              if (
+                e.key === "Enter" &&
+                matching.length > 0 &&
+                selectedIndex >= 0
+              ) {
+                e.preventDefault();
+                const current = matching[selectedIndex];
+                if (current) {
+                  setActiveNodeId(current.id);
+                  // visuelles Feedback
+                  setNodes((nds) =>
+                    nds.map((n) => ({
+                      ...n,
+                      selected: n.id === current.id,
+                      style: {
+                        ...n.style,
+                        boxShadow:
+                          n.id === current.id
+                            ? "0 0 14px rgba(47,243,255,0.9)"
+                            : undefined,
+                        outline:
+                          n.id === current.id ? "2px solid #2FF3FF" : undefined,
+                        outlineOffset: n.id === current.id ? "2px" : undefined,
+                      },
+                    }))
+                  );
+                }
+                return;
+              }
+
+              // Esc → Suche leeren & Auswahl zurücksetzen
               if (e.key === "Escape") {
                 e.preventDefault();
                 setSearchTerm("");
+                setSelectedIndex(-1);
                 setNodes((nds) =>
                   nds.map((n) => ({
                     ...n,
@@ -327,6 +392,7 @@ export default function GraphCanvas() {
                     },
                   }))
                 );
+                return;
               }
             }}
             className="px-3 py-1 rounded-lg bg-[#2a2a2a] text-white text-sm outline-none"
