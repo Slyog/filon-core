@@ -6,7 +6,7 @@ import ReactMarkdown from "react-markdown";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 
 export default function ThoughtPanel() {
-  const { activeNodeId } = useActiveNode();
+  const { activeNodeId, setActiveNodeId } = useActiveNode();
   const [note, setNote] = useState("");
   const [showPreview, setShowPreview] = useState(false);
 
@@ -34,6 +34,26 @@ export default function ThoughtPanel() {
     setNote(value);
     saveNote(value);
   };
+
+  // --- Hotkeys: Esc schließt Panel, Ctrl+S/Cmd+S speichert ---
+  useEffect(() => {
+    if (!activeNodeId) return;
+    const onKey = (e: KeyboardEvent) => {
+      // Escape schließt Panel
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setActiveNodeId(null);
+        return;
+      }
+      // Ctrl+S / Cmd+S speichert (Browser-Save verhindern)
+      if ((e.key === "s" || e.key === "S") && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        saveNote(note);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [activeNodeId, note, setActiveNodeId, saveNote]);
 
   if (!activeNodeId) return null;
 

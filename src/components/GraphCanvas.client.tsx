@@ -9,6 +9,7 @@ import {
   Background,
   Controls,
   MiniMap,
+  useReactFlow,
   type Connection,
   type Node,
   type Edge,
@@ -18,6 +19,7 @@ import {
   type OnEdgesChange,
   type OnConnect,
   type NodeMouseHandler,
+  type XYPosition,
   applyNodeChanges,
   applyEdgeChanges,
 } from "reactflow";
@@ -37,6 +39,7 @@ export default function GraphCanvas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
 
   // 📥 Graph laden
   useEffect(() => {
@@ -214,6 +217,15 @@ export default function GraphCanvas() {
     node.data.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Helper: editierbare Targets erkennen, damit Hotkeys beim Tippen nicht stören
+  const isEditableTarget = (e: EventTarget | null) => {
+    if (!(e instanceof HTMLElement)) return false;
+    const tag = e.tagName.toLowerCase();
+    if (tag === "input" || tag === "textarea") return true;
+    if (e.isContentEditable) return true; // z.B. Markdown-Editor
+    return false;
+  };
+
   // 💾 Globales Badge (Portal in <body>)
   useEffect(() => {
     const existing = document.getElementById("noion-badge");
@@ -253,6 +265,7 @@ export default function GraphCanvas() {
         {/* 🔧 Toolbar */}
         <div className="absolute top-2 left-2 z-10 flex gap-2">
           <input
+            ref={searchRef}
             type="text"
             placeholder="🔍 Suchbegriff eingeben..."
             value={searchTerm}
@@ -275,26 +288,171 @@ export default function GraphCanvas() {
 
         {/* 🧠 React Flow Graph */}
         <ReactFlowProvider>
-          <ReactFlow
-            nodes={filteredNodes}
-            edges={edges}
+          <GraphFlowWithHotkeys
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={onNodeClick}
             onPaneClick={onPaneClick}
             onNodeDragStop={onNodeDragStop}
-            fitView
-          >
-            <MiniMap />
-            <Controls />
-            <Background color="#334155" gap={16} />
-          </ReactFlow>
+            filteredNodes={filteredNodes}
+            edges={edges}
+            setNodes={setNodes}
+            withGlow={withGlow}
+            setActiveNodeId={setActiveNodeId}
+            searchRef={searchRef}
+            isEditableTarget={isEditableTarget}
+          />
         </ReactFlowProvider>
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel />
       </div>
     </GraphContext.Provider>
+  );
+}
+
+// 🔧 Innere Komponente korrigiert
+function GraphFlowWithHotkeys({
+  onNodesChange,
+  onEdgesChange,
+  onConnect,
+  onNodeClick,
+  onPaneClick,
+  onNodeDragStop,
+  filteredNodes,
+  edges,
+  setNodes,
+  withGlow,
+  setActiveNodeId,
+  searchRef,
+  isEditableTarget,
+}: {
+  onNodesChange: OnNodesChange;
+  onEdgesChange: OnEdgesChange;
+  onConnect: OnConnect;
+  onNodeClick: NodeMouseHandler;
+  onPaneClick: () => void;
+  onNodeDragStop: NodeMouseHandler;
+  filteredNodes: Node[];
+  edges: Edge[];
+  setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
+  withGlow: (n: Node, active: boolean) => Node;
+  setActiveNodeId: (id: string | null) => void;
+  searchRef: React.RefObject<HTMLInputElement | null>;
+  isEditableTarget: (e: EventTarget | null) => boolean;
+}) {
+  const rf = useReactFlow();
+
+  const addNodeAt = useCallback(
+    (pos: XYPosition) => {
+      setNodes((nds) => {
+        const id = `n_${Date.now()}`;
+        const cleared = nds.map((n) => ({
+          ...n,
+          selected: false,
+          style: {
+            ...n.style,
+            boxShadow: undefined,
+            outline: undefined,
+            outlineOffset: undefined,
+          },
+        }));
+        const newNode: Node = {
+          id,
+          position: pos,
+          data: { label: "🧠 Neuer Gedanke", note: "" },
+          type: "default",
+          selected: true,
+          style: {
+            ...(cleared[0]?.style ?? {}),
+            background: "#475569",
+            color: "white",
+            padding: 10,
+            borderRadius: 8,
+            cursor: "pointer",
+            boxShadow: "0 0 14px rgba(47,243,255,0.9)",
+            outline: "2px solid #2FF3FF",
+            outlineOffset: "2px",
+          },
+        };
+        return [...cleared, newNode];
+      });
+    },
+    [setNodes]
+  );
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // "/" -> Suche fokussieren
+      if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (!isEditableTarget(document.activeElement)) {
+          e.preventDefault();
+          searchRef.current?.focus();
+        }
+        return;
+      }
+
+      // "n" -> neuen Node nahe Bildschirmmitte anlegen
+      if (
+        (e.key === "n" || e.key === "N") &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey
+      ) {
+        if (isEditableTarget(document.activeElement)) return;
+        e.preventDefault();
+        // Leicht oberhalb der Mitte platzieren, damit Node nicht von der Toolbar überlappt wird
+        const offsetY = -80; // ≈ 5 % Bildschirmhöhe – justierbar
+        const screenCenter = {
+          x: Math.round(window.innerWidth / 2),
+          y: Math.round(window.innerHeight / 2 + offsetY),
+        };
+        const flowPos = rf.screenToFlowPosition(screenCenter);
+        addNodeAt(flowPos);
+        return;
+      }
+
+      // "Escape" -> Selektion aufheben & Panel schließen
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            selected: false,
+            style: {
+              ...n.style,
+              boxShadow: undefined,
+              outline: undefined,
+              outlineOffset: undefined,
+            },
+          }))
+        );
+        setActiveNodeId(null);
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [rf, addNodeAt, setNodes, setActiveNodeId, searchRef, isEditableTarget]);
+
+  // ✅ Kein fitView → verhindert Viewport-Resets
+  return (
+    <ReactFlow
+      nodes={filteredNodes}
+      edges={edges}
+      onNodesChange={onNodesChange}
+      onEdgesChange={onEdgesChange}
+      onConnect={onConnect}
+      onNodeClick={onNodeClick}
+      onPaneClick={onPaneClick}
+      onNodeDragStop={onNodeDragStop}
+      // ❌ fitView entfernt → keine Auto-Zentrierung mehr
+    >
+      <MiniMap />
+      <Controls />
+      <Background color="#334155" gap={16} />
+    </ReactFlow>
   );
 }
