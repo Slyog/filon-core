@@ -38,6 +38,8 @@ export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
 } | null>(null);
 
+type SaveState = "idle" | "saving" | "saved" | "error";
+
 export default function GraphCanvas() {
   const { setActiveNodeId } = useActiveNode();
   const [nodes, setNodes] = useState<Node[]>([]);
@@ -46,7 +48,10 @@ export default function GraphCanvas() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isSaved, setIsSaved] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
   // 📥 Graph laden
@@ -93,14 +98,32 @@ export default function GraphCanvas() {
     })();
   }, []);
 
-  // 💾 Autosave
+  // 💾 Autosave (debounced 800ms) + Status
   const saveGraph = useCallback((n: Node[], e: Edge[]) => {
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      void localforage.setItem("noion-graph", { nodes: n, edges: e });
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 1200);
-    }, 300);
+    if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
+    setSaveState("saving");
+
+    saveDebounceRef.current = setTimeout(async () => {
+      try {
+        const when = Date.now();
+        await localforage.setItem("noion-graph", {
+          nodes: n,
+          edges: e,
+          meta: { lastSavedAt: when, nodeCount: n.length, edgeCount: e.length },
+        });
+        setLastSavedAt(when);
+        setSaveState("saved");
+
+        // nach kurzer Zeit wieder in idle übergehen
+        setTimeout(
+          () => setSaveState((s) => (s === "saved" ? "idle" : s)),
+          1000
+        );
+      } catch (err) {
+        console.error("Autosave failed:", err);
+        setSaveState("error");
+      }
+    }, 800);
   }, []);
 
   // 🔄 Node & Edge Handlers
