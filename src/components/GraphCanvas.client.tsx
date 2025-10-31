@@ -47,10 +47,8 @@ export default function GraphCanvas() {
   const [nodeCount, setNodeCount] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [isSaved, setIsSaved] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
@@ -297,35 +295,61 @@ export default function GraphCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedIndex]); // 👈 nur bei Indexwechsel ausführen, nicht bei jedem Render
 
-  // 💾 Globales Badge (Portal in <body>)
+  // 💬 Globales HUD-Badge (unten rechts) – zeigt Save-Status
   useEffect(() => {
-    const existing = document.getElementById("noion-badge");
-    if (existing) existing.remove();
+    const id = "noion-badge";
+    let badge = document.getElementById(id);
+    if (!badge) {
+      badge = document.createElement("div");
+      badge.id = id;
+      document.body.appendChild(badge);
+    }
 
-    const badge = document.createElement("div");
-    badge.id = "noion-badge";
-    badge.textContent = "💾 Gespeichert!";
+    const fmtTime = (ts: number) =>
+      new Date(ts).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
+    const text =
+      saveState === "saving"
+        ? "💾 Speichern …"
+        : saveState === "saved"
+        ? `✅ Gespeichert • ${lastSavedAt ? fmtTime(lastSavedAt) : ""}`
+        : saveState === "error"
+        ? "⚠️ Speichern fehlgeschlagen"
+        : " "; // idle = leer
+
     Object.assign(badge.style, {
       position: "fixed",
       bottom: "24px",
       right: "24px",
-      background: "#059669",
+      background:
+        saveState === "error"
+          ? "#991b1b"
+          : saveState === "saving"
+          ? "#0ea5e9"
+          : "#059669",
       color: "white",
       padding: "8px 14px",
       borderRadius: "9999px",
       fontSize: "14px",
       fontWeight: "600",
       boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
-      opacity: isSaved ? "1" : "0",
-      transform: isSaved ? "translateY(0)" : "translateY(8px)",
-      transition: "all 0.3s ease",
+      opacity: saveState === "idle" ? "0" : "1",
+      transform: saveState === "idle" ? "translateY(8px)" : "translateY(0)",
+      transition: "all 0.25s ease",
       pointerEvents: "none",
       zIndex: "2147483647",
+      whiteSpace: "nowrap",
     });
-    document.body.appendChild(badge);
+    badge.textContent = text;
 
-    return () => badge.remove();
-  }, [isSaved]);
+    return () => {
+      // Badge behalten (persistentes HUD), kein remove
+    };
+  }, [saveState, lastSavedAt]);
 
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
