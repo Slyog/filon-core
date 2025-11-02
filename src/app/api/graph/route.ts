@@ -48,12 +48,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      nodes,
-      edges,
-      automerge,
-    }: { nodes: Node[]; edges: Edge[]; automerge?: number[] } =
-      await request.json();
+    const body = await request.json();
+    const nodes: Node[] = body.nodes || [];
+    const edges: Edge[] = body.edges || [];
+    const automerge = body.automerge;
 
     // Transaction: Alles oder nichts (Array-Syntax für bessere Performance)
     await prisma.$transaction(async (tx) => {
@@ -62,24 +60,28 @@ export async function POST(request: NextRequest) {
       await tx.node.deleteMany();
 
       // Nodes speichern (gemappt von ReactFlow-Format zu DB-Format)
-      await tx.node.createMany({
-        data: nodes.map((n) => ({
-          id: n.id,
-          label: n.data.label,
-          note: n.data.note || "",
-          x: n.position.x,
-          y: n.position.y,
-        })),
-      });
+      if (nodes.length > 0) {
+        await tx.node.createMany({
+          data: nodes.map((n) => ({
+            id: n.id,
+            label: n.data?.label || "Unnamed Node",
+            note: n.data?.note || "",
+            x: n.position?.x || 0,
+            y: n.position?.y || 0,
+          })),
+        });
+      }
 
       // Edges speichern (gemappt von ReactFlow-Format zu DB-Format)
-      await tx.edge.createMany({
-        data: edges.map((e) => ({
-          id: e.id,
-          sourceId: e.source,
-          targetId: e.target,
-        })),
-      });
+      if (edges.length > 0) {
+        await tx.edge.createMany({
+          data: edges.map((e) => ({
+            id: e.id,
+            sourceId: e.source,
+            targetId: e.target,
+          })),
+        });
+      }
 
       // Meta-Infos speichern
       const automergeBuffer = automerge ? Buffer.from(automerge) : null;

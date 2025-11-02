@@ -43,6 +43,7 @@ import TimelinePlayer from "@/components/TimelinePlayer";
 import LearningSummaryPanel from "@/components/LearningSummaryPanel";
 import InsightsPanel from "@/components/InsightsPanel";
 import NodeVisual from "@/components/NodeVisual";
+import ContextMenu from "@/components/ContextMenu";
 import {
   saveGraphRemote,
   loadGraphSync,
@@ -50,7 +51,6 @@ import {
 } from "@/lib/syncAdapter";
 import {
   saveSession,
-  loadSession,
   saveGraphState,
   loadGraphState,
   type GraphState,
@@ -79,12 +79,16 @@ export const GraphContext = createContext<{
 } | null>(null);
 
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
-type ToastType = "restore" | "save" | "recovery" | null;
+type ToastType = "restore" | "save" | "recovery" | "error" | null;
 
 export default function GraphCanvas() {
-  const { setActiveNodeId } = useActiveNode();
+  const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
   const [motionTest, setMotionTest] = useState(false);
+  const [contextNode, setContextNode] = useState<Node | null>(null);
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [activeNode, setActiveNode] = useState<Node | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [nodeCount, setNodeCount] = useState(1);
@@ -130,55 +134,57 @@ export default function GraphCanvas() {
   // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
   useEffect(() => {
     (async () => {
-      // Clean up expired snapshots and feedback events on mount
-      await clearSnapshots();
-      await cleanupOldFeedback();
+      setIsLoading(true);
+      try {
+        // Clean up expired snapshots and feedback events on mount
+        await clearSnapshots();
+        await cleanupOldFeedback();
 
-      // Try to restore from session manager first
-      const savedGraphState = await loadGraphState();
-      if (savedGraphState) {
-        setNodes(savedGraphState.nodes ?? []);
-        setEdges(savedGraphState.edges ?? []);
-        setNodeCount((savedGraphState.nodes?.length ?? 0) + 1);
-        setToast({
-          type: "recovery",
-          message: `📦 Vorheriger Zustand wiederhergestellt (${
-            savedGraphState.nodes?.length ?? 0
-          } Nodes)`,
-        });
-        setTimeout(() => setToast(null), 4000);
-      }
-
-      // Then sync with remote (CRDT-Sync)
-      const result = await syncAndResolve("mergeProps");
-      if (result?.merged) {
-        setNodes(result.merged.nodes ?? []);
-        setEdges(result.merged.edges ?? []);
-        setNodeCount((result.merged.nodes?.length ?? 0) + 1);
-
-        // Konflikte loggen
-        if (result.conflicts.length > 0) {
-          console.warn(
-            `⚠️ ${result.conflicts.length} Konflikte automatisch aufgelöst`
-          );
+        // Try to restore from session manager first
+        const savedGraphState = await loadGraphState();
+        if (savedGraphState) {
+          setNodes(savedGraphState.nodes ?? []);
+          setEdges(savedGraphState.edges ?? []);
+          setNodeCount((savedGraphState.nodes?.length ?? 0) + 1);
+          setToast({
+            type: "recovery",
+            message: `📦 Vorheriger Zustand wiederhergestellt (${
+              savedGraphState.nodes?.length ?? 0
+            } Nodes)`,
+          });
+          setTimeout(() => setToast(null), 4000);
         }
-      }
 
-      // 🧠 Session restore (UI state)
-      const restoredSession = await loadSession();
-      if (restoredSession) {
-        if (restoredSession.activeId) setActiveNodeId(restoredSession.activeId);
-        if (restoredSession.panel) setPanelOpen(true);
-        setLastActiveId(restoredSession.activeId);
-      }
+        // Then sync with remote (CRDT-Sync)
+        const result = await syncAndResolve("mergeProps");
+        if (result?.merged) {
+          setNodes(result.merged.nodes ?? []);
+          setEdges(result.merged.edges ?? []);
+          setNodeCount((result.merged.nodes?.length ?? 0) + 1);
 
-      // 🌿 Load active branch
-      const activeBranchId = await getActiveBranch();
-      if (activeBranchId) {
-        const branch = await getBranch(activeBranchId);
-        if (branch) {
-          setActiveBranch(branch);
+          // Konflikte loggen
+          if (result.conflicts.length > 0) {
+            console.warn(
+              `⚠️ ${result.conflicts.length} Konflikte automatisch aufgelöst`
+            );
+          }
         }
+
+        // 🌿 Load active branch
+        const activeBranchId = await getActiveBranch();
+        if (activeBranchId) {
+          const branch = await getBranch(activeBranchId);
+          if (branch) {
+            setActiveBranch(branch);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load graph:", err);
+      } finally {
+        // Reset active node states after load to prevent stale data
+        setActiveNode(null);
+        setActiveNodeId(null);
+        setIsLoading(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -222,6 +228,17 @@ export default function GraphCanvas() {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
+
+  // 🎯 Escape to close Meta-Editor
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && activeNode) {
+        setActiveNode(null);
+      }
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [activeNode]);
 
   // 💾 Autosave (debounced 800ms) + Status + Session Persistence + Snapshot
   const saveGraph = useCallback(
@@ -604,12 +621,13 @@ export default function GraphCanvas() {
 
   const onNodeClick: NodeMouseHandler = useCallback(
     (_event, node) => {
+      setActiveNode(node);
       setActiveNodeId(node.id);
       setLastActiveId(node.id);
-      setPanelOpen(true);
+      // Inline Meta-Editor opens automatically via activeNode state
       void saveSession({
         activeId: node.id,
-        panel: true,
+        panel: false, // Keep old ThoughtPanel closed
       });
       // Selektion auf genau diesen Node setzen
       setNodes((nds) => nds.map((n) => withGlow(n, n.id === node.id)));
@@ -619,13 +637,27 @@ export default function GraphCanvas() {
 
   const onPaneClick = useCallback(() => {
     setNodes((nds) => nds.map((n) => withGlow(n, false)));
+    setActiveNode(null);
     setActiveNodeId(null);
     setPanelOpen(false);
+    setMenuPos(null);
+    setContextNode(null);
     void saveSession({ activeId: null, panel: false });
   }, [setNodes, setActiveNodeId, withGlow]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(() => {
     // Nichts tun → Selektion/Glow bleibt erhalten
+  }, []);
+
+  const onNodeContextMenu: NodeMouseHandler = useCallback((event, node) => {
+    event.preventDefault();
+    setContextNode(node);
+    setMenuPos({ x: event.clientX, y: event.clientY });
+  }, []);
+
+  const closeContextMenu = useCallback(() => {
+    setMenuPos(null);
+    setContextNode(null);
   }, []);
 
   // 🧠 Node-Notiz aktualisieren
@@ -989,6 +1021,115 @@ export default function GraphCanvas() {
           >
             🧪 Motion Test
           </button>
+          <button
+            onClick={() => {
+              const text = JSON.stringify({ nodes, edges }, null, 2);
+              navigator.clipboard.writeText(text);
+              setToast({
+                type: "save",
+                message: "📋 Graph JSON copied to clipboard!",
+              });
+              setTimeout(() => setToast(null), 2000);
+            }}
+            className="px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Copy current graph JSON"
+          >
+            📋 Copy Graph
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                const text = await navigator.clipboard.readText();
+                const parsed = JSON.parse(text);
+                if (!parsed.nodes) {
+                  setToast({
+                    type: "error",
+                    message: "❌ Invalid graph format",
+                  });
+                  setTimeout(() => setToast(null), 2000);
+                  return;
+                }
+                // Import via API
+                const response = await fetch("/api/graph/import", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(parsed),
+                });
+                if (response.ok) {
+                  // Reload graph
+                  loadFromServer();
+                  setToast({
+                    type: "save",
+                    message: "✅ Graph imported successfully!",
+                  });
+                  setTimeout(() => setToast(null), 2000);
+                } else {
+                  setToast({
+                    type: "error",
+                    message: "❌ Import failed",
+                  });
+                  setTimeout(() => setToast(null), 2000);
+                }
+              } catch (err) {
+                console.error("Import error:", err);
+                setToast({
+                  type: "error",
+                  message: "❌ Failed to read clipboard",
+                });
+                setTimeout(() => setToast(null), 2000);
+              }
+            }}
+            className="px-sm py-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Import graph from clipboard"
+          >
+            📥 Import Graph
+          </button>
+          <button
+            onClick={async () => {
+              if (!activeNodeId) {
+                setToast({
+                  type: "error",
+                  message: "⚠️ Please select a node first",
+                });
+                setTimeout(() => setToast(null), 2000);
+                return;
+              }
+              try {
+                const response = await fetch("/api/graph/duplicate", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ nodeId: activeNodeId }),
+                });
+                const result = await response.json();
+                if (result.ok) {
+                  // Reload from server
+                  loadFromServer();
+                  setToast({
+                    type: "save",
+                    message: `✅ Duplicated: ${result.duplicate.label}`,
+                  });
+                  setTimeout(() => setToast(null), 2000);
+                } else {
+                  setToast({
+                    type: "error",
+                    message: "❌ Duplication failed",
+                  });
+                  setTimeout(() => setToast(null), 2000);
+                }
+              } catch (err) {
+                console.error("Duplicate error:", err);
+                setToast({
+                  type: "error",
+                  message: "❌ Duplication failed",
+                });
+                setTimeout(() => setToast(null), 2000);
+              }
+            }}
+            className="px-sm py-xs rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Duplicate selected node"
+          >
+            🔄 Duplicate Node
+          </button>
         </div>
 
         {/* 💾 Status Badge */}
@@ -1100,23 +1241,37 @@ export default function GraphCanvas() {
         </AnimatePresence>
 
         {/* 🧠 React Flow Graph */}
-        <ReactFlowProvider>
-          <GraphFlowWithHotkeys
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            onNodeDragStop={onNodeDragStop}
-            filteredNodes={filteredNodes}
-            edges={edges}
-            setNodes={setNodes}
-            withGlow={withGlow}
-            setActiveNodeId={setActiveNodeId}
-            searchRef={searchRef}
-            isEditableTarget={isEditableTarget}
-          />
-        </ReactFlowProvider>
+        <div style={{ width: "100%", height: "100%" }}>
+          {isLoading ? (
+            <div className="flex items-center justify-center w-full h-full">
+              <div className="text-filon-glow text-lg font-medium">
+                💫 Lade Graph…
+              </div>
+            </div>
+          ) : (
+            <ReactFlowProvider>
+              <GraphFlowWithHotkeys
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onPaneClick={onPaneClick}
+                onNodeDragStop={onNodeDragStop}
+                onNodeContextMenu={onNodeContextMenu}
+                contextNode={contextNode}
+                menuPos={menuPos}
+                closeContextMenu={closeContextMenu}
+                filteredNodes={filteredNodes}
+                edges={edges}
+                setNodes={setNodes}
+                withGlow={withGlow}
+                setActiveNodeId={setActiveNodeId}
+                searchRef={searchRef}
+                isEditableTarget={isEditableTarget}
+              />
+            </ReactFlowProvider>
+          )}
+        </div>
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel
@@ -1129,6 +1284,202 @@ export default function GraphCanvas() {
             });
           }}
         />
+
+        {/* 🎯 Inline Meta-Editor */}
+        <AnimatePresence>
+          {activeNode && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="absolute bg-filon-surface border border-filon-glow rounded-xl p-md shadow-glow text-sm z-50 w-[320px]"
+              style={{
+                left: activeNode.position.x + 220,
+                top: activeNode.position.y,
+              }}
+            >
+              <h3 className="text-filon-glow font-semibold mb-sm">
+                🧠 {activeNode.data?.label}
+              </h3>
+
+              {/* Label Editor */}
+              <label className="block text-xs mb-xs text-filon-text opacity-80">
+                Label
+              </label>
+              <input
+                defaultValue={activeNode.data?.label || ""}
+                onBlur={async (e) => {
+                  if (e.target.value !== activeNode.data?.label) {
+                    try {
+                      await fetch("/api/nodes/update", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          id: activeNode.id,
+                          label: e.target.value,
+                        }),
+                      });
+                      loadFromServer();
+                    } catch (err) {
+                      console.error("Update error:", err);
+                    }
+                  }
+                }}
+                className="w-full bg-filon-bg text-filon-text border border-filon-glow rounded px-sm py-xs mb-sm outline-none focus:border-filon-accent transition-colors duration-fast"
+              />
+
+              {/* Note Editor */}
+              <label className="block text-xs mb-xs text-filon-text opacity-80">
+                Note
+              </label>
+              <textarea
+                defaultValue={activeNode.data?.note || ""}
+                onBlur={async (e) => {
+                  if (e.target.value !== activeNode.data?.note) {
+                    try {
+                      await fetch("/api/nodes/update", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          id: activeNode.id,
+                          note: e.target.value,
+                        }),
+                      });
+                      loadFromServer();
+                    } catch (err) {
+                      console.error("Update error:", err);
+                    }
+                  }
+                }}
+                className="w-full bg-filon-bg text-filon-text border border-filon-glow rounded px-sm py-xs mb-sm outline-none focus:border-filon-accent transition-colors duration-fast resize-none"
+                rows={2}
+              />
+
+              {/* Quick Actions */}
+              <div className="flex items-center gap-xs mt-sm flex-wrap">
+                <button
+                  onClick={async () => {
+                    try {
+                      await fetch("/api/graph/duplicate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ nodeId: activeNode.id }),
+                      });
+                      loadFromServer();
+                      setToast({ type: "save", message: "✅ Node duplicated" });
+                      setTimeout(() => setToast(null), 2000);
+                    } catch (err) {
+                      console.error("Duplicate error:", err);
+                      setToast({
+                        type: "error",
+                        message: "❌ Failed to duplicate",
+                      });
+                      setTimeout(() => setToast(null), 2000);
+                    }
+                  }}
+                  className="px-xs py-xs bg-filon-accent text-filon-bg rounded hover:brightness-110 transition-all duration-fast text-xs"
+                >
+                  🔄 Duplicate
+                </button>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(
+                      JSON.stringify(activeNode, null, 2)
+                    );
+                    setToast({ type: "save", message: "📋 Node copied" });
+                    setTimeout(() => setToast(null), 2000);
+                  }}
+                  className="px-xs py-xs bg-filon-accent text-filon-bg rounded hover:brightness-110 transition-all duration-fast text-xs"
+                >
+                  📋 Copy
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Delete "${activeNode.data?.label}"?`)) return;
+                    try {
+                      await fetch("/api/graph/delete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ nodeId: activeNode.id }),
+                      });
+                      loadFromServer();
+                      setToast({ type: "save", message: "🗑️ Node deleted" });
+                      setTimeout(() => setToast(null), 2000);
+                    } catch (err) {
+                      console.error("Delete error:", err);
+                      setToast({
+                        type: "error",
+                        message: "❌ Failed to delete",
+                      });
+                      setTimeout(() => setToast(null), 2000);
+                    }
+                    setActiveNode(null);
+                  }}
+                  className="px-xs py-xs bg-red-600 text-white rounded hover:brightness-110 transition-all duration-fast text-xs"
+                >
+                  🗑️ Delete
+                </button>
+              </div>
+
+              {/* Connections */}
+              {edges.filter(
+                (e) => e.source === activeNode.id || e.target === activeNode.id
+              ).length > 0 && (
+                <div className="mt-sm border-t border-filon-glow/30 pt-sm">
+                  <h4 className="text-xs text-filon-glow/70 mb-xs font-medium">
+                    Verknüpfungen
+                  </h4>
+                  {edges
+                    .filter(
+                      (e) =>
+                        e.source === activeNode.id || e.target === activeNode.id
+                    )
+                    .slice(0, 5)
+                    .map((e) => {
+                      const connectedNode =
+                        e.source === activeNode.id
+                          ? nodes.find((n) => n.id === e.target)
+                          : nodes.find((n) => n.id === e.source);
+                      return (
+                        <div
+                          key={e.id}
+                          className="text-xs text-filon-text/70 flex items-center gap-xs"
+                        >
+                          {e.source === activeNode.id ? "→" : "←"}
+                          <span className="truncate">
+                            {connectedNode?.data?.label || "Unknown"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  {edges.filter(
+                    (e) =>
+                      e.source === activeNode.id || e.target === activeNode.id
+                  ).length > 5 && (
+                    <div className="text-xs text-filon-text/50 mt-xs">
+                      +
+                      {edges.filter(
+                        (e) =>
+                          e.source === activeNode.id ||
+                          e.target === activeNode.id
+                      ).length - 5}{" "}
+                      more
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Close Button */}
+              <button
+                className="mt-sm w-full px-sm py-xs bg-filon-accent/20 text-filon-text border border-filon-glow rounded hover:bg-filon-accent/30 transition-all duration-fast text-xs font-medium"
+                onClick={() => setActiveNode(null)}
+              >
+                Schließen
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* 🔔 Toast Notifications */}
         <AnimatePresence>
@@ -1168,6 +1519,10 @@ function GraphFlowWithHotkeys({
   onNodeClick,
   onPaneClick,
   onNodeDragStop,
+  onNodeContextMenu,
+  contextNode,
+  menuPos,
+  closeContextMenu,
   filteredNodes,
   edges,
   setNodes,
@@ -1182,6 +1537,10 @@ function GraphFlowWithHotkeys({
   onNodeClick: NodeMouseHandler;
   onPaneClick: () => void;
   onNodeDragStop: NodeMouseHandler;
+  onNodeContextMenu: NodeMouseHandler;
+  contextNode: Node | null;
+  menuPos: { x: number; y: number } | null;
+  closeContextMenu: () => void;
   filteredNodes: Node[];
   edges: Edge[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
@@ -1288,6 +1647,15 @@ function GraphFlowWithHotkeys({
   }, [rf, addNodeAt, setNodes, setActiveNodeId, searchRef, isEditableTarget]);
 
   // ✅ Kein fitView → verhindert Viewport-Resets
+  useEffect(() => {
+    console.log(
+      "🔍 GraphFlowWithHotkeys render - nodes:",
+      filteredNodes.length,
+      "edges:",
+      edges.length
+    );
+  }, [filteredNodes.length, edges.length]);
+
   return (
     <div
       role="region"
@@ -1319,12 +1687,21 @@ function GraphFlowWithHotkeys({
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         onNodeDragStop={onNodeDragStop}
+        onNodeContextMenu={onNodeContextMenu}
         // ❌ fitView entfernt → keine Auto-Zentrierung mehr
       >
         <MiniMap />
         <Controls />
         <Background color="#334155" gap={16} />
       </ReactFlow>
+      {menuPos && contextNode && (
+        <div
+          className="fixed z-40 bg-filon-surface border border-filon-glow rounded p-xs text-sm shadow-glow animate-fade-in"
+          style={{ left: menuPos.x, top: menuPos.y }}
+        >
+          <ContextMenu node={contextNode} closeMenu={closeContextMenu} />
+        </div>
+      )}
     </div>
   );
 }
