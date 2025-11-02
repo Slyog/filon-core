@@ -25,7 +25,7 @@ export default function NodeVisual({
         boxShadow: `0 0 12px ${pulseColor}`,
         transition: { duration: 0.4, ease: "easeInOut" },
       }}
-      className="rounded-xl bg-zinc-900 text-zinc-100 px-4 py-2"
+      className="rounded-xl bg-filon-surface text-filon-text px-md py-sm transition-all duration-fast"
     >
       <p className="text-sm font-medium">{node.data?.label || "Node"}</p>
     </motion.div>

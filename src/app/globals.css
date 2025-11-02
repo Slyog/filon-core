@@ -2,6 +2,9 @@
 @import "tailwindcss/preflight";
 @tailwind utilities;
 
+/* FILON Theme System */
+@import "../styles/filon-theme.css";
+
 /* --- Sichtbarkeit fixen ohne Layout zu zerstören --- */
 html,
 body,
@@ -122,11 +125,6 @@ button:focus-visible {
   animation: mergeGlow 1.2s ease-in-out infinite;
 }
 
-/* --- ReactFlow fix: keine Z-Clipping-Probleme --- */
-.react-flow {
-  z-index: 1 !important;
-  isolation: isolate !important;
-}
 /* --- ReactFlow Layer Fix: Panels & Overlays sichtbar machen --- */
 .react-flow,
 .react-flow__renderer,
@@ -140,4 +138,11 @@ aside,
 [data-portal-root] {
   z-index: 2147483647 !important;
   position: fixed !important;
+}
+
+/* --- Motion Test Mode --- */
+body.motion-test * {
+  transition-property: all;
+  transition-duration: var(--filon-transition-medium);
+  transition-timing-function: ease-in-out;
 }

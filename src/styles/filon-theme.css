@@ -1,0 +1,28 @@
+/* FILON Design System - Unified Theme Tokens */
+
+:root {
+  /* Core Colors */
+  --filon-bg: #0a0f12;
+  --filon-surface: #121820;
+  --filon-glow: #2ff3ff;
+  --filon-accent: #00b7c2;
+  --filon-text: #d9e5ef;
+
+  /* Motion Durations */
+  --filon-transition-fast: 0.4s;
+  --filon-transition-medium: 1.2s;
+  --filon-transition-slow: 2.4s;
+
+  /* Shadow & Glow */
+  --filon-glow-shadow: 0 0 24px var(--filon-glow);
+}
+
+/* Legacy compatibility - map old tokens to new ones */
+:root {
+  --background: var(--filon-bg);
+  --foreground: var(--filon-text);
+  --accent: var(--filon-accent);
+  --muted: var(--filon-surface);
+  --glow: var(--filon-glow);
+}
+

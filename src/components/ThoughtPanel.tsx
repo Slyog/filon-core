@@ -79,12 +79,20 @@ export default function ThoughtPanel({
   if (!activeNodeId) return null;
 
   return (
-    <aside className="fixed right-0 top-0 h-full w-80 bg-[#0f172a]/95 border-l border-zinc-700 p-4 text-white z-[9999] backdrop-blur-md shadow-lg flex flex-col">
-      <div className="flex justify-between items-center mb-3">
+    <aside
+      className="fixed right-0 top-0 h-full w-80 bg-filon-surface/95 border-l border-zinc-700 p-md text-filon-text z-[9999] backdrop-blur-md shadow-lg flex flex-col transition-all duration-medium"
+      role="dialog"
+      aria-label="Thought Node Details"
+      aria-description="Shows details and notes for the selected thought node"
+    >
+      <div className="flex justify-between items-center mb-md">
         <h2 className="text-lg font-semibold">🧠 Node {activeNodeId}</h2>
         <button
           onClick={() => setShowPreview((p) => !p)}
-          className="text-xs px-2 py-1 rounded bg-zinc-700 hover:bg-zinc-600"
+          className="text-xs px-sm py-xs rounded bg-zinc-700 hover:bg-zinc-600 transition-all duration-fast"
+          aria-label={
+            showPreview ? "Switch to edit mode" : "Switch to preview mode"
+          }
         >
           {showPreview ? "Bearbeiten" : "Vorschau"}
         </button>

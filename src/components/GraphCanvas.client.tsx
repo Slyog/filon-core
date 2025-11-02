@@ -32,6 +32,8 @@ import {
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { useActiveNode } from "@/context/ActiveNodeContext";
+import { getMoodPreset, type MoodKey } from "@/lib/visual/GraphMoodEngine";
+import { useMindProgress } from "@/context/MindProgressContext";
 import ThoughtPanel from "@/components/ThoughtPanel";
 import SaveStatusBadge from "@/components/SaveStatusBadge";
 import SessionBadge from "@/components/SessionBadge";
@@ -39,6 +41,7 @@ import SnapshotPanel from "@/components/SnapshotPanel";
 import BranchPanel from "@/components/BranchPanel";
 import TimelinePlayer from "@/components/TimelinePlayer";
 import LearningSummaryPanel from "@/components/LearningSummaryPanel";
+import InsightsPanel from "@/components/InsightsPanel";
 import NodeVisual from "@/components/NodeVisual";
 import {
   saveGraphRemote,
@@ -80,6 +83,8 @@ type ToastType = "restore" | "save" | "recovery" | null;
 
 export default function GraphCanvas() {
   const { setActiveNodeId } = useActiveNode();
+  const { currentMindState, setCurrentMindState } = useMindProgress();
+  const [motionTest, setMotionTest] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [nodeCount, setNodeCount] = useState(1);
@@ -93,6 +98,7 @@ export default function GraphCanvas() {
   const [branchPanelOpen, setBranchPanelOpen] = useState(false);
   const [visualizerOpen, setVisualizerOpen] = useState(false);
   const [playbackPanelOpen, setPlaybackPanelOpen] = useState(false);
+  const [insightsPanelOpen, setInsightsPanelOpen] = useState(false);
   const [activeBranch, setActiveBranch] = useState<Branch | null>(null);
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [playbackActive, setPlaybackActive] = useState(false);
@@ -110,6 +116,16 @@ export default function GraphCanvas() {
   const lastSnapshotRef = useRef<number>(0);
   const nodeChangeCountRef = useRef<number>(0);
   const lastInsightCheckRef = useRef<number>(0);
+
+  // 🧪 Motion Test Toggle
+  useEffect(() => {
+    if (motionTest) {
+      document.body.classList.add("motion-test");
+    } else {
+      document.body.classList.remove("motion-test");
+    }
+    return () => document.body.classList.remove("motion-test");
+  }, [motionTest]);
 
   // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
   useEffect(() => {
@@ -194,6 +210,17 @@ export default function GraphCanvas() {
       });
     }, 10 * 60 * 1000); // 10 minutes
     return () => clearInterval(interval);
+  }, []);
+
+  // 🎯 Keyboard Shortcut for Insights Panel (Alt+I)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === "i") {
+        setInsightsPanelOpen((s) => !s);
+      }
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
   // 💾 Autosave (debounced 800ms) + Status + Session Persistence + Snapshot
@@ -786,11 +813,11 @@ export default function GraphCanvas() {
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
       <div
-        className="relative border border-zinc-700 rounded-2xl bg-[#111827] overflow-hidden"
+        className="relative border border-zinc-700 rounded-2xl bg-filon-surface overflow-hidden transition-colors duration-medium"
         style={{ width: "100%", height: "80vh", minHeight: "400px" }}
       >
         {/* 🔧 Toolbar */}
-        <div className="absolute top-2 left-2 z-10 flex gap-2">
+        <div className="absolute top-sm left-sm z-10 flex gap-sm">
           <input
             ref={searchRef}
             type="text"
@@ -874,29 +901,34 @@ export default function GraphCanvas() {
                 return;
               }
             }}
-            className="px-3 py-1 rounded-lg bg-[#2a2a2a] text-white text-sm outline-none"
+            className="px-sm py-xs rounded-lg bg-filon-surface text-filon-text text-sm outline-none transition-all duration-fast"
+            aria-label="Search nodes"
           />
           <button
             onClick={addNode}
-            className="px-3 py-1 rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-medium shadow-md"
+            className="px-sm py-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Add new node"
           >
             + Node
           </button>
           <button
             onClick={clearGraph}
-            className="px-3 py-1 rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm font-medium shadow-md"
+            className="px-sm py-xs rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Clear graph"
           >
             Clear
           </button>
           <button
             onClick={saveToServer}
-            className="px-3 py-1 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-medium shadow-md"
+            className="px-sm py-xs rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Save graph to database"
           >
             💾 Save DB
           </button>
           <button
             onClick={loadFromServer}
-            className="px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium shadow-md"
+            className="px-sm py-xs rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Load graph from database"
           >
             📥 Load DB
           </button>
@@ -906,7 +938,7 @@ export default function GraphCanvas() {
             aria-label={
               snapshotPanelOpen ? "Close Snapshot Panel" : "Open Snapshot Panel"
             }
-            className={`px-3 py-1 rounded-lg text-white text-sm font-medium shadow-md transition-all ${
+            className={`px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
               snapshotPanelOpen
                 ? "bg-purple-700 hover:bg-purple-600 border-2 border-purple-400"
                 : "bg-purple-600 hover:bg-purple-500"
@@ -923,7 +955,7 @@ export default function GraphCanvas() {
             aria-label={
               branchPanelOpen ? "Close Branch Panel" : "Open Branch Panel"
             }
-            className={`px-3 py-1 rounded-lg text-white text-sm font-medium shadow-md transition-all ${
+            className={`px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
               branchPanelOpen
                 ? "bg-green-700 hover:bg-green-600 border-2 border-green-400"
                 : "bg-green-600 hover:bg-green-500"
@@ -933,6 +965,29 @@ export default function GraphCanvas() {
               <span className="text-base">🌿</span>
               <span>{branchPanelOpen ? "Close Branches" : "Branches"}</span>
             </span>
+          </button>
+          <select
+            value={currentMindState}
+            onChange={(e) => setCurrentMindState(e.target.value as MoodKey)}
+            className="px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+            aria-label="Select mood state"
+          >
+            <option value="focus">🎯 Focus</option>
+            <option value="flow">💫 Flow</option>
+            <option value="insight">💡 Insight</option>
+            <option value="synthesis">🔮 Synthesis</option>
+            <option value="resonance">✨ Resonance</option>
+          </select>
+          <button
+            onClick={() => setMotionTest(!motionTest)}
+            className={`px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
+              motionTest
+                ? "bg-orange-600 hover:bg-orange-700 border-2 border-orange-400"
+                : "bg-slate-600 hover:bg-slate-700"
+            }`}
+            aria-label="Toggle motion test mode"
+          >
+            🧪 Motion Test
           </button>
         </div>
 
@@ -1094,6 +1149,12 @@ export default function GraphCanvas() {
 
         {/* 🧠 Learning Summary Panel */}
         <LearningSummaryPanel />
+
+        {/* 🎯 Insights Panel */}
+        <InsightsPanel
+          visible={insightsPanelOpen}
+          onClose={() => setInsightsPanelOpen(false)}
+        />
       </div>
     </GraphContext.Provider>
   );
@@ -1130,6 +1191,8 @@ function GraphFlowWithHotkeys({
   isEditableTarget: (e: EventTarget | null) => boolean;
 }) {
   const rf = useReactFlow();
+  const { currentMindState } = useMindProgress();
+  const mood = getMoodPreset(currentMindState);
 
   const addNodeAt = useCallback(
     (pos: XYPosition) => {
@@ -1226,20 +1289,42 @@ function GraphFlowWithHotkeys({
 
   // ✅ Kein fitView → verhindert Viewport-Resets
   return (
-    <ReactFlow
-      nodes={filteredNodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onNodeClick={onNodeClick}
-      onPaneClick={onPaneClick}
-      onNodeDragStop={onNodeDragStop}
-      // ❌ fitView entfernt → keine Auto-Zentrierung mehr
+    <div
+      role="region"
+      aria-label="Thought Graph"
+      style={{ width: "100%", height: "100%" }}
     >
-      <MiniMap />
-      <Controls />
-      <Background color="#334155" gap={16} />
-    </ReactFlow>
+      <style>
+        {`
+          .react-flow {
+            background: radial-gradient(circle at 50% 50%, ${
+              mood.moodColor
+            }10, var(--filon-bg) 80%) !important;
+            transition: background var(--filon-transition-medium) ease-in-out !important;
+          }
+          .react-flow__pane {
+            filter: drop-shadow(0 0 ${mood.glowIntensity * 15}px ${
+          mood.moodColor
+        });
+            transition: filter var(--filon-transition-medium) ease-in-out !important;
+          }
+        `}
+      </style>
+      <ReactFlow
+        nodes={filteredNodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
+        onNodeDragStop={onNodeDragStop}
+        // ❌ fitView entfernt → keine Auto-Zentrierung mehr
+      >
+        <MiniMap />
+        <Controls />
+        <Background color="#334155" gap={16} />
+      </ReactFlow>
+    </div>
   );
 }
