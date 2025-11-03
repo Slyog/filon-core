@@ -80,6 +80,8 @@ import { getMostRelevantInsight } from "@/lib/feedback/FeedbackEngine";
 import { motion, AnimatePresence } from "framer-motion";
 import { bbox } from "@/utils/rfDebug";
 import dynamic from "next/dynamic";
+import { startVoiceCapture } from "@/lib/voiceInput";
+import { useThoughtType } from "@/hooks/useThoughtType";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -144,6 +146,7 @@ export default function GraphCanvas() {
   const setStatus = useFeedbackStore((s) => s.setStatus);
   const addMemory = useMemoryStore((s) => s.addSnapshot);
   const getTrend = useMemoryStore((s) => s.getTrend);
+  const { getType } = useThoughtType();
   const [motionTest, setMotionTest] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
@@ -896,7 +899,7 @@ export default function GraphCanvas() {
 
   // ➕ Node hinzufügen
   const addNode = useCallback(
-    (label?: string) => {
+    (label?: string, thoughtType?: string) => {
       if (!flowInstance) return;
 
       const center = flowInstance.screenToFlowPosition({
@@ -907,7 +910,10 @@ export default function GraphCanvas() {
       const newNode: Node = {
         id: `node_${Date.now()}`,
         position: center,
-        data: { label: label || `Neuer Gedanke ${nodes.length + 1}` },
+        data: {
+          label: label || `Neuer Gedanke ${nodes.length + 1}`,
+          thoughtType: thoughtType || "Idea",
+        },
         type: "default",
       };
 
@@ -930,14 +936,37 @@ export default function GraphCanvas() {
   );
 
   // 🎯 Welcome Hub helpers
-  const handleCreateThought = useCallback(() => {
-    addNode("New Thought");
-  }, [addNode]);
+  const handleCreateThought = useCallback(async () => {
+    const thoughtType = await getType();
+    addNode("New Thought", thoughtType);
+    addFeedback({
+      type: "success",
+      message: `🧠 ${thoughtType} thought created`,
+    });
+  }, [addNode, getType, addFeedback]);
 
   const startVoiceInput = useCallback(async () => {
-    console.log("🎙️ Voice input started — placeholder for Step 22");
-    addFeedback({ type: "info", message: "🎙️ Voice input coming soon" });
-  }, [addFeedback]);
+    console.log("🎙 Voice input started...");
+    setStatus("saving", "🎙 Listening...");
+    const transcript = await startVoiceCapture();
+
+    if (transcript) {
+      const label = transcript.slice(0, 120);
+      const thoughtType = await getType();
+      addNode(label, thoughtType);
+      addFeedback({ type: "success", message: `🎧 Captured: "${label}"` });
+      addFeedback({
+        type: "info",
+        message: `🧠 ${thoughtType} thought created`,
+      });
+      setStatus("synced", "☁️ Voice thought created");
+      setTimeout(() => setStatus("idle", ""), 2000);
+    } else {
+      addFeedback({ type: "error", message: "⚠️ No speech detected" });
+      setStatus("offline", "Voice capture failed or unsupported");
+      setTimeout(() => setStatus("idle", ""), 2000);
+    }
+  }, [addNode, addFeedback, setStatus, getType]);
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -947,14 +976,19 @@ export default function GraphCanvas() {
       try {
         const text = await file.text();
         const preview = text.slice(0, 200).trim();
-        addNode(preview);
+        const thoughtType = await getType();
+        addNode(preview, thoughtType);
         addFeedback({ type: "success", message: "📄 File imported" });
+        addFeedback({
+          type: "info",
+          message: `🧠 ${thoughtType} thought created`,
+        });
       } catch (err) {
         console.error("File upload error:", err);
         addFeedback({ type: "error", message: "❌ Failed to read file" });
       }
     },
-    [addNode, addFeedback]
+    [addNode, addFeedback, getType]
   );
 
   // 🧹 Graph löschen
@@ -1548,6 +1582,11 @@ export default function GraphCanvas() {
             <p className="text-[var(--muted)] max-w-md">
               Speak, write, or upload a file — FILON will turn it into glowing
               ideas.
+              <br />
+              <span className="opacity-70 text-sm">
+                Choose a type after recording (e.g., Idea, Knowledge, Guide,
+                Inspiration).
+              </span>
             </p>
 
             <div className="flex gap-4">

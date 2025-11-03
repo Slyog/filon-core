@@ -339,3 +339,28 @@ body.motion-test * {
 .animate-pulse {
   animation: pulse-smooth 2s ease-in-out infinite;
 }
+
+/* Thought Type Glow Colors */
+.node-idea {
+  box-shadow: 0 0 10px rgba(47, 243, 255, 0.5);
+}
+
+.node-knowledge {
+  box-shadow: 0 0 10px rgba(128, 255, 175, 0.5);
+}
+
+.node-guide {
+  box-shadow: 0 0 10px rgba(255, 210, 64, 0.5);
+}
+
+.node-inspiration {
+  box-shadow: 0 0 10px rgba(255, 140, 230, 0.5);
+}
+
+.node-reflection {
+  box-shadow: 0 0 10px rgba(128, 169, 255, 0.5);
+}
+
+.node-custom {
+  box-shadow: 0 0 10px rgba(200, 200, 200, 0.5);
+}
