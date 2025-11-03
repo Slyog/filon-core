@@ -3,8 +3,9 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSessionStore } from "@/store/SessionStore";
+import WorkspaceShell from "@/components/WorkspaceShell";
 
-export default function HomePage() {
+export default function Page() {
   const router = useRouter();
   const getLastActive = useSessionStore((s) => s.getLastActive);
 
@@ -15,10 +16,5 @@ export default function HomePage() {
     }
   }, [router, getLastActive]);
 
-  return (
-    <main className="flex flex-col items-center justify-center h-screen text-[var(--foreground)]">
-      <h1 className="text-2xl font-semibold text-[var(--accent)]">FILON</h1>
-      <p className="opacity-80 mt-2">Loading your last workspace…</p>
-    </main>
-  );
+  return <WorkspaceShell />;
 }

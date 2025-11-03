@@ -155,6 +155,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const [motionTest, setMotionTest] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
+  const [feedbackInit, setFeedbackInit] = useState(false);
   const [contextNode, setContextNode] = useState<Node | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -346,6 +347,15 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     addFeedback,
     updateMetadata,
   ]);
+
+  // ✅ Feedback initialization after first successful load
+  useEffect(() => {
+    if (!feedbackInit && graphLoadedOnce && !isLoading) {
+      addFeedback({ type: "success", message: "✅ Graph ready" });
+      setStatus("idle", "Ready");
+      setFeedbackInit(true);
+    }
+  }, [feedbackInit, graphLoadedOnce, isLoading, addFeedback, setStatus]);
 
   // 🔗 Track active session for DB/snapshot imports
   useEffect(() => {

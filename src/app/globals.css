@@ -364,3 +364,16 @@ body.motion-test * {
 .node-custom {
   box-shadow: 0 0 10px rgba(200, 200, 200, 0.5);
 }
+
+/* --- Workspace Shell Layout --- */
+.workspace-grid {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: radial-gradient(
+    circle at 20% 20%,
+    rgba(47, 243, 255, 0.05),
+    transparent 70%
+  );
+  color: #fff;
+}
