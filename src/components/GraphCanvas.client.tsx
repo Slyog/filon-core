@@ -890,47 +890,81 @@ export default function GraphCanvas() {
   );
 
   // ➕ Node hinzufügen
-  const addNode = useCallback(() => {
-    if (!flowInstance) return;
+  const addNode = useCallback(
+    (label?: string) => {
+      if (!flowInstance) return;
 
-    const center = flowInstance.screenToFlowPosition({
-      x: window.innerWidth / 2 - 120 + (Math.random() * 100 - 50),
-      y: window.innerHeight / 2 - 60 + (Math.random() * 100 - 50),
-    });
+      const center = flowInstance.screenToFlowPosition({
+        x: window.innerWidth / 2 - 120 + (Math.random() * 100 - 50),
+        y: window.innerHeight / 2 - 60 + (Math.random() * 100 - 50),
+      });
 
-    const newNode: Node = {
-      id: `node_${Date.now()}`,
-      position: center,
-      data: { label: `Neuer Gedanke ${nodes.length + 1}` },
-      type: "default",
-    };
+      const newNode: Node = {
+        id: `node_${Date.now()}`,
+        position: center,
+        data: { label: label || `Neuer Gedanke ${nodes.length + 1}` },
+        type: "default",
+      };
 
-    setNodes((nds) => {
-      const updated = [...nds, withGlow(newNode, false)];
-      saveGraph(updated, edges);
-      return updated;
-    });
-    setLayoutTrigger((n) => n + 1);
+      setNodes((nds) => {
+        const updated = [...nds, withGlow(newNode, false)];
+        saveGraph(updated, edges);
+        return updated;
+      });
+      setLayoutTrigger((n) => n + 1);
 
-    setTimeout(() => {
+      setTimeout(() => {
+        try {
+          flowInstance.fitView({ padding: 0.3, duration: 600 });
+        } catch (err) {
+          console.warn("fitView failed", err);
+        }
+      }, 150);
+    },
+    [flowInstance, nodes.length, withGlow, saveGraph, edges]
+  );
+
+  // 🎯 Welcome Hub helpers
+  const handleCreateThought = useCallback(() => {
+    addNode("New Thought");
+  }, [addNode]);
+
+  const startVoiceInput = useCallback(async () => {
+    console.log("🎙️ Voice input started — placeholder for Step 22");
+    addFeedback({ type: "info", message: "🎙️ Voice input coming soon" });
+  }, [addFeedback]);
+
+  const handleFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
       try {
-        flowInstance.fitView({ padding: 0.3, duration: 600 });
+        const text = await file.text();
+        const preview = text.slice(0, 200).trim();
+        addNode(preview);
+        addFeedback({ type: "success", message: "📄 File imported" });
       } catch (err) {
-        console.warn("fitView failed", err);
+        console.error("File upload error:", err);
+        addFeedback({ type: "error", message: "❌ Failed to read file" });
       }
-    }, 150);
-  }, [flowInstance, nodes.length, withGlow, saveGraph, edges]);
+    },
+    [addNode, addFeedback]
+  );
 
   // 🧹 Graph löschen
   const clearGraph = useCallback(async () => {
     setNodes([]);
     setEdges([]);
     setHoveredNodeId(null);
+    setActiveNode(null); // ✅ clear active node state
+    setActiveNodeId(null); // ✅ clear selection
+    console.log("All nodes cleared and selection reset.");
     await localforage.removeItem("noion-graph");
     const keys = await localforage.keys();
     for (const key of keys)
       if (key.startsWith("note-")) await localforage.removeItem(key);
-  }, []);
+  }, [setActiveNodeId]);
 
   // 🔄 Sync-Funktionen (Prisma + localforage)
   const saveToServer = async () => {
@@ -1150,7 +1184,7 @@ export default function GraphCanvas() {
               aria-label="Search nodes"
             />
             <button
-              onClick={addNode}
+              onClick={() => addNode()}
               className="focus-glow px-sm py-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Add new node"
             >
@@ -1377,6 +1411,17 @@ export default function GraphCanvas() {
             >
               🔄 Duplicate Node
             </button>
+
+            {/* 🌐 Language Toggle (placeholder for i18n) */}
+            <select
+              className="ml-auto bg-transparent border border-[var(--accent)] rounded-md text-sm px-2 py-1 focus-glow"
+              defaultValue="en"
+              onChange={(e) => console.log("Language:", e.target.value)}
+            >
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+              <option value="es">Español</option>
+            </select>
           </div>
         </motion.header>
 
@@ -1488,36 +1533,82 @@ export default function GraphCanvas() {
           )}
         </AnimatePresence>
 
+        {/* 🎯 Welcome Hub (empty graph state) */}
+        {nodes.length === 0 && graphLoadedOnce && !isLoading && (
+          <div className="flex flex-col items-center justify-center h-[calc(100vh-4rem)] text-center text-[var(--foreground)] space-y-6 welcome-fadein pt-20">
+            <h2 className="text-2xl font-semibold text-[var(--accent)]">
+              Begin your first thought 💭
+            </h2>
+
+            <p className="text-[var(--muted)] max-w-md">
+              Speak, write, or upload a file — FILON will turn it into glowing
+              ideas.
+            </p>
+
+            <div className="flex gap-4">
+              <button
+                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-black hover:opacity-90 transition-all duration-fast focus-glow"
+                onClick={handleCreateThought}
+              >
+                ✏️ New Text Thought
+              </button>
+
+              <button
+                className="px-6 py-2 rounded-xl border border-[var(--accent)] hover:bg-[rgba(47,243,255,0.1)] transition-all duration-fast focus-glow"
+                onClick={startVoiceInput}
+              >
+                🎙️ Voice Input
+              </button>
+
+              <label className="cursor-pointer px-6 py-2 rounded-xl border border-[var(--accent)] hover:bg-[rgba(47,243,255,0.1)] transition-all duration-fast focus-glow">
+                📄 Upload File
+                <input
+                  type="file"
+                  accept=".txt,.md,.pdf"
+                  hidden
+                  onChange={handleFileUpload}
+                />
+              </label>
+            </div>
+
+            <p className="text-xs opacity-60">
+              *Language settings coming soon — English / Deutsch / more*
+            </p>
+          </div>
+        )}
+
         {/* 🧠 React Flow Graph */}
-        <ReactFlowProvider>
-          <GraphFlowWithHotkeys
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            onNodeDragStop={onNodeDragStop}
-            onNodeContextMenu={onNodeContextMenu}
-            onNodeMouseEnter={onNodeMouseEnter}
-            onNodeMouseLeave={onNodeMouseLeave}
-            registerInstance={setFlowInstance}
-            contextNode={contextNode}
-            menuPos={menuPos}
-            closeContextMenu={closeContextMenu}
-            filteredNodes={filteredNodes}
-            rawNodes={nodes}
-            edges={edges}
-            setNodes={setNodes}
-            withGlow={withGlow}
-            setActiveNodeId={setActiveNodeId}
-            searchRef={searchRef}
-            isEditableTarget={isEditableTarget}
-            isLoading={isLoading}
-            hasNodes={nodes?.length > 0}
-            hasAnimated={hasAnimated}
-            graphLoadedOnce={graphLoadedOnce}
-          />
-        </ReactFlowProvider>
+        {nodes.length > 0 && (
+          <ReactFlowProvider>
+            <GraphFlowWithHotkeys
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
+              onNodeDragStop={onNodeDragStop}
+              onNodeContextMenu={onNodeContextMenu}
+              onNodeMouseEnter={onNodeMouseEnter}
+              onNodeMouseLeave={onNodeMouseLeave}
+              registerInstance={setFlowInstance}
+              contextNode={contextNode}
+              menuPos={menuPos}
+              closeContextMenu={closeContextMenu}
+              filteredNodes={filteredNodes}
+              rawNodes={nodes}
+              edges={edges}
+              setNodes={setNodes}
+              withGlow={withGlow}
+              setActiveNodeId={setActiveNodeId}
+              searchRef={searchRef}
+              isEditableTarget={isEditableTarget}
+              isLoading={isLoading}
+              hasNodes={nodes?.length > 0}
+              hasAnimated={hasAnimated}
+              graphLoadedOnce={graphLoadedOnce}
+            />
+          </ReactFlowProvider>
+        )}
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel

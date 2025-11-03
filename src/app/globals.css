@@ -293,3 +293,32 @@ body.motion-test * {
     pointer-events: none;
   }
 }
+
+/* Welcome Hub fade-in animation */
+.welcome-fadein {
+  animation: welcomeFade 0.6s ease-in-out;
+}
+
+@keyframes welcomeFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Panel hide/show animations */
+.panel-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+}
+
+.panel-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 0.25s ease-in;
+}
