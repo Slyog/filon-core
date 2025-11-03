@@ -1,11 +1,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-type Session = {
+export type Session = {
   id: string;
   title: string;
   createdAt: number;
   updatedAt: number;
+  category?:
+    | "Idea"
+    | "Knowledge"
+    | "Guide"
+    | "Inspiration"
+    | "Project"
+    | "Other";
   meta?: {
     nodeCount: number;
     edgeCount: number;
@@ -16,11 +23,12 @@ type Session = {
 type SessionState = {
   sessions: Session[];
   activeSessionId: string | null;
-  addSession: (title?: string) => string;
+  addSession: (title?: string, category?: Session["category"]) => string;
   removeSession: (id: string) => void;
   setActiveSession: (id: string) => void;
   getLastActive: () => string | null;
   updateMetadata: (id: string, meta: Session["meta"]) => void;
+  updateCategory: (id: string, category: Session["category"]) => void;
 };
 
 export const useSessionStore = create<SessionState>()(
@@ -28,13 +36,17 @@ export const useSessionStore = create<SessionState>()(
     (set, get) => ({
       sessions: [],
       activeSessionId: null,
-      addSession: (title = "New Graph") => {
+      addSession: (
+        title = "New Graph",
+        category: Session["category"] = "Other"
+      ) => {
         const id = crypto.randomUUID();
         const newSession: Session = {
           id,
           title,
           createdAt: Date.now(),
           updatedAt: Date.now(),
+          category,
         };
         set({ sessions: [...get().sessions, newSession], activeSessionId: id });
         return id;
@@ -47,6 +59,13 @@ export const useSessionStore = create<SessionState>()(
         set({
           sessions: get().sessions.map((s) =>
             s.id === id ? { ...s, meta, updatedAt: Date.now() } : s
+          ),
+        });
+      },
+      updateCategory: (id, category) => {
+        set({
+          sessions: get().sessions.map((s) =>
+            s.id === id ? { ...s, category, updatedAt: Date.now() } : s
           ),
         });
       },

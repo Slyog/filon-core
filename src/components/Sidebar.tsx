@@ -1,5 +1,6 @@
 "use client";
-import { useSessionStore } from "@/store/SessionStore";
+import { useState, useMemo } from "react";
+import { useSessionStore, type Session } from "@/store/SessionStore";
 import { useRouter } from "next/navigation";
 import GraphPreview from "./GraphPreview";
 
@@ -8,10 +9,22 @@ export default function Sidebar() {
     sessions,
     addSession,
     removeSession,
-    activeSessionId,
     setActiveSession,
+    activeSessionId,
   } = useSessionStore();
   const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState<Session["category"] | "All">("All");
+
+  const filtered = useMemo(() => {
+    return sessions.filter((s) => {
+      const matchesSearch = s.title
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      const matchesFilter = filter === "All" || s.category === filter;
+      return matchesSearch && matchesFilter;
+    });
+  }, [sessions, search, filter]);
 
   const handleNew = () => {
     const id = addSession();
@@ -24,54 +37,87 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-[rgba(10,15,18,0.9)] border-r border-[var(--border-glow)] text-[var(--foreground)] flex flex-col p-4 space-y-4 z-40">
-      <h2 className="text-[var(--accent)] font-semibold mb-2">Workspaces</h2>
+    <aside className="fixed top-0 left-0 h-full w-64 bg-[rgba(10,15,18,0.95)] border-r border-[var(--border-glow)] text-[var(--foreground)] flex flex-col p-4 z-40">
+      <h2 className="text-[var(--accent)] font-semibold mb-3">Workspaces</h2>
 
       <button
         onClick={handleNew}
-        className="w-full px-4 py-2 bg-[var(--accent)] text-black rounded-lg hover:opacity-90 transition"
+        className="w-full px-4 py-2 bg-[var(--accent)] text-black rounded-lg hover:opacity-90 transition mb-3"
       >
         ➕ New Graph
       </button>
 
-      <div className="flex-1 overflow-y-auto space-y-2">
-        {sessions.length === 0 ? (
-          <p className="opacity-60 text-sm mt-2">No graphs yet.</p>
-        ) : (
-          sessions.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => handleOpen(s.id)}
-              className={`cursor-pointer p-2 rounded-lg border transition ${
-                s.id === activeSessionId
-                  ? "border-[var(--accent)]"
-                  : "border-transparent hover:border-[rgba(47,243,255,0.25)]"
-              }`}
-            >
-              <div className="flex justify-between items-center mb-1">
-                <span>{s.title}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    removeSession(s.id);
-                  }}
-                  className="opacity-50 hover:opacity-100"
-                >
-                  ✕
-                </button>
-              </div>
+      {/* Search Bar */}
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search..."
+        className="w-full px-3 py-1 rounded-md bg-[rgba(255,255,255,0.05)] text-sm mb-2 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+      />
 
-              {s.meta && (
-                <p className="text-xs opacity-70 mb-1">
-                  {s.meta.nodeCount} nodes • {s.meta.edgeCount} edges •{" "}
-                  {new Date(s.meta.lastSaved).toLocaleTimeString()}
-                </p>
-              )}
+      {/* Filter */}
+      <select
+        value={filter}
+        onChange={(e) => setFilter(e.target.value as any)}
+        className="w-full px-2 py-1 rounded-md bg-[rgba(255,255,255,0.05)] text-sm mb-3 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+      >
+        <option value="All">All Categories</option>
+        <option value="Idea">Ideas</option>
+        <option value="Knowledge">Knowledge</option>
+        <option value="Guide">Guides</option>
+        <option value="Inspiration">Inspiration</option>
+        <option value="Project">Projects</option>
+        <option value="Other">Other</option>
+      </select>
 
-              <GraphPreview nodes={[]} edges={[]} />
-            </div>
-          ))
+      {/* Sessions List */}
+      <div className="flex-1 overflow-y-auto space-y-3">
+        {filtered.length === 0 && (
+          <p className="opacity-60 text-xs mt-4 text-center">
+            No matching graphs.
+          </p>
         )}
+
+        {filtered.map((s) => (
+          <div
+            key={s.id}
+            className={`p-2 rounded-lg cursor-pointer border ${
+              s.id === activeSessionId
+                ? "border-[var(--accent)] bg-[rgba(47,243,255,0.1)]"
+                : "border-transparent hover:border-[rgba(47,243,255,0.25)]"
+            }`}
+            onClick={() => handleOpen(s.id)}
+          >
+            <div className="flex justify-between items-center mb-1">
+              <span className="truncate">{s.title}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeSession(s.id);
+                }}
+                className="text-xs opacity-60 hover:opacity-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            {s.category && (
+              <p className="text-[10px] text-[var(--accent)] opacity-80">
+                {s.category}
+              </p>
+            )}
+
+            {s.meta && (
+              <p className="text-[10px] opacity-60">
+                {s.meta.nodeCount} nodes •{" "}
+                {new Date(s.meta.lastSaved).toLocaleTimeString()}
+              </p>
+            )}
+
+            <GraphPreview nodes={[]} edges={[]} />
+          </div>
+        ))}
       </div>
 
       <hr className="opacity-30 my-3" />
