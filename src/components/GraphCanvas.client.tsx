@@ -839,19 +839,9 @@ export default function GraphCanvas() {
     };
   }, [saveState, lastSavedAt]);
 
-  // 🔍 Debug: Live-Logging der Nodes/Edges
-  useEffect(() => {
-    console.log("🧠 ReactFlow Render Data:", {
-      nodeCount: nodes?.length,
-      edgeCount: edges?.length,
-      nodes,
-      edges,
-    });
-  }, [nodes, edges]);
-
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
-      <div className="relative w-full h-full bg-filon-bg overflow-hidden flex flex-col">
+      <div className="relative flex min-h-screen w-full flex-col bg-filon-bg">
         {/* 🔧 Toolbar */}
         <div className="absolute top-sm left-sm z-10 flex gap-sm">
           <input
@@ -1245,51 +1235,29 @@ export default function GraphCanvas() {
         </AnimatePresence>
 
         {/* 🧠 React Flow Graph */}
-        <div
-          className="flex-1 relative bg-[#0a0a0a] overflow-hidden flex flex-col"
-          style={{ width: "100%", height: "100%", minHeight: "600px" }}
-        >
-          {/* 🔍 Debug: Visual container boundary - DEV ONLY */}
-          {process.env.NODE_ENV === "development" && (
-            <div className="absolute inset-0 pointer-events-none z-999 border border-cyan-500/30" />
-          )}
-          {isLoading ? (
-            <div className="flex items-center justify-center w-full h-full">
-              <div className="text-filon-glow text-lg font-medium">
-                💫 Lade Graph…
-              </div>
-            </div>
-          ) : (
-            <>
-              {nodes?.length === 0 && (
-                <div className="absolute top-10 left-10 z-50 px-4 py-2 bg-red-900/80 border border-red-400 rounded text-cyan-400 text-sm font-bold">
-                  ⚠️ No nodes rendered
-                </div>
-              )}
-              <ReactFlowProvider>
-                <GraphFlowWithHotkeys
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={onConnect}
-                  onNodeClick={onNodeClick}
-                  onPaneClick={onPaneClick}
-                  onNodeDragStop={onNodeDragStop}
-                  onNodeContextMenu={onNodeContextMenu}
-                  contextNode={contextNode}
-                  menuPos={menuPos}
-                  closeContextMenu={closeContextMenu}
-                  filteredNodes={filteredNodes}
-                  edges={edges}
-                  setNodes={setNodes}
-                  withGlow={withGlow}
-                  setActiveNodeId={setActiveNodeId}
-                  searchRef={searchRef}
-                  isEditableTarget={isEditableTarget}
-                />
-              </ReactFlowProvider>
-            </>
-          )}
-        </div>
+        <ReactFlowProvider>
+          <GraphFlowWithHotkeys
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            onNodeDragStop={onNodeDragStop}
+            onNodeContextMenu={onNodeContextMenu}
+            contextNode={contextNode}
+            menuPos={menuPos}
+            closeContextMenu={closeContextMenu}
+            filteredNodes={filteredNodes}
+            edges={edges}
+            setNodes={setNodes}
+            withGlow={withGlow}
+            setActiveNodeId={setActiveNodeId}
+            searchRef={searchRef}
+            isEditableTarget={isEditableTarget}
+            isLoading={isLoading}
+            hasNodes={nodes?.length > 0}
+          />
+        </ReactFlowProvider>
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel
@@ -1559,6 +1527,8 @@ function GraphFlowWithHotkeys({
   setActiveNodeId,
   searchRef,
   isEditableTarget,
+  isLoading,
+  hasNodes,
 }: {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -1577,91 +1547,12 @@ function GraphFlowWithHotkeys({
   setActiveNodeId: (id: string | null) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
   isEditableTarget: (e: EventTarget | null) => boolean;
+  isLoading: boolean;
+  hasNodes: boolean;
 }) {
   const rf = useReactFlow();
   const { currentMindState } = useMindProgress();
   const mood = getMoodPreset(currentMindState);
-  const SHOULD_DEBUG_LAYOUT = false;
-
-  // 🔍 Debug: Track zoom level
-  const [zoom, setZoom] = useState(1);
-
-  useEffect(() => {
-    const updateZoom = () => setZoom(rf.getZoom());
-    const interval = setInterval(updateZoom, 100);
-    // Initialize immediately via timeout to avoid sync setState
-    setTimeout(updateZoom, 0);
-    return () => clearInterval(interval);
-  }, [rf]);
-
-  // 🔍 Debug: Log container size
-  useEffect(() => {
-    const height = document.querySelector("#flow-container")?.clientHeight;
-    // console.log("Container size:", height);
-  }, []);
-
-  // 🔍 Debug: Inspect ReactFlow layout chain
-  useEffect(() => {
-    if (!SHOULD_DEBUG_LAYOUT) return;
-    if (typeof window === "undefined") return;
-
-    const flowElement = document.querySelector(
-      ".react-flow"
-    ) as HTMLElement | null;
-    if (!flowElement) return;
-
-    const collectChain = () => {
-      const chain: HTMLElement[] = [];
-      let current: HTMLElement | null = flowElement;
-      let depth = 0;
-      while (current && depth < 8) {
-        chain.push(current);
-        if (current === document.body) {
-          const root = document.documentElement as HTMLElement | null;
-          if (root) chain.push(root);
-          break;
-        }
-        current = current.parentElement as HTMLElement | null;
-        depth += 1;
-      }
-      return chain;
-    };
-
-    const logLayout = () => {
-      const targets = collectChain();
-      const rows = targets.map((el) => {
-        const styles = window.getComputedStyle(el);
-        return {
-          tag: el.tagName.toLowerCase(),
-          id: el.id || "—",
-          className: el.className || "—",
-          width: styles.width,
-          height: styles.height,
-          display: styles.display,
-          position: styles.position,
-          overflow: styles.overflow,
-        };
-      });
-      // console.table(rows);
-    };
-
-    logLayout();
-
-    const resizeObserver = new ResizeObserver(() => {
-      logLayout();
-    });
-
-    const targets = collectChain();
-    targets.forEach((element) => resizeObserver.observe(element));
-
-    const handleResize = () => logLayout();
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", handleResize);
-    };
-  }, [SHOULD_DEBUG_LAYOUT]);
 
   const addNodeAt = useCallback(
     (pos: XYPosition) => {
@@ -1764,69 +1655,66 @@ function GraphFlowWithHotkeys({
 
   return (
     <div
-      id="flow-container"
-      role="region"
-      aria-label="Thought Graph"
-      className="relative w-full h-full flex-1"
-      style={{
-        minHeight: "100vh",
-        height: "100%",
-        width: "100%",
-        flex: "1 1 auto",
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "#0a0a0a",
-        overflow: "visible",
-      }}
+      id="canvas-shell"
+      className="w-full flex justify-center items-start py-4 bg-[#0a0a0a]"
     >
-      {/* 🔍 Debug Overlay - DEV ONLY */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="absolute top-2 left-2 z-1000 bg-black/80 text-cyan-400 text-xs px-2 py-1 rounded border border-cyan-400/50">
-          <div>Nodes: {filteredNodes?.length || 0}</div>
-          <div>Edges: {edges?.length || 0}</div>
-          <div>Zoom: {zoom.toFixed(2)}x</div>
-        </div>
-      )}
-      <style>
-        {`
-          .react-flow {
-            background: radial-gradient(circle at 50% 50%, ${
-              mood.moodColor
-            }10, var(--filon-bg) 80%) !important;
-            transition: background var(--filon-transition-medium) ease-in-out !important;
-          }
-          .react-flow__pane {
-            filter: drop-shadow(0 0 ${mood.glowIntensity * 15}px ${
-          mood.moodColor
-        });
-            transition: filter var(--filon-transition-medium) ease-in-out !important;
-          }
-        `}
-      </style>
-      <ReactFlow
-        className="flex-1"
-        nodes={filteredNodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
-        onNodeDragStop={onNodeDragStop}
-        onNodeContextMenu={onNodeContextMenu}
-        fitView
-        proOptions={{ hideAttribution: true }}
-        style={{
-          width: "100%",
-          height: "100%",
-          minHeight: "100%",
-          flex: "1 1 auto",
-        }}
+      <div
+        id="flow-container"
+        role="region"
+        aria-label="Thought Graph"
+        className="relative h-[75vh] w-[90%] max-w-6xl overflow-hidden rounded-2xl border border-cyan-500/10 shadow-[0_0_15px_rgba(47,243,255,0.1)]"
       >
-        <MiniMap />
-        <Controls showInteractive={true} position="bottom-left" />
-        <Background color="#2ff3ff" gap={16} size={1} />
-      </ReactFlow>
+        {isLoading ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="text-filon-glow text-lg font-medium">
+              💫 Lade Graph…
+            </div>
+          </div>
+        ) : (
+          <>
+            <style>
+              {`
+                #flow-container .react-flow {
+                  background: radial-gradient(circle at 50% 50%, ${
+                    mood.moodColor
+                  }10, #0a0a0a 80%) !important;
+                  transition: background var(--filon-transition-medium) ease-in-out !important;
+                }
+                #flow-container .react-flow__pane {
+                  filter: drop-shadow(0 0 ${mood.glowIntensity * 15}px ${
+                mood.moodColor
+              });
+                  transition: filter var(--filon-transition-medium) ease-in-out !important;
+                }
+              `}
+            </style>
+            {!hasNodes && (
+              <div className="absolute left-6 top-6 z-10 rounded border border-cyan-500/30 bg-black/60 px-4 py-2 text-sm font-semibold text-cyan-200">
+                ⚠️ No nodes rendered
+              </div>
+            )}
+            <ReactFlow
+              className="bg-[#0a0a0a]"
+              nodes={filteredNodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={onNodeClick}
+              onPaneClick={onPaneClick}
+              onNodeDragStop={onNodeDragStop}
+              onNodeContextMenu={onNodeContextMenu}
+              fitView
+              proOptions={{ hideAttribution: true }}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <Background color="#2ff3ff" gap={16} size={1} />
+              <Controls showInteractive={true} position="bottom-left" />
+              <MiniMap />
+            </ReactFlow>
+          </>
+        )}
+      </div>
       {menuPos && contextNode && (
         <div
           className="fixed z-40 bg-filon-surface border border-filon-glow rounded p-xs text-sm shadow-glow animate-fade-in"
