@@ -43,8 +43,8 @@ import BranchPanel from "@/components/BranchPanel";
 import TimelinePlayer from "@/components/TimelinePlayer";
 import InsightsPanel from "@/components/InsightsPanel";
 import ContextMenu from "@/components/ContextMenu";
-import RFDebugPanel from "@/components/RFDebugPanel";
 import { attachRFDebug } from "@/utils/rfDebug";
+import { DEBUG_MODE } from "@/utils/env";
 import {
   saveGraphRemote,
   loadGraphSync,
@@ -74,6 +74,12 @@ import {
 import { getMostRelevantInsight } from "@/lib/feedback/FeedbackEngine";
 import { motion, AnimatePresence } from "framer-motion";
 import { bbox } from "@/utils/rfDebug";
+import dynamic from "next/dynamic";
+
+// 🌀 dynamic import: RFDebugPanel loaded only in dev
+const RFDebugPanel = DEBUG_MODE
+  ? dynamic(() => import("@/components/RFDebugPanel"), { ssr: false })
+  : () => null;
 
 // --- View & Layout Sanity Utils ---
 type RFNode = import("reactflow").Node;
@@ -125,9 +131,6 @@ export const GraphContext = createContext<{
 
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
 type ToastType = "restore" | "save" | "recovery" | "error" | null;
-
-// Debug mode toggle - set to true for development debugging
-const DEBUG_MODE = process.env.NODE_ENV === "development";
 
 export default function GraphCanvas() {
   const { activeNodeId, setActiveNodeId } = useActiveNode();

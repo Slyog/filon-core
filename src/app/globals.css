@@ -258,3 +258,9 @@ body.motion-test * {
   border-color: rgba(47, 243, 255, 0.5) !important;
   box-shadow: 0 0 20px rgba(47, 243, 255, 0.7);
 }
+
+/* Hide debug UI in production */
+#rf-debug,
+.rf-debug-hint {
+  display: none !important;
+}
