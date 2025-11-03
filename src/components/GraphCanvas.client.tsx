@@ -45,9 +45,11 @@ import InsightsPanel from "@/components/InsightsPanel";
 import ContextMenu from "@/components/ContextMenu";
 import FeedbackToast from "@/components/FeedbackToast";
 import SaveStatusBar from "@/components/SaveStatusBar";
+import MemoryPanel from "@/components/MemoryPanel";
 import { attachRFDebug } from "@/utils/rfDebug";
 import { DEBUG_MODE } from "@/utils/env";
 import { useFeedbackStore } from "@/store/FeedbackStore";
+import { useMemoryStore } from "@/store/MemoryStore";
 import {
   saveGraphRemote,
   loadGraphSync,
@@ -139,7 +141,11 @@ export default function GraphCanvas() {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
   const addFeedback = useFeedbackStore((s) => s.add);
+  const addMemory = useMemoryStore((s) => s.addSnapshot);
+  const getTrend = useMemoryStore((s) => s.getTrend);
   const [motionTest, setMotionTest] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
   const [contextNode, setContextNode] = useState<Node | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
@@ -191,6 +197,8 @@ export default function GraphCanvas() {
 
   // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
   useEffect(() => {
+    let mounted = true;
+
     (async () => {
       setIsLoading(true);
       try {
@@ -200,6 +208,8 @@ export default function GraphCanvas() {
 
         // Try to restore from session manager first
         const savedGraphState = await loadGraphState();
+        if (!mounted) return;
+
         if (savedGraphState) {
           setNodes(styleNodes(savedGraphState.nodes ?? []));
           setEdges(savedGraphState.edges ?? []);
@@ -215,6 +225,8 @@ export default function GraphCanvas() {
 
         // Then sync with remote (CRDT-Sync)
         const result = await syncAndResolve("mergeProps");
+        if (!mounted) return;
+
         if (result?.merged) {
           setNodes(styleNodes(result.merged.nodes ?? []));
           setEdges(result.merged.edges ?? []);
@@ -230,6 +242,8 @@ export default function GraphCanvas() {
 
         // 🌿 Load active branch
         const activeBranchId = await getActiveBranch();
+        if (!mounted) return;
+
         if (activeBranchId) {
           const branch = await getBranch(activeBranchId);
           if (branch) {
@@ -239,12 +253,20 @@ export default function GraphCanvas() {
       } catch (err) {
         console.error("Failed to load graph:", err);
       } finally {
-        // Reset active node states after load to prevent stale data
-        setActiveNode(null);
-        setActiveNodeId(null);
-        setIsLoading(false);
+        if (mounted) {
+          // Reset active node states after load to prevent stale data
+          setActiveNode(null);
+          setActiveNodeId(null);
+          setIsLoading(false);
+          setGraphLoadedOnce(true); // ✅ Lock the render after first success
+          setTimeout(() => setHasAnimated(true), 100); // after fade
+        }
       }
     })();
+
+    return () => {
+      mounted = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -376,6 +398,19 @@ export default function GraphCanvas() {
                       type: "success",
                       message: `🧠 Snapshot + Insight: ${summary}`,
                     });
+
+                    // Add to memory store and show trend
+                    addMemory({
+                      id: snapshotId,
+                      timestamp: when,
+                      summary,
+                      nodes: n.length,
+                      edges: e.length,
+                    });
+                    const trend = getTrend();
+                    if (trend !== "Noch keine Trends.") {
+                      addFeedback({ type: "info", message: `📈 ${trend}` });
+                    }
                   }
                 }
               }
@@ -504,7 +539,7 @@ export default function GraphCanvas() {
         }
       }, 800);
     },
-    [activeBranch, addFeedback]
+    [activeBranch, addFeedback, addMemory, getTrend]
   );
 
   // Selektions-Glow als Helper (keine globalen Styles anfassen)
@@ -1479,6 +1514,8 @@ export default function GraphCanvas() {
             isEditableTarget={isEditableTarget}
             isLoading={isLoading}
             hasNodes={nodes?.length > 0}
+            hasAnimated={hasAnimated}
+            graphLoadedOnce={graphLoadedOnce}
           />
         </ReactFlowProvider>
 
@@ -1756,6 +1793,8 @@ function GraphFlowWithHotkeys({
   isEditableTarget,
   isLoading,
   hasNodes,
+  hasAnimated,
+  graphLoadedOnce,
 }: {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -1780,6 +1819,8 @@ function GraphFlowWithHotkeys({
   isEditableTarget: (e: EventTarget | null) => boolean;
   isLoading: boolean;
   hasNodes: boolean;
+  hasAnimated: boolean;
+  graphLoadedOnce: boolean;
 }) {
   const rf = useReactFlow();
   const { currentMindState } = useMindProgress();
@@ -1932,7 +1973,9 @@ function GraphFlowWithHotkeys({
           `}
         </style>
         <ReactFlow
-          className="react-flow-subtle-cyan"
+          className={`react-flow-subtle-cyan ${
+            !hasAnimated ? "graph-fadein" : ""
+          }`}
           nodes={rawNodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -1975,8 +2018,8 @@ function GraphFlowWithHotkeys({
             }}
           />
         </ReactFlow>
-        {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]/85 backdrop-blur-sm">
+        {!graphLoadedOnce && isLoading && (
+          <div className="loader-fadeout absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]/85 backdrop-blur-sm">
             <div className="text-filon-glow text-lg font-medium">
               💫 Lade Graph…
             </div>
@@ -1999,6 +2042,7 @@ function GraphFlowWithHotkeys({
       )}
       <FeedbackToast />
       <SaveStatusBar />
+      <MemoryPanel />
     </div>
   );
 }

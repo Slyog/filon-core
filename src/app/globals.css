@@ -264,3 +264,32 @@ body.motion-test * {
 .rf-debug-hint {
   display: none !important;
 }
+
+/* Graph fade-in animation */
+.graph-fadein {
+  animation: graphFade 0.6s ease-in-out;
+}
+
+@keyframes graphFade {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Loader fade-out animation */
+.loader-fadeout {
+  animation: loaderFadeOut 0.6s ease forwards;
+}
+
+@keyframes loaderFadeOut {
+  to {
+    opacity: 0;
+    transform: scale(1.02);
+    pointer-events: none;
+  }
+}
