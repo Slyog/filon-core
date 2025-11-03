@@ -11,6 +11,14 @@ interface FeedbackState {
   items: Feedback[];
   add: (msg: Omit<Feedback, "id" | "timestamp">) => void;
   clear: () => void;
+  // Autosave status tracking
+  status: "idle" | "saving" | "synced" | "offline";
+  lastSync: number | null;
+  message: string;
+  setStatus: (
+    s: "idle" | "saving" | "synced" | "offline",
+    msg?: string
+  ) => void;
 }
 
 export const useFeedbackStore = create<FeedbackState>((set) => ({
@@ -23,4 +31,14 @@ export const useFeedbackStore = create<FeedbackState>((set) => ({
       ].slice(-5), // keep last 5
     })),
   clear: () => set({ items: [] }),
+  // Autosave status fields
+  status: "idle",
+  lastSync: null,
+  message: "",
+  setStatus: (status, msg = "") =>
+    set({
+      status,
+      message: msg,
+      lastSync: status === "synced" ? Date.now() : null,
+    }),
 }));

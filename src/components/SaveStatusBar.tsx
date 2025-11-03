@@ -1,22 +1,26 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useFeedbackStore } from "@/store/FeedbackStore";
 
 export default function SaveStatusBar() {
-  const [status, setStatus] = useState("Idle");
-  useEffect(() => {
-    const onOnline = () => setStatus("🟢 Online");
-    const onOffline = () => setStatus("🔴 Offline");
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
-    onOnline();
-    return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
-    };
-  }, []);
+  const { status, lastSync } = useFeedbackStore();
+
+  const colors = {
+    idle: "text-gray-400",
+    saving: "text-yellow-400 animate-pulse",
+    synced: "text-cyan-400",
+    offline: "text-red-400",
+  };
+
+  const text = {
+    idle: "Idle",
+    saving: "Saving...",
+    synced: `Synced (${new Date(lastSync || 0).toLocaleTimeString()})`,
+    offline: "Offline (local only)",
+  };
+
   return (
-    <div className="fixed bottom-1 left-2 text-xs text-[var(--foreground)] opacity-60">
-      {status}
+    <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-sm font-medium z-50">
+      <span className={colors[status]}>{text[status]}</span>
     </div>
   );
 }

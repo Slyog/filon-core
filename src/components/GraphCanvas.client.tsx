@@ -141,6 +141,7 @@ export default function GraphCanvas() {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
   const addFeedback = useFeedbackStore((s) => s.add);
+  const setStatus = useFeedbackStore((s) => s.setStatus);
   const addMemory = useMemoryStore((s) => s.addSnapshot);
   const getTrend = useMemoryStore((s) => s.getTrend);
   const [motionTest, setMotionTest] = useState(false);
@@ -325,6 +326,7 @@ export default function GraphCanvas() {
     (n: Node[], e: Edge[]) => {
       if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
       setSaveState("saving");
+      setStatus("saving", "💾 Saving...");
       hasUnsavedChangesRef.current = true;
 
       saveDebounceRef.current = setTimeout(async () => {
@@ -345,6 +347,7 @@ export default function GraphCanvas() {
             duration: Date.now() - saveStartTime,
           });
           addFeedback({ type: "success", message: "☁️ Synced to cloud" });
+          setStatus("synced", "☁️ Synced to cloud");
 
           // Create version snapshot conditionally: every ~5 min or 20+ node changes
           const timeSinceLastSnapshot = when - lastSnapshotRef.current;
@@ -447,6 +450,7 @@ export default function GraphCanvas() {
             () => setSaveState((s) => (s === "saved" ? "idle" : s)),
             1000
           );
+          setTimeout(() => setStatus("idle", ""), 2000);
         } catch (err) {
           console.warn("Remote save failed, local only", err);
 
@@ -465,6 +469,7 @@ export default function GraphCanvas() {
             type: "error",
             message: "⚠️ Offline – local backup only",
           });
+          setStatus("offline", "⚠️ Offline – local backup only");
 
           await localforage.setItem("noion-graph", { nodes: n, edges: e });
           // Still save to session manager for recovery
@@ -539,7 +544,7 @@ export default function GraphCanvas() {
         }
       }, 800);
     },
-    [activeBranch, addFeedback, addMemory, getTrend]
+    [activeBranch, addFeedback, addMemory, getTrend, setStatus]
   );
 
   // Selektions-Glow als Helper (keine globalen Styles anfassen)

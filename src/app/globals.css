@@ -322,3 +322,20 @@ body.motion-test * {
   pointer-events: auto;
   transition: opacity 0.25s ease-in;
 }
+
+/* Smooth pulse animation */
+@keyframes pulse-smooth {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.animate-pulse {
+  animation: pulse-smooth 2s ease-in-out infinite;
+}
