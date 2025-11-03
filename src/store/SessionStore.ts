@@ -178,15 +178,36 @@ export const useSessionStore = create<SessionState>()(
           await persistSnapshot();
           return id;
         },
-        createOrGetActive: async (name?: string) => {
-          const existing = get().activeSessionId;
-          if (existing) return existing;
+        createOrGetActive: async (autoTitle?: string) => {
+          const { activeSessionId } = get();
+          if (activeSessionId) return activeSessionId;
 
-          const newId = await get().addSession(
-            name || "Untitled Workspace",
-            "Other"
-          );
-          return newId;
+          const fallbackName =
+            autoTitle && autoTitle.trim().length > 0
+              ? autoTitle.trim()
+              : `Untitled Workspace #${Math.max(
+                  1,
+                  Math.floor(Math.random() * 999)
+                )}`;
+
+          const id = crypto.randomUUID();
+          const timestamp = Date.now();
+          const newSession: Session = {
+            id,
+            title: fallbackName,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            category: "Other",
+          };
+
+          set((state) => ({
+            ...state,
+            sessions: [...state.sessions, newSession],
+            activeSessionId: id,
+          }));
+
+          await persistSnapshot();
+          return id;
         },
         removeSession: (id) => {
           get().deleteSession(id);

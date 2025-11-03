@@ -9,6 +9,7 @@ import {
   useMemo,
 } from "react";
 import localforage from "localforage";
+import { useRouter } from "next/navigation";
 import {
   ReactFlowProvider,
   ReactFlow,
@@ -165,6 +166,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const drainThoughtsForSession = useSessionStore(
     (s) => s.drainThoughtsForSession
   );
+  const router = useRouter();
   const [motionTest, setMotionTest] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
@@ -1096,6 +1098,25 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     [edges, flowInstance, saveGraph, setLayoutTrigger, withGlow]
   );
 
+  const ensureActiveSession = useCallback(
+    async (suggestedTitle?: string) => {
+      const store = useSessionStore.getState();
+      let sessionId = store.activeSessionId;
+
+      if (!sessionId) {
+        sessionId = await store.createOrGetActive(suggestedTitle);
+        try {
+          router.push(`/f/${sessionId}`);
+        } catch (error) {
+          console.warn("Failed to navigate to new workspace", error);
+        }
+      }
+
+      return sessionId;
+    },
+    [router]
+  );
+
   useEffect(() => {
     if (!graphLoadedOnce || isLoading || !activeSessionId) return;
 
@@ -1132,10 +1153,26 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     const transcript = await startVoiceCapture();
 
     if (transcript) {
-      const label = transcript.slice(0, 120);
+      const store = useSessionStore.getState();
+      const trimmed = transcript.trim();
+      const titleSuggestion =
+        trimmed.length > 0
+          ? store.generateTitleFromThought(trimmed)
+          : undefined;
+      const sessionId = await ensureActiveSession(titleSuggestion);
       const thoughtType = await getType();
-      addNode(label, thoughtType);
-      addFeedback({ type: "success", message: `🎧 Captured: "${label}"` });
+      const content =
+        trimmed || transcript.slice(0, 160).trim() || "Voice thought";
+      const display =
+        content.length > 120 ? `${content.slice(0, 117)}...` : content;
+
+      store.enqueueThought({
+        sessionId,
+        content,
+        thoughtType,
+      });
+
+      addFeedback({ type: "success", message: `🎧 Captured: "${display}"` });
       addFeedback({
         type: "info",
         message: `🧠 ${thoughtType} thought created`,
@@ -1147,7 +1184,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       setStatus("offline", "Voice capture failed or unsupported");
       setTimeout(() => setStatus("idle", ""), 2000);
     }
-  }, [addNode, addFeedback, setStatus, getType]);
+  }, [addFeedback, setStatus, getType, ensureActiveSession]);
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1158,7 +1195,17 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
         const text = await file.text();
         const preview = text.slice(0, 200).trim();
         const thoughtType = await getType();
-        addNode(preview, thoughtType);
+        const store = useSessionStore.getState();
+        const content = preview || file.name || "Imported file";
+        const titleSuggestion = store.generateTitleFromThought(content);
+        const sessionId = await ensureActiveSession(titleSuggestion);
+
+        store.enqueueThought({
+          sessionId,
+          content,
+          thoughtType,
+        });
+
         addFeedback({ type: "success", message: "📄 File imported" });
         addFeedback({
           type: "info",
@@ -1169,7 +1216,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
         addFeedback({ type: "error", message: "❌ Failed to read file" });
       }
     },
-    [addNode, addFeedback, getType]
+    [addFeedback, getType, ensureActiveSession]
   );
 
   // 🧹 Graph löschen

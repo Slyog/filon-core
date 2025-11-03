@@ -18,6 +18,7 @@ export default function ThoughtTypeSelector() {
   const router = useRouter();
   const pathname = usePathname();
   const addFeedback = useFeedbackStore((s) => s.add);
+  const activeSessionId = useSessionStore((s) => s.activeSessionId);
   const createOrGetActive = useSessionStore((s) => s.createOrGetActive);
   const generateTitleFromThought = useSessionStore(
     (s) => s.generateTitleFromThought
@@ -47,9 +48,15 @@ export default function ThoughtTypeSelector() {
     }
 
     const content = text.trim();
-    // 🔹 Generate title from thought text for new workspaces
-    const titleSuggestion = generateTitleFromThought(content);
-    const sessionId = await createOrGetActive(titleSuggestion);
+
+    let sessionId = activeSessionId;
+    let navigated = false;
+    if (!sessionId) {
+      const titleSuggestion = generateTitleFromThought(content);
+      sessionId = await createOrGetActive(titleSuggestion);
+      router.push(`/f/${sessionId}`);
+      navigated = true;
+    }
 
     enqueueThought({
       sessionId,
@@ -57,7 +64,7 @@ export default function ThoughtTypeSelector() {
       thoughtType: currentType,
     });
 
-    if (pathname !== `/f/${sessionId}`) {
+    if (!navigated && pathname !== `/f/${sessionId}`) {
       router.push(`/f/${sessionId}`);
     }
 

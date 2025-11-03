@@ -34,15 +34,21 @@ export default function WorkspaceList() {
 
   if (!sessions || sessions.length === 0) {
     return (
-      <div className="px-4 py-3 text-sm text-zinc-500 flex items-center justify-between bg-zinc-900/60 border-b border-zinc-800">
-        <span>No workspaces yet</span>
-        <button
-          onClick={handleNew}
-          className="ml-2 inline-flex items-center gap-1 text-cyan-400 hover:underline"
-        >
-          <PlusCircle size={16} />
-          <span>Create one</span>
-        </button>
+      <div className="px-4 py-3 bg-zinc-900/60 border-b border-zinc-800 space-y-2 text-sm text-zinc-500">
+        <div className="flex items-center justify-between">
+          <span>No workspaces yet</span>
+          <button
+            onClick={handleNew}
+            className="ml-2 inline-flex items-center gap-1 text-cyan-400 hover:underline"
+          >
+            <PlusCircle size={16} />
+            <span>Create one</span>
+          </button>
+        </div>
+        <div className="text-xs italic">
+          No workspaces yet — a new one will be created when you add your first
+          thought.
+        </div>
       </div>
     );
   }
