@@ -357,11 +357,6 @@ export default function GraphCanvas() {
                 success: true,
               });
 
-              setToast({
-                type: "save",
-                message: "🤖 Analyzing snapshot changes...",
-              });
-
               // Get previous snapshot for comparison
               const allSnapshots = await listSnapshots(2);
               if (allSnapshots.length > 1) {
@@ -377,20 +372,18 @@ export default function GraphCanvas() {
 
                   if (summary) {
                     await updateSummary(snapshotId, summary);
-                    setToast({
-                      type: "save",
-                      message: "🧠 Summary generated",
+                    addFeedback({
+                      type: "success",
+                      message: `🧠 Snapshot + Insight: ${summary}`,
                     });
-                    setTimeout(() => setToast(null), 3000);
                   }
                 }
               }
             } else {
-              setToast({
-                type: "save",
+              addFeedback({
+                type: "success",
                 message: "📜 Snapshot created",
               });
-              setTimeout(() => setToast(null), 3000);
             }
           } else {
             nodeChangeCountRef.current++;
@@ -474,11 +467,6 @@ export default function GraphCanvas() {
                 success: true,
               });
 
-              setToast({
-                type: "save",
-                message: "🤖 Analyzing snapshot changes...",
-              });
-
               // Get previous snapshot for comparison
               const allSnapshots = await listSnapshots(2);
               if (allSnapshots.length > 1) {
@@ -494,20 +482,18 @@ export default function GraphCanvas() {
 
                   if (summary) {
                     await updateSummary(snapshotId, summary);
-                    setToast({
-                      type: "save",
-                      message: "🧠 Summary generated",
+                    addFeedback({
+                      type: "success",
+                      message: `🧠 Snapshot + Insight: ${summary}`,
                     });
-                    setTimeout(() => setToast(null), 3000);
                   }
                 }
               }
             } else {
-              setToast({
-                type: "save",
+              addFeedback({
+                type: "success",
                 message: "📜 Snapshot created",
               });
-              setTimeout(() => setToast(null), 3000);
             }
           } else {
             nodeChangeCountRef.current++;
