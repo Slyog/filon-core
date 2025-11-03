@@ -841,7 +841,7 @@ export default function GraphCanvas() {
 
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
-      <div className="relative flex min-h-screen w-full flex-col bg-filon-bg">
+      <div className="relative flex min-h-screen w-full flex-1 flex-col bg-filon-bg">
         {/* 🔧 Toolbar */}
         <div className="absolute top-sm left-sm z-10 flex gap-sm">
           <input
@@ -1656,63 +1656,73 @@ function GraphFlowWithHotkeys({
   return (
     <div
       id="canvas-shell"
-      className="w-full flex justify-center items-start py-4 bg-[#0a0a0a]"
+      className="flex w-full flex-1 justify-center bg-[#0a0a0a] px-6 pb-6 pt-4"
     >
       <div
-        id="flow-container"
+        id="graph-container"
         role="region"
         aria-label="Thought Graph"
-        className="relative h-[75vh] w-[90%] max-w-6xl overflow-hidden rounded-2xl border border-cyan-500/10 shadow-[0_0_15px_rgba(47,243,255,0.1)]"
+        className="relative flex-1 min-h-[80vh] w-full overflow-hidden rounded-[var(--radius-lg)] bg-[var(--background)] shadow-[var(--shadow-soft)]"
+        style={{ height: "calc(100vh - 4rem)" }}
       >
-        {isLoading ? (
-          <div className="flex h-full w-full items-center justify-center">
+        <style>
+          {`
+            #graph-container .react-flow {
+              background: radial-gradient(circle at 50% 50%, ${
+                mood.moodColor
+              }08, #0a0a0a 80%) !important;
+              transition: background var(--filon-transition-medium) ease-in-out !important;
+            }
+            #graph-container .react-flow__pane {
+              filter: drop-shadow(0 0 ${mood.glowIntensity * 15}px ${
+            mood.moodColor
+          });
+              transition: filter var(--filon-transition-medium) ease-in-out !important;
+            }
+          `}
+        </style>
+        <ReactFlow
+          className="react-flow-canvas"
+          nodes={filteredNodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
+          onNodeDragStop={onNodeDragStop}
+          onNodeContextMenu={onNodeContextMenu}
+          fitView
+          minZoom={0.25}
+          maxZoom={1.5}
+          panOnDrag
+          zoomOnScroll
+          proOptions={{ hideAttribution: true }}
+          style={{ width: "100%", height: "100%" }}
+        >
+          <Background color="rgba(47,243,255,0.08)" gap={20} size={1} />
+          <Controls
+            position="bottom-right"
+            style={{ color: "var(--accent)" }}
+            showInteractive
+          />
+          <MiniMap
+            nodeColor={() => "#2ff3ff"}
+            maskColor="rgba(10,15,18,0.85)"
+            style={{ borderRadius: "8px" }}
+          />
+        </ReactFlow>
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--background)]/85 backdrop-blur-sm">
             <div className="text-filon-glow text-lg font-medium">
               💫 Lade Graph…
             </div>
           </div>
-        ) : (
-          <>
-            <style>
-              {`
-                #flow-container .react-flow {
-                  background: radial-gradient(circle at 50% 50%, ${
-                    mood.moodColor
-                  }10, #0a0a0a 80%) !important;
-                  transition: background var(--filon-transition-medium) ease-in-out !important;
-                }
-                #flow-container .react-flow__pane {
-                  filter: drop-shadow(0 0 ${mood.glowIntensity * 15}px ${
-                mood.moodColor
-              });
-                  transition: filter var(--filon-transition-medium) ease-in-out !important;
-                }
-              `}
-            </style>
-            {!hasNodes && (
-              <div className="absolute left-6 top-6 z-10 rounded border border-cyan-500/30 bg-black/60 px-4 py-2 text-sm font-semibold text-cyan-200">
-                ⚠️ No nodes rendered
-              </div>
-            )}
-            <ReactFlow
-              className="bg-[#0a0a0a]"
-              nodes={filteredNodes}
-              edges={edges}
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onNodeClick={onNodeClick}
-              onPaneClick={onPaneClick}
-              onNodeDragStop={onNodeDragStop}
-              onNodeContextMenu={onNodeContextMenu}
-              fitView
-              proOptions={{ hideAttribution: true }}
-              style={{ width: "100%", height: "100%" }}
-            >
-              <Background color="#2ff3ff" gap={16} size={1} />
-              <Controls showInteractive={true} position="bottom-left" />
-              <MiniMap />
-            </ReactFlow>
-          </>
+        )}
+        {!isLoading && !hasNodes && (
+          <div className="pointer-events-none absolute left-6 top-6 z-10 rounded border border-cyan-500/30 bg-black/70 px-4 py-2 text-sm font-semibold text-cyan-200">
+            ⚠️ No nodes rendered
+          </div>
         )}
       </div>
       {menuPos && contextNode && (

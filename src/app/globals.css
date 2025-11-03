@@ -20,48 +20,51 @@ body {
   overflow-x: hidden;
 }
 
-/* --- Noion Farb- & Fontvariablen --- */
-:root {
-  --background: #0e0f12;
-  --foreground: #fafafa;
-  --accent: #00c2ff;
-  --muted: #1a1b1e;
-  --glow: #38bdf8;
+main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Inline Theme (Tailwind 4 Syntax) */
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-accent: var(--accent);
-  --color-muted: var(--muted);
-  --color-glow: var(--glow);
-  --font-sans: "Inter", system-ui, sans-serif;
+/* --- FILON Theme Variables (Extended) --- */
+:root {
+  /* Additional theme tokens */
+  --border-glow: rgba(47, 243, 255, 0.25);
+  --radius-sm: 1rem;
+  --radius-lg: 1.5rem;
+  --motion: 0.3s ease-in-out;
+  --shadow-soft: 0 0 20px rgba(47, 243, 255, 0.08);
 }
+
+/* Theme variables are imported from filon-theme.css above */
 
 /* --- Global Styles --- */
 body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* Global transitions - exclude ReactFlow elements */
+*:not(.react-flow):not(.react-flow *) {
+  transition: all var(--motion);
 }
 
 /* --- Interaktive Elemente --- */
 a {
-  color: var(--color-accent);
+  color: var(--accent);
   transition: color 0.2s ease;
 }
 a:hover {
-  color: var(--color-glow);
+  color: var(--glow);
 }
 
 button {
-  border-radius: 0.5rem;
+  border-radius: var(--radius-sm);
   transition: all 0.2s ease;
 }
 button:focus-visible {
-  outline: 2px solid var(--color-glow);
+  outline: 2px solid var(--glow);
   outline-offset: 2px;
 }
 

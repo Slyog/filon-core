@@ -13,7 +13,7 @@ export default function Page() {
   return (
     <ActiveNodeProvider>
       <MindProgressProvider>
-        <main className="min-h-screen w-full bg-filon-bg text-filon-text">
+        <main className="min-h-screen flex flex-col w-full bg-filon-bg text-filon-text">
           <GraphCanvas />
         </main>
       </MindProgressProvider>
