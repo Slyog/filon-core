@@ -1,9 +1,14 @@
 "use client";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ActiveNodeProvider } from "@/context/ActiveNodeContext";
 import { MindProgressProvider } from "@/context/MindProgressContext";
+import { useSessionStore } from "@/store/SessionStore";
 import Sidebar from "@/components/Sidebar";
+import SessionTabs from "@/components/SessionTabs";
+import WorkspaceList from "@/components/WorkspaceList";
+import WorkspaceHeader from "@/components/WorkspaceHeader";
 
 const GraphCanvas = dynamic(
   () => import("@/components/GraphCanvas.client").then((mod) => mod.default),
@@ -17,18 +22,52 @@ export default function WorkspaceShell({
   children?: ReactNode;
   sessionId?: string;
 }) {
+  const pathname = usePathname();
+  const activeSessionId = useSessionStore((s) => s.activeSessionId);
+  const sessions = useSessionStore((s) => s.sessions);
+  const setActiveSession = useSessionStore((s) => s.setActiveSession);
+
+  // 🔹 Set active session from URL if not already set
+  useEffect(() => {
+    if (!activeSessionId && pathname?.startsWith("/f/")) {
+      const idFromUrl = pathname.split("/f/")[1];
+      if (idFromUrl) {
+        const session = sessions.find((s) => s.id === idFromUrl);
+        if (session) {
+          setActiveSession(idFromUrl);
+          return;
+        }
+      }
+    }
+  }, [pathname, activeSessionId, sessions, setActiveSession]);
+
   return (
     <ActiveNodeProvider>
       <MindProgressProvider>
         <div className="workspace-grid min-h-screen bg-[#0A0F12] text-white relative">
           {/* Header */}
-          <header className="flex items-center justify-between px-4 h-12 border-b border-white/10">
+          <header className="fixed top-0 left-0 w-full h-12 flex items-center justify-between px-6 border-b border-white/10 bg-[rgba(10,15,18,0.7)] backdrop-blur-md z-50">
             <h1 className="font-semibold tracking-wide text-cyan-400">FILON</h1>
             <div className="text-xs opacity-70">Visual Workspace Alpha</div>
           </header>
 
+          {/* Workspace List */}
+          <div className="fixed top-12 left-0 w-full z-40">
+            <WorkspaceList />
+          </div>
+
+          {/* Workspace Header */}
+          <div className="fixed top-[60px] left-0 w-full z-[39]">
+            <WorkspaceHeader />
+          </div>
+
+          {/* Session Tabs Bar - positioned below WorkspaceHeader */}
+          <div className="fixed top-[108px] left-0 w-full z-38">
+            <SessionTabs />
+          </div>
+
           {/* Body */}
-          <main className="flex flex-1 overflow-hidden">
+          <main className="flex flex-1 overflow-hidden pt-[140px]">
             <aside className="w-64 border-r border-white/10">
               <Sidebar />
             </aside>

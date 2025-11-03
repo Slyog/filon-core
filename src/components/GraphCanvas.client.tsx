@@ -82,8 +82,10 @@ import { bbox } from "@/utils/rfDebug";
 import dynamic from "next/dynamic";
 import { startVoiceCapture } from "@/lib/voiceInput";
 import { useThoughtType } from "@/hooks/useThoughtType";
+import ThoughtTypeSelector from "@/components/ThoughtTypeSelector";
 import { saveGraphToSession, loadGraphFromSession } from "@/lib/sessionStorage";
 import { useSessionStore } from "@/store/SessionStore";
+import { useGraphStore } from "@/store/GraphStore";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -152,9 +154,15 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const getLastActive = useSessionStore((s) => s.getLastActive);
   const setActiveSession = useSessionStore((s) => s.setActiveSession);
   const updateMetadata = useSessionStore((s) => s.updateMetadata);
+  const activeSessionId = useSessionStore((s) => s.activeSessionId);
+  const pendingThoughts = useSessionStore((s) => s.pendingThoughts);
+  const drainThoughtsForSession = useSessionStore(
+    (s) => s.drainThoughtsForSession
+  );
   const [motionTest, setMotionTest] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
+  const setGraphLoadedOnceStore = useGraphStore((s) => s.setGraphLoadedOnce);
   const [feedbackInit, setFeedbackInit] = useState(false);
   const [contextNode, setContextNode] = useState<Node | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -197,6 +205,12 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const lastInsightCheckRef = useRef<number>(0);
   const isInitialSessionLoadRef = useRef(true);
 
+  // 🚀 Top-level initialization: Set initial feedback and status
+  useEffect(() => {
+    addFeedback({ type: "info", message: "📡 Graph initialized" });
+    setStatus("idle");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 🧪 Motion Test Toggle
   useEffect(() => {
     if (motionTest) {
@@ -216,6 +230,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       if (sessionId) {
         setIsLoading(false);
         setGraphLoadedOnce(true);
+        setGraphLoadedOnceStore(true);
         return;
       }
 
@@ -278,6 +293,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
           setActiveNodeId(null);
           setIsLoading(false);
           setGraphLoadedOnce(true); // ✅ Lock the render after first success
+          setGraphLoadedOnceStore(true); // ✅ Update store
           setTimeout(() => setHasAnimated(true), 100); // after fade
         }
       }
@@ -287,7 +303,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+  }, [sessionId, setGraphLoadedOnceStore]);
 
   // 🔗 Session ID routing: Load graph when sessionId changes
   useEffect(() => {
@@ -305,6 +321,8 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       setNodes(data.nodes);
       setEdges(data.edges);
       setIsSessionLoaded(true);
+      setGraphLoadedOnce(true);
+      setGraphLoadedOnceStore(true);
       setLayoutTrigger((n) => n + 1);
       console.log(`[FILON] Graph loaded for session ${activeId}`);
       // Reset flag after a short delay to allow for the first save
@@ -361,6 +379,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   useEffect(() => {
     if (sessionId) {
       setActiveSession(sessionId);
+      localStorage.setItem("lastSessionAt", Date.now().toString());
     }
   }, [sessionId, setActiveSession]);
 
@@ -419,10 +438,11 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     (n: Node[], e: Edge[]) => {
       if (saveDebounceRef.current) clearTimeout(saveDebounceRef.current);
       setSaveState("saving");
-      setStatus("saving", "💾 Saving...");
       hasUnsavedChangesRef.current = true;
 
       saveDebounceRef.current = setTimeout(async () => {
+        // 🔹 Set status in async handler to avoid render-time updates
+        setStatus("saving", "💾 Saving...");
         const saveStartTime = Date.now();
         try {
           const when = Date.now();
@@ -675,7 +695,10 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
         const styled = updated.map((node) =>
           withGlow(node, node.id === activeNodeId, hoveredNodeId === node.id)
         );
-        saveGraph(styled, edges);
+        // 🔹 Call saveGraph in next tick to avoid render-time state updates
+        setTimeout(() => {
+          saveGraph(styled, edges);
+        }, 0);
         return styled;
       });
     },
@@ -686,7 +709,10 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     (changes: EdgeChange[]) => {
       setEdges((eds) => {
         const updated = applyEdgeChanges(changes, eds);
-        saveGraph(nodes, updated);
+        // 🔹 Call saveGraph in next tick to avoid render-time state updates
+        setTimeout(() => {
+          saveGraph(nodes, updated);
+        }, 0);
         return updated;
       });
     },
@@ -697,7 +723,10 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     (params: Connection) =>
       setEdges((eds) => {
         const updated = addEdge(params, eds);
-        saveGraph(nodes, updated);
+        // 🔹 Call saveGraph in next tick to avoid render-time state updates
+        setTimeout(() => {
+          saveGraph(nodes, updated);
+        }, 0);
         return updated;
       }),
     [nodes, saveGraph]
@@ -1025,15 +1054,71 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     [flowInstance, nodes.length, withGlow, saveGraph, edges]
   );
 
-  // 🎯 Welcome Hub helpers
-  const handleCreateThought = useCallback(async () => {
-    const thoughtType = await getType();
-    addNode("New Thought", thoughtType);
+  const createTextNode = useCallback(
+    (label: string, thoughtType: string) => {
+      const hasWindow = typeof window !== "undefined";
+      const center = flowInstance
+        ? flowInstance.screenToFlowPosition({
+            x: hasWindow ? window.innerWidth / 2 : 0,
+            y: hasWindow ? window.innerHeight / 2 - 80 : -80,
+          })
+        : { x: 100, y: 100 };
+
+      const newNode: Node = {
+        id: `node_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        position: center,
+        data: { label, thoughtType },
+        type: "default",
+      };
+
+      setNodes((nds) => {
+        const updated = [...nds, withGlow(newNode, false)];
+        saveGraph(updated, edges);
+        return updated;
+      });
+
+      setLayoutTrigger((n) => n + 1);
+
+      setTimeout(() => {
+        try {
+          flowInstance?.fitView({ padding: 0.3, duration: 600 });
+        } catch {
+          // FitView can fail if instance unmounted; ignore.
+        }
+      }, 150);
+    },
+    [edges, flowInstance, saveGraph, setLayoutTrigger, withGlow]
+  );
+
+  useEffect(() => {
+    if (!graphLoadedOnce || isLoading || !activeSessionId) return;
+
+    const hasPendingForSession = pendingThoughts.some(
+      (t) => t.sessionId === activeSessionId
+    );
+    if (!hasPendingForSession) return;
+
+    const queued = drainThoughtsForSession(activeSessionId);
+    if (!queued.length) return;
+
+    queued.forEach((thought) => {
+      const label = thought.content.trim() || "New Thought";
+      createTextNode(label, thought.thoughtType);
+    });
+
     addFeedback({
       type: "success",
-      message: `🧠 ${thoughtType} thought created`,
+      message: `✨ ${queued.length} Thought(s) hinzugefügt`,
     });
-  }, [addNode, getType, addFeedback]);
+  }, [
+    graphLoadedOnce,
+    isLoading,
+    activeSessionId,
+    pendingThoughts,
+    drainThoughtsForSession,
+    createTextNode,
+    addFeedback,
+  ]);
 
   const startVoiceInput = useCallback(async () => {
     console.log("🎙 Voice input started...");
@@ -1314,14 +1399,16 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
             />
             <button
               onClick={() => addNode()}
-              className="focus-glow px-sm py-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              disabled={isLoading}
+              className="focus-glow px-sm py-xs rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Add new node"
             >
               + Node
             </button>
             <button
               onClick={clearGraph}
-              className="focus-glow px-sm py-xs rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              disabled={isLoading || nodes.length === 0}
+              className="focus-glow px-sm py-xs rounded-lg bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Clear graph"
             >
               Clear
@@ -1415,54 +1502,6 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
               aria-label="Copy current graph JSON"
             >
               📋 Copy Graph
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  const text = await navigator.clipboard.readText();
-                  const parsed = JSON.parse(text);
-                  if (!parsed.nodes) {
-                    setToast({
-                      type: "error",
-                      message: "❌ Invalid graph format",
-                    });
-                    setTimeout(() => setToast(null), 2000);
-                    return;
-                  }
-                  // Import via API
-                  const response = await fetch("/api/graph/import", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(parsed),
-                  });
-                  if (response.ok) {
-                    // Reload graph
-                    loadFromServer();
-                    setToast({
-                      type: "save",
-                      message: "✅ Graph imported successfully!",
-                    });
-                    setTimeout(() => setToast(null), 2000);
-                  } else {
-                    setToast({
-                      type: "error",
-                      message: "❌ Import failed",
-                    });
-                    setTimeout(() => setToast(null), 2000);
-                  }
-                } catch (err) {
-                  console.error("Import error:", err);
-                  setToast({
-                    type: "error",
-                    message: "❌ Failed to read clipboard",
-                  });
-                  setTimeout(() => setToast(null), 2000);
-                }
-              }}
-              className="focus-glow px-sm py-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-              aria-label="Import graph from clipboard"
-            >
-              📥 Import Graph
             </button>
             <button
               onClick={() => {
@@ -1679,30 +1718,29 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
               </span>
             </p>
 
-            <div className="flex gap-4">
-              <button
-                className="px-6 py-2 rounded-xl bg-[var(--accent)] text-black hover:opacity-90 transition-all duration-fast focus-glow"
-                onClick={handleCreateThought}
-              >
-                ✏️ New Text Thought
-              </button>
+            <div className="flex flex-col gap-4 items-center">
+              <ThoughtTypeSelector />
 
-              <button
-                className="px-6 py-2 rounded-xl border border-[var(--accent)] hover:bg-[rgba(47,243,255,0.1)] transition-all duration-fast focus-glow"
-                onClick={startVoiceInput}
-              >
-                🎙️ Voice Input
-              </button>
+              <div className="flex gap-4 mt-4">
+                <button
+                  className="px-6 py-2 rounded-xl border border-[var(--accent)] hover:bg-[rgba(47,243,255,0.1)] transition-all duration-fast focus-glow"
+                  onClick={startVoiceInput}
+                  disabled={isLoading || !graphLoadedOnce}
+                >
+                  🎙️ Voice Input
+                </button>
 
-              <label className="cursor-pointer px-6 py-2 rounded-xl border border-[var(--accent)] hover:bg-[rgba(47,243,255,0.1)] transition-all duration-fast focus-glow">
-                📄 Upload File
-                <input
-                  type="file"
-                  accept=".txt,.md,.pdf"
-                  hidden
-                  onChange={handleFileUpload}
-                />
-              </label>
+                <label className="cursor-pointer px-6 py-2 rounded-xl border border-[var(--accent)] hover:bg-[rgba(47,243,255,0.1)] transition-all duration-fast focus-glow disabled:opacity-50 disabled:cursor-not-allowed">
+                  📄 Upload File
+                  <input
+                    type="file"
+                    accept=".txt,.md,.pdf"
+                    hidden
+                    onChange={handleFileUpload}
+                    disabled={isLoading || !graphLoadedOnce}
+                  />
+                </label>
+              </div>
             </div>
 
             <p className="text-xs opacity-60">

@@ -1,0 +1,133 @@
+"use client";
+
+import { useRouter, usePathname } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useFeedbackStore } from "@/store/FeedbackStore";
+import { useSessionStore } from "@/store/SessionStore";
+
+const TYPES = [
+  "Idea",
+  "Knowledge",
+  "Guide",
+  "Inspiration",
+  "Reflection",
+  "Custom",
+] as const;
+
+export default function ThoughtTypeSelector() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const addFeedback = useFeedbackStore((s) => s.add);
+  const createOrGetActive = useSessionStore((s) => s.createOrGetActive);
+  const generateTitleFromThought = useSessionStore(
+    (s) => s.generateTitleFromThought
+  );
+  const enqueueThought = useSessionStore((s) => s.enqueueThought);
+
+  const [selected, setSelected] = useState<(typeof TYPES)[number]>("Idea");
+  const [custom, setCustom] = useState("");
+  const [text, setText] = useState("");
+
+  const currentType = useMemo(() => {
+    if (selected === "Custom") {
+      return custom.trim() || "Custom";
+    }
+    return selected;
+  }, [selected, custom]);
+
+  const canConfirm = text.trim().length > 0;
+
+  async function handleConfirm() {
+    if (!canConfirm) {
+      addFeedback({
+        type: "error",
+        message: "Bitte zuerst Text eingeben.",
+      });
+      return;
+    }
+
+    const content = text.trim();
+    // 🔹 Generate title from thought text for new workspaces
+    const titleSuggestion = generateTitleFromThought(content);
+    const sessionId = await createOrGetActive(titleSuggestion);
+
+    enqueueThought({
+      sessionId,
+      content,
+      thoughtType: currentType,
+    });
+
+    if (pathname !== `/f/${sessionId}`) {
+      router.push(`/f/${sessionId}`);
+    }
+
+    setText("");
+    if (selected === "Custom") {
+      setCustom("");
+    }
+
+    addFeedback({
+      type: "success",
+      message: "🧠 Thought wird hinzugefügt…",
+    });
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="flex gap-2 flex-wrap">
+        {TYPES.map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => setSelected(type)}
+            className={
+              "px-2 py-1 rounded border transition-colors " +
+              (type === selected
+                ? "border-cyan-400 text-cyan-300 bg-cyan-900/20"
+                : "border-zinc-600 text-zinc-300 hover:border-cyan-400/60")
+            }
+          >
+            {type}
+          </button>
+        ))}
+      </div>
+
+      {selected === "Custom" && (
+        <input
+          className="mt-2 w-full rounded border border-zinc-600 bg-black/50 px-2 py-1 text-zinc-100"
+          placeholder="Custom type…"
+          value={custom}
+          onChange={(event) => setCustom(event.target.value)}
+        />
+      )}
+
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          className="flex-1 rounded border border-zinc-600 bg-black/50 px-2 py-1 text-zinc-100"
+          placeholder="write your thought… (Enter to confirm)"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && canConfirm) {
+              event.preventDefault();
+              void handleConfirm();
+            }
+          }}
+        />
+        <button
+          type="button"
+          disabled={!canConfirm}
+          onClick={handleConfirm}
+          className={
+            "px-3 py-1 rounded font-medium transition-colors " +
+            (canConfirm
+              ? "bg-cyan-600 hover:bg-cyan-500 text-black"
+              : "bg-zinc-700 text-zinc-400 cursor-not-allowed")
+          }
+        >
+          Confirm
+        </button>
+      </div>
+    </div>
+  );
+}

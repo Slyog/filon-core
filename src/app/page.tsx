@@ -11,9 +11,9 @@ export default function Page() {
 
   useEffect(() => {
     const last = getLastActive();
-    if (last) {
-      router.push(`/graph/${last}`);
-    }
+    const lastTime = localStorage.getItem("lastSessionAt");
+    const recent = lastTime && Date.now() - Number(lastTime) < 5 * 60_000;
+    if (recent && last) router.push(`/f/${last}`);
   }, [router, getLastActive]);
 
   return <WorkspaceShell />;

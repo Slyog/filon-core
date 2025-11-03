@@ -30,13 +30,34 @@ export default function Sidebar() {
   }, [sessions, search, filter]);
 
   const handleNew = () => {
-    const id = addSession();
-    router.push(`/graph/${id}`);
+    const name = window.prompt("Name of new workspace:");
+    if (!name || name.trim() === "") {
+      return; // User cancelled or left blank
+    }
+    const id = crypto.randomUUID();
+    const store = useSessionStore.getState();
+
+    // Prevent duplicate creation
+    const existing = store.sessions.find((s) => s.id === id);
+    if (existing) {
+      alert("Session with this ID already exists.");
+      return;
+    }
+
+    store.openSession({
+      id,
+      title: name.trim(),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    localStorage.setItem("lastSessionAt", Date.now().toString());
+    router.push(`/f/${id}`);
   };
 
   const handleOpen = (id: string) => {
     setActiveSession(id);
-    router.push(`/graph/${id}`);
+    localStorage.setItem("lastSessionAt", Date.now().toString());
+    router.push(`/f/${id}`);
   };
 
   return (
