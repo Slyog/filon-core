@@ -43,8 +43,11 @@ import BranchPanel from "@/components/BranchPanel";
 import TimelinePlayer from "@/components/TimelinePlayer";
 import InsightsPanel from "@/components/InsightsPanel";
 import ContextMenu from "@/components/ContextMenu";
+import FeedbackToast from "@/components/FeedbackToast";
+import SaveStatusBar from "@/components/SaveStatusBar";
 import { attachRFDebug } from "@/utils/rfDebug";
 import { DEBUG_MODE } from "@/utils/env";
+import { useFeedbackStore } from "@/store/FeedbackStore";
 import {
   saveGraphRemote,
   loadGraphSync,
@@ -135,6 +138,7 @@ type ToastType = "restore" | "save" | "recovery" | "error" | null;
 export default function GraphCanvas() {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
+  const addFeedback = useFeedbackStore((s) => s.add);
   const [motionTest, setMotionTest] = useState(false);
   const [contextNode, setContextNode] = useState<Node | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -310,7 +314,7 @@ export default function GraphCanvas() {
           // Also save to session manager for crash recovery
           await saveGraphState({ nodes: n, edges: e });
 
-          // Log successful save
+          // Log successful save (legacy + new toast)
           await addFeedbackEvent({
             timestamp: when,
             type: "save",
@@ -318,6 +322,7 @@ export default function GraphCanvas() {
             success: true,
             duration: Date.now() - saveStartTime,
           });
+          addFeedback({ type: "success", message: "☁️ Synced to cloud" });
 
           // Create version snapshot conditionally: every ~5 min or 20+ node changes
           const timeSinceLastSnapshot = when - lastSnapshotRef.current;
@@ -428,6 +433,10 @@ export default function GraphCanvas() {
             },
             success: false,
           });
+          addFeedback({
+            type: "error",
+            message: "⚠️ Offline – local backup only",
+          });
 
           await localforage.setItem("noion-graph", { nodes: n, edges: e });
           // Still save to session manager for recovery
@@ -509,7 +518,7 @@ export default function GraphCanvas() {
         }
       }, 800);
     },
-    [activeBranch]
+    [activeBranch, addFeedback]
   );
 
   // Selektions-Glow als Helper (keine globalen Styles anfassen)
@@ -2002,6 +2011,8 @@ function GraphFlowWithHotkeys({
           <ContextMenu node={contextNode} closeMenu={closeContextMenu} />
         </div>
       )}
+      <FeedbackToast />
+      <SaveStatusBar />
     </div>
   );
 }
