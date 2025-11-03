@@ -7,12 +7,17 @@
 
 /* --- Sichtbarkeit fixen ohne Layout zu zerstören --- */
 html,
-body,
-#__next {
+body {
+  height: 100%;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: hidden;
   position: relative;
-  min-height: 100%;
+}
+
+#__next {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 /* --- Noion Farb- & Fontvariablen --- */
@@ -161,4 +166,37 @@ body.motion-test * {
 
 .animate-fade-in {
   animation: fade-in var(--filon-transition-fast) ease-in-out;
+}
+
+/* --- Fade-Scale Animation for Panels --- */
+@keyframes fade-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-scale {
+  animation: fade-scale 0.25s ease-out;
+}
+
+/* --- Node Active State Glow --- */
+@keyframes node-active-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(47, 243, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(47, 243, 255, 0.8);
+  }
+}
+
+.node-active {
+  box-shadow: 0 0 8px rgba(47, 243, 255, 0.6);
+  transition: all 0.3s;
+  animation: node-active-pulse 2s ease-in-out infinite;
 }

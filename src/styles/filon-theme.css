@@ -3,18 +3,18 @@
 :root {
   /* Core Colors */
   --filon-bg: #0a0f12;
-  --filon-surface: #121820;
+  --filon-surface: #12181c;
   --filon-glow: #2ff3ff;
-  --filon-accent: #00b7c2;
-  --filon-text: #d9e5ef;
+  --filon-accent: #00c2d1;
+  --filon-text: #e6e6e6;
 
   /* Motion Durations */
-  --filon-transition-fast: 0.4s;
-  --filon-transition-medium: 1.2s;
-  --filon-transition-slow: 2.4s;
+  --filon-transition-fast: 150ms;
+  --filon-transition-medium: 300ms;
+  --filon-transition-slow: 600ms;
 
   /* Shadow & Glow */
-  --filon-glow-shadow: 0 0 24px var(--filon-glow);
+  --filon-glow-shadow: 0 0 12px rgba(47, 243, 255, 0.3);
 }
 
 /* Legacy compatibility - map old tokens to new ones */
@@ -25,4 +25,3 @@
   --muted: var(--filon-surface);
   --glow: var(--filon-glow);
 }
-

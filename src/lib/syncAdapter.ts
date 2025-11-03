@@ -21,7 +21,15 @@ export async function saveGraphRemote(graph: GraphData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(graph),
   });
-  if (!res.ok) throw new Error("Remote save failed");
+  if (!res.ok) {
+    const errorData = await res
+      .json()
+      .catch(() => ({ error: "Unknown error" }));
+    console.error("❌ Remote save failed:", errorData);
+    throw new Error(
+      errorData.detail || errorData.error || "Remote save failed"
+    );
+  }
   await localforage.setItem("noion-graph", graph); // Cache speichern
 }
 

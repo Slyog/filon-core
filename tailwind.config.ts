@@ -13,6 +13,11 @@ const config: Config = {
         "noion-glow": "#38bdf8",
         "noion-muted": "#1a1b1e",
         // New FILON Design System colors
+        background: "#0A0F12",
+        surface: "#12181C",
+        glow: "#2FF3FF",
+        accent: "#00C2D1",
+        text: "#E6E6E6",
         filon: {
           bg: "var(--filon-bg)",
           surface: "var(--filon-surface)",
@@ -28,9 +33,9 @@ const config: Config = {
         glow: "var(--filon-glow-shadow)",
       },
       transitionDuration: {
-        fast: "400ms",
-        medium: "1200ms",
-        slow: "2400ms",
+        fast: "150ms",
+        medium: "300ms",
+        slow: "600ms",
       },
       spacing: {
         xs: "0.5rem",

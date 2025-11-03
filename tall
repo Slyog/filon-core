@@ -1,0 +1,60 @@
+warning: in the working copy of 'src/components/GraphCanvas.client.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/components/GraphCanvas.client.tsx b/src/components/GraphCanvas.client.tsx[m
+[1mindex a95058b..8373242 100644[m
+[1m--- a/src/components/GraphCanvas.client.tsx[m
+[1m+++ b/src/components/GraphCanvas.client.tsx[m
+[36m@@ -989,6 +989,21 @@[m [mexport default function GraphCanvas() {[m
+           >[m
+             🧪 Motion Test[m
+           </button>[m
+[32m+[m[32m          <button[m
+[32m+[m[32m            onClick={() => {[m
+[32m+[m[32m              const text = JSON.stringify({ nodes, edges }, null, 2);[m
+[32m+[m[32m              navigator.clipboard.writeText(text);[m
+[32m+[m[32m              setToast({[m
+[32m+[m[32m                type: "save",[m
+[32m+[m[32m                message: "📋 Graph JSON copied to clipboard!",[m
+[32m+[m[32m              });[m
+[32m+[m[32m              setTimeout(() => setToast(null), 2000);[m
+[32m+[m[32m            }}[m
+[32m+[m[32m            className="px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"[m
+[32m+[m[32m            aria-label="Copy current graph JSON"[m
+[32m+[m[32m          >[m
+[32m+[m[32m            📋 Copy Graph[m
+[32m+[m[32m          </button>[m
+         </div>[m
+ [m
+         {/* 💾 Status Badge */}[m
+[36m@@ -1100,8 +1115,9 @@[m [mexport default function GraphCanvas() {[m
+         </AnimatePresence>[m
+ [m
+         {/* 🧠 React Flow Graph */}[m
+[31m-        <ReactFlowProvider>[m
+[31m-          <GraphFlowWithHotkeys[m
+[32m+[m[32m        <div style={{ width: "100%", height: "100%" }}>[m
+[32m+[m[32m          <ReactFlowProvider>[m
+[32m+[m[32m            <GraphFlowWithHotkeys[m
+             onNodesChange={onNodesChange}[m
+             onEdgesChange={onEdgesChange}[m
+             onConnect={onConnect}[m
+[36m@@ -1116,7 +1132,8 @@[m [mexport default function GraphCanvas() {[m
+             searchRef={searchRef}[m
+             isEditableTarget={isEditableTarget}[m
+           />[m
+[31m-        </ReactFlowProvider>[m
+[32m+[m[32m          </ReactFlowProvider>[m
+[32m+[m[32m        </div>[m
+ [m
+         {/* 🔹 Rechtes Notiz-Panel */}[m
+         <ThoughtPanel[m
+[36m@@ -1288,6 +1305,10 @@[m [mfunction GraphFlowWithHotkeys({[m
+   }, [rf, addNodeAt, setNodes, setActiveNodeId, searchRef, isEditableTarget]);[m
+ [m
+   // ✅ Kein fitView → verhindert Viewport-Resets[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    console.log("🔍 GraphFlowWithHotkeys render - nodes:", filteredNodes.length, "edges:", edges.length);[m
+[32m+[m[32m  }, [filteredNodes.length, edges.length]);[m
+[32m+[m
+   return ([m
+     <div[m
+       role="region"[m
