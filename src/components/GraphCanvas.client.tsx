@@ -139,7 +139,7 @@ export const GraphContext = createContext<{
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
 type ToastType = "restore" | "save" | "recovery" | "error" | null;
 
-export default function GraphCanvas() {
+export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
   const addFeedback = useFeedbackStore((s) => s.add);
@@ -273,6 +273,15 @@ export default function GraphCanvas() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 🔗 Session ID routing: Load graph when sessionId changes
+  useEffect(() => {
+    if (sessionId) {
+      // Load the session-specific graph
+      loadFromServer();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   // 🚨 Browser-Warnung bei ungespeicherten Änderungen
   useEffect(() => {
