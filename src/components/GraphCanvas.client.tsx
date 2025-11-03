@@ -27,6 +27,7 @@ import {
   type OnConnect,
   type NodeMouseHandler,
   type XYPosition,
+  type ReactFlowInstance,
   applyNodeChanges,
   applyEdgeChanges,
 } from "reactflow";
@@ -42,6 +43,8 @@ import BranchPanel from "@/components/BranchPanel";
 import TimelinePlayer from "@/components/TimelinePlayer";
 import InsightsPanel from "@/components/InsightsPanel";
 import ContextMenu from "@/components/ContextMenu";
+import RFDebugPanel from "@/components/RFDebugPanel";
+import { attachRFDebug } from "@/utils/rfDebug";
 import {
   saveGraphRemote,
   loadGraphSync,
@@ -70,6 +73,51 @@ import {
 } from "@/lib/feedback/FeedbackStore";
 import { getMostRelevantInsight } from "@/lib/feedback/FeedbackEngine";
 import { motion, AnimatePresence } from "framer-motion";
+import { bbox } from "@/utils/rfDebug";
+
+// --- View & Layout Sanity Utils ---
+type RFNode = import("reactflow").Node;
+
+function normalizeNodes<T extends RFNode>(
+  nodes: T[],
+  gridX = 240,
+  gridY = 140
+) {
+  if (!nodes.length) return { changed: false, nodes } as const;
+
+  const { minX, minY, w, h } = bbox(nodes);
+
+  const tooFar =
+    Math.abs(minX) > 20000 || Math.abs(minY) > 20000 || w > 50000 || h > 50000;
+  const collapsed = w < 10 && h < 10;
+
+  if (tooFar || collapsed) {
+    const fixed = nodes.map((n, i) => ({
+      ...n,
+      position: {
+        x: (i % 5) * gridX,
+        y: Math.floor(i / 5) * gridY,
+      },
+    }));
+    return { changed: true, nodes: fixed as T[] } as const;
+  }
+
+  const dx = minX < 0 ? -minX + 100 : 0;
+  const dy = minY < 0 ? -minY + 100 : 0;
+
+  if (dx !== 0 || dy !== 0) {
+    const shifted = nodes.map((n) => ({
+      ...n,
+      position: {
+        x: (n.position?.x ?? 0) + dx,
+        y: (n.position?.y ?? 0) + dy,
+      },
+    }));
+    return { changed: true, nodes: shifted as T[] } as const;
+  }
+
+  return { changed: false, nodes } as const;
+}
 
 export const GraphContext = createContext<{
   updateNodeNote: (id: string, note: string) => void;
@@ -78,22 +126,24 @@ export const GraphContext = createContext<{
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
 type ToastType = "restore" | "save" | "recovery" | "error" | null;
 
+// Debug mode toggle - set to true for development debugging
+const DEBUG_MODE = process.env.NODE_ENV === "development";
+
 export default function GraphCanvas() {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
   const [motionTest, setMotionTest] = useState(false);
   const [contextNode, setContextNode] = useState<Node | null>(null);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [activeNode, setActiveNode] = useState<Node | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
-  const [nodeCount, setNodeCount] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-  const [lastActiveId, setLastActiveId] = useState<string | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
   const [snapshotPanelOpen, setSnapshotPanelOpen] = useState(false);
   const [branchPanelOpen, setBranchPanelOpen] = useState(false);
@@ -103,6 +153,10 @@ export default function GraphCanvas() {
   const [activeBranch, setActiveBranch] = useState<Branch | null>(null);
   const [diffResult, setDiffResult] = useState<DiffResult | null>(null);
   const [playbackActive, setPlaybackActive] = useState(false);
+  const [flowInstance, setFlowInstance] = useState<ReactFlowInstance | null>(
+    null
+  );
+  const [layoutTrigger, setLayoutTrigger] = useState(0);
   const [originalGraphState, setOriginalGraphState] = useState<{
     nodes: Node[];
     edges: Edge[];
@@ -140,9 +194,9 @@ export default function GraphCanvas() {
         // Try to restore from session manager first
         const savedGraphState = await loadGraphState();
         if (savedGraphState) {
-          setNodes(savedGraphState.nodes ?? []);
+          setNodes(styleNodes(savedGraphState.nodes ?? []));
           setEdges(savedGraphState.edges ?? []);
-          setNodeCount((savedGraphState.nodes?.length ?? 0) + 1);
+          setLayoutTrigger((n) => n + 1);
           setToast({
             type: "recovery",
             message: `📦 Vorheriger Zustand wiederhergestellt (${
@@ -155,9 +209,9 @@ export default function GraphCanvas() {
         // Then sync with remote (CRDT-Sync)
         const result = await syncAndResolve("mergeProps");
         if (result?.merged) {
-          setNodes(result.merged.nodes ?? []);
+          setNodes(styleNodes(result.merged.nodes ?? []));
           setEdges(result.merged.edges ?? []);
-          setNodeCount((result.merged.nodes?.length ?? 0) + 1);
+          setLayoutTrigger((n) => n + 1);
 
           // Konflikte loggen
           if (result.conflicts.length > 0) {
@@ -455,16 +509,46 @@ export default function GraphCanvas() {
     [activeBranch]
   );
 
+  // Selektions-Glow als Helper (keine globalen Styles anfassen)
+  const withGlow = useCallback(
+    (n: Node, active: boolean, hoveredOverride?: boolean) => {
+      const baseStyle = n.style ?? {};
+      const isHovered = hoveredOverride ?? hoveredNodeId === n.id;
+      return {
+        ...n,
+        selected: active,
+        style: {
+          ...baseStyle,
+          transition: "box-shadow 0.4s ease, border 0.25s ease",
+          boxShadow: active
+            ? "0 0 20px rgba(47,243,255,0.8)"
+            : isHovered
+            ? "0 0 10px rgba(47,243,255,0.4)"
+            : "0 0 0 rgba(0,0,0,0)",
+          border: active
+            ? "1px solid rgba(47,243,255,0.5)"
+            : "1px solid transparent",
+          outline: active ? "2px solid #2FF3FF" : undefined,
+          outlineOffset: active ? "2px" : undefined,
+        },
+      };
+    },
+    [hoveredNodeId]
+  );
+
   // 🔄 Node & Edge Handlers
   const onNodesChange: OnNodesChange = useCallback(
     (changes: NodeChange[]) => {
       setNodes((nds) => {
         const updated = applyNodeChanges(changes, nds);
-        saveGraph(updated, edges);
-        return updated;
+        const styled = updated.map((node) =>
+          withGlow(node, node.id === activeNodeId, hoveredNodeId === node.id)
+        );
+        saveGraph(styled, edges);
+        return styled;
       });
     },
-    [edges, saveGraph]
+    [edges, saveGraph, withGlow, activeNodeId, hoveredNodeId]
   );
 
   const onEdgesChange: OnEdgesChange = useCallback(
@@ -488,24 +572,6 @@ export default function GraphCanvas() {
     [nodes, saveGraph]
   );
 
-  // Selektions-Glow als Helper (keine globalen Styles anfassen)
-  const withGlow = useCallback(
-    (n: Node, active: boolean) => ({
-      ...n,
-      selected: active,
-      style: {
-        ...n.style,
-        // sanfter, risikoarmer Glow
-        boxShadow: active ? "0 0 14px rgba(47,243,255,0.9)" : undefined,
-        // optional leichtes Outline als Fallback
-        outline: active ? "2px solid #2FF3FF" : undefined,
-        outlineOffset: active ? "2px" : undefined,
-        // niemals Größe/Position ändern
-      },
-    }),
-    []
-  );
-
   // Visualizer Dim Helper
   const withVisualizerDim = useCallback(
     (n: Node) => {
@@ -525,6 +591,115 @@ export default function GraphCanvas() {
     [visualizerOpen, activeBranch]
   );
 
+  const styleNodes = useCallback(
+    (list: Node[], activeId: string | null = null) =>
+      list.map((node) =>
+        withGlow(node, activeId ? node.id === activeId : node.selected ?? false)
+      ),
+    [withGlow]
+  );
+
+  useEffect(() => {
+    if (!flowInstance || nodes.length === 0) return;
+
+    let changed = false;
+    const fixed = nodes.map((node, index) => {
+      const hasPos =
+        node.position &&
+        typeof node.position.x === "number" &&
+        typeof node.position.y === "number";
+
+      if (!hasPos || (node.position!.x === 0 && node.position!.y === 0)) {
+        changed = true;
+        return {
+          ...node,
+          position: {
+            x: (index % 5) * 220,
+            y: Math.floor(index / 5) * 140,
+          },
+        };
+      }
+
+      return node;
+    });
+
+    if (!changed) return;
+
+    const styled = styleNodes(fixed);
+    setNodes(styled);
+    saveGraph(styled, edges);
+
+    const timeout = window.setTimeout(() => {
+      try {
+        flowInstance.fitView({ padding: 0.3, duration: 800 });
+      } catch (err) {
+        console.warn("fitView failed", err);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [flowInstance, nodes.length, styleNodes, saveGraph, edges]);
+
+  useEffect(() => {
+    if (!layoutTrigger || !flowInstance) return;
+    const timeout = window.setTimeout(() => {
+      try {
+        flowInstance.fitView({ padding: 0.3, duration: 800 });
+      } catch (err) {
+        console.warn("fitView failed", err);
+      }
+      setLayoutTrigger(0); // Reset trigger after fitView
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [layoutTrigger, flowInstance]);
+
+  useEffect(() => {
+    if (!flowInstance) return;
+    if (!nodes.length) return;
+
+    const result = normalizeNodes(nodes);
+    if (result.changed) {
+      setNodes(result.nodes);
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          try {
+            flowInstance.fitView({ padding: 0.35, duration: 800 });
+          } catch (err) {
+            console.warn("fitView normalization failed", err);
+          }
+        }, 250);
+      });
+      return;
+    }
+
+    const { minX, minY, w, h } = bbox(nodes);
+    const absurd =
+      Math.abs(minX) > 10000 ||
+      Math.abs(minY) > 10000 ||
+      w > 20000 ||
+      h > 20000;
+    const collapsed = w < 10 && h < 10;
+
+    if (layoutTrigger > 0 || absurd || collapsed) {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          try {
+            flowInstance.fitView({ padding: 0.35, duration: 800 });
+          } catch (err) {
+            console.warn("fitView auto-adjust failed", err);
+          }
+        }, 250);
+      });
+      if (layoutTrigger > 0) {
+        setLayoutTrigger(0);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flowInstance, nodes.length, layoutTrigger]);
+
+  // 🪄 Einheitlicher Hover/Selection-Style anwenden
+  // REMOVED: This was causing infinite loops. Styling is now handled in onNodesChange
+
   // Playback Handler
   const handlePlaybackSnapshotChange = useCallback(
     async (snapshot: GraphState | null) => {
@@ -542,10 +717,11 @@ export default function GraphCanvas() {
       }
 
       // Animate to snapshot state
-      setNodes(snapshot.nodes ?? []);
+      setNodes(styleNodes(snapshot.nodes ?? []));
+      setLayoutTrigger((n) => n + 1); // Trigger layout update
       setEdges(snapshot.edges ?? []);
     },
-    [nodes, edges, originalGraphState, playbackActive]
+    [nodes, edges, originalGraphState, playbackActive, styleNodes]
   );
 
   const handlePlaybackClose = useCallback(() => {
@@ -554,7 +730,8 @@ export default function GraphCanvas() {
 
     // Restore original state if exists
     if (originalGraphState) {
-      setNodes(originalGraphState.nodes);
+      setNodes(styleNodes(originalGraphState.nodes));
+      setLayoutTrigger((n) => n + 1); // Trigger layout update
       setEdges(originalGraphState.edges);
       setOriginalGraphState(null);
 
@@ -564,7 +741,7 @@ export default function GraphCanvas() {
       });
       setTimeout(() => setToast(null), 3000);
     }
-  }, [originalGraphState]);
+  }, [originalGraphState, styleNodes]);
 
   // Diff Highlight als Helper
   const withDiffHighlight = useCallback(
@@ -620,7 +797,6 @@ export default function GraphCanvas() {
     (_event, node) => {
       setActiveNode(node);
       setActiveNodeId(node.id);
-      setLastActiveId(node.id);
       // Inline Meta-Editor opens automatically via activeNode state
       void saveSession({
         activeId: node.id,
@@ -639,8 +815,9 @@ export default function GraphCanvas() {
     setPanelOpen(false);
     setMenuPos(null);
     setContextNode(null);
+    setHoveredNodeId(null);
     void saveSession({ activeId: null, panel: false });
-  }, [setNodes, setActiveNodeId, withGlow]);
+  }, [setNodes, setActiveNodeId, withGlow, setHoveredNodeId]);
 
   const onNodeDragStop: NodeMouseHandler = useCallback(() => {
     // Nichts tun → Selektion/Glow bleibt erhalten
@@ -655,6 +832,14 @@ export default function GraphCanvas() {
   const closeContextMenu = useCallback(() => {
     setMenuPos(null);
     setContextNode(null);
+  }, []);
+
+  const onNodeMouseEnter: NodeMouseHandler = useCallback((_, node) => {
+    setHoveredNodeId(node.id);
+  }, []);
+
+  const onNodeMouseLeave: NodeMouseHandler = useCallback(() => {
+    setHoveredNodeId(null);
   }, []);
 
   // 🧠 Node-Notiz aktualisieren
@@ -673,32 +858,41 @@ export default function GraphCanvas() {
 
   // ➕ Node hinzufügen
   const addNode = useCallback(() => {
-    const id = crypto.randomUUID();
+    if (!flowInstance) return;
+
+    const center = flowInstance.screenToFlowPosition({
+      x: window.innerWidth / 2 - 120 + (Math.random() * 100 - 50),
+      y: window.innerHeight / 2 - 60 + (Math.random() * 100 - 50),
+    });
+
     const newNode: Node = {
-      id,
-      position: { x: Math.random() * 400 + 100, y: Math.random() * 200 + 100 },
-      data: { label: `🧠 Gedanke ${nodeCount}`, note: "" },
-      style: {
-        background: "#475569",
-        color: "white",
-        padding: 10,
-        borderRadius: 8,
-        cursor: "pointer",
-      },
+      id: `node_${Date.now()}`,
+      position: center,
+      data: { label: `Neuer Gedanke ${nodes.length + 1}` },
+      type: "default",
     };
+
     setNodes((nds) => {
-      const updated = [...nds, newNode];
+      const updated = [...nds, withGlow(newNode, false)];
       saveGraph(updated, edges);
       return updated;
     });
-    setNodeCount((n) => n + 1);
-  }, [edges, nodeCount, saveGraph]);
+    setLayoutTrigger((n) => n + 1);
+
+    setTimeout(() => {
+      try {
+        flowInstance.fitView({ padding: 0.3, duration: 600 });
+      } catch (err) {
+        console.warn("fitView failed", err);
+      }
+    }, 150);
+  }, [flowInstance, nodes.length, withGlow, saveGraph, edges]);
 
   // 🧹 Graph löschen
   const clearGraph = useCallback(async () => {
     setNodes([]);
     setEdges([]);
-    setNodeCount(1);
+    setHoveredNodeId(null);
     await localforage.removeItem("noion-graph");
     const keys = await localforage.keys();
     for (const key of keys)
@@ -718,7 +912,8 @@ export default function GraphCanvas() {
   const loadFromServer = async () => {
     try {
       const data = await loadGraphSync();
-      setNodes(data.nodes);
+      setNodes(styleNodes(data.nodes ?? []));
+      setLayoutTrigger((n) => n + 1); // Trigger layout update
       setEdges(data.edges);
       console.log("✅ Synced from server", { meta: data.meta });
     } catch (err) {
@@ -752,7 +947,7 @@ export default function GraphCanvas() {
     // Keine Nodes verändern, wenn kein Treffer vorhanden
     if (searchTerm === "" || filteredNodes.length === 0) return;
 
-    const activeNodeId =
+    const activeMatchId =
       selectedIndex >= 0 && selectedIndex < filteredNodes.length
         ? filteredNodes[selectedIndex].id
         : null;
@@ -763,21 +958,27 @@ export default function GraphCanvas() {
         const isMatch = n.data.label
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
-        const isActive = n.id === activeNodeId;
-        return {
-          ...n,
-          selected: isActive,
-          style: {
-            ...n.style,
-            boxShadow: isActive
-              ? "0 0 14px rgba(47,243,255,0.9)"
-              : isMatch
-              ? "0 0 8px rgba(47,243,255,0.4)"
-              : undefined,
-            outline: isActive ? "2px solid #2FF3FF" : undefined,
-            outlineOffset: isActive ? "2px" : undefined,
-          },
-        };
+        const isActive = !!activeMatchId && n.id === activeMatchId;
+        const enhanced = withGlow(n, isActive, hoveredNodeId === n.id);
+        if (!isActive && isMatch && hoveredNodeId !== n.id) {
+          return {
+            ...enhanced,
+            style: {
+              ...enhanced.style,
+              boxShadow: "0 0 8px rgba(47,243,255,0.35)",
+            },
+          };
+        }
+        if (!isActive && !isMatch && hoveredNodeId !== n.id) {
+          return {
+            ...enhanced,
+            style: {
+              ...enhanced.style,
+              boxShadow: "0 0 0 rgba(0,0,0,0)",
+            },
+          };
+        }
+        return enhanced;
       })
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -843,296 +1044,316 @@ export default function GraphCanvas() {
     <GraphContext.Provider value={{ updateNodeNote }}>
       <div className="relative flex min-h-screen w-full flex-1 flex-col bg-filon-bg">
         {/* 🔧 Toolbar */}
-        <div className="absolute top-sm left-sm z-10 flex gap-sm">
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="🔍 Suchbegriff eingeben..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setSelectedIndex(-1); // reset navigation
-            }}
-            onKeyDown={(e) => {
-              const matching = nodes.filter((n) =>
-                n.data.label.toLowerCase().includes(searchTerm.toLowerCase())
-              );
-
-              // ↓ nächster Treffer
-              if (e.key === "ArrowDown" && matching.length > 0) {
-                e.preventDefault();
-                setSelectedIndex((prev) =>
-                  prev + 1 < matching.length ? prev + 1 : 0
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="fixed top-0 left-0 z-50 flex h-14 w-full items-center border-b border-[var(--border-glow)] bg-[rgba(10,15,18,0.7)] px-6 shadow-[var(--shadow-soft)] backdrop-blur-md"
+        >
+          <div className="flex w-full items-center gap-sm overflow-x-auto">
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="🔍 Suchbegriff eingeben..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setSelectedIndex(-1); // reset navigation
+              }}
+              onKeyDown={(e) => {
+                const matching = nodes.filter((n) =>
+                  n.data.label.toLowerCase().includes(searchTerm.toLowerCase())
                 );
-                return;
-              }
 
-              // ↑ vorheriger Treffer
-              if (e.key === "ArrowUp" && matching.length > 0) {
-                e.preventDefault();
-                setSelectedIndex((prev) =>
-                  prev - 1 >= 0 ? prev - 1 : matching.length - 1
-                );
-                return;
-              }
-
-              // Enter → Panel für aktuellen Node öffnen
-              if (
-                e.key === "Enter" &&
-                matching.length > 0 &&
-                selectedIndex >= 0
-              ) {
-                e.preventDefault();
-                const current = matching[selectedIndex];
-                if (current) {
-                  setActiveNodeId(current.id);
-                  // visuelles Feedback
-                  setNodes((nds) =>
-                    nds.map((n) => ({
-                      ...n,
-                      selected: n.id === current.id,
-                      style: {
-                        ...n.style,
-                        boxShadow:
-                          n.id === current.id
-                            ? "0 0 14px rgba(47,243,255,0.9)"
-                            : undefined,
-                        outline:
-                          n.id === current.id ? "2px solid #2FF3FF" : undefined,
-                        outlineOffset: n.id === current.id ? "2px" : undefined,
-                      },
-                    }))
+                // ↓ nächster Treffer
+                if (e.key === "ArrowDown" && matching.length > 0) {
+                  e.preventDefault();
+                  setSelectedIndex((prev) =>
+                    prev + 1 < matching.length ? prev + 1 : 0
                   );
+                  return;
                 }
-                return;
-              }
 
-              // Esc → Suche leeren & Auswahl zurücksetzen
-              if (e.key === "Escape") {
-                e.preventDefault();
-                setSearchTerm("");
-                setSelectedIndex(-1);
-                setNodes((nds) =>
-                  nds.map((n) => ({
-                    ...n,
-                    selected: false,
-                    style: {
-                      ...n.style,
-                      boxShadow: undefined,
-                      outline: undefined,
-                      outlineOffset: undefined,
-                    },
-                  }))
-                );
-                return;
+                // ↑ vorheriger Treffer
+                if (e.key === "ArrowUp" && matching.length > 0) {
+                  e.preventDefault();
+                  setSelectedIndex((prev) =>
+                    prev - 1 >= 0 ? prev - 1 : matching.length - 1
+                  );
+                  return;
+                }
+
+                // Enter → Panel für aktuellen Node öffnen
+                if (
+                  e.key === "Enter" &&
+                  matching.length > 0 &&
+                  selectedIndex >= 0
+                ) {
+                  e.preventDefault();
+                  const current = matching[selectedIndex];
+                  if (current) {
+                    setActiveNodeId(current.id);
+                    // visuelles Feedback
+                    setNodes((nds) =>
+                      nds.map((n) =>
+                        withGlow(n, n.id === current.id, hoveredNodeId === n.id)
+                      )
+                    );
+                  }
+                  return;
+                }
+
+                // Esc → Suche leeren & Auswahl zurücksetzen
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  setSearchTerm("");
+                  setSelectedIndex(-1);
+                  setNodes((nds) => nds.map((n) => withGlow(n, false, false)));
+                  setHoveredNodeId(null);
+                  return;
+                }
+              }}
+              className="px-sm py-xs rounded-lg bg-filon-surface text-filon-text text-sm outline-none transition-all duration-fast focus-glow"
+              aria-label="Search nodes"
+            />
+            <button
+              onClick={addNode}
+              className="focus-glow px-sm py-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Add new node"
+            >
+              + Node
+            </button>
+            <button
+              onClick={clearGraph}
+              className="focus-glow px-sm py-xs rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Clear graph"
+            >
+              Clear
+            </button>
+            <button
+              onClick={saveToServer}
+              className="focus-glow px-sm py-xs rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Save graph to database"
+            >
+              💾 Save DB
+            </button>
+            <button
+              onClick={loadFromServer}
+              className="focus-glow px-sm py-xs rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Load graph from database"
+            >
+              📥 Load DB
+            </button>
+            <button
+              onClick={() => setSnapshotPanelOpen(!snapshotPanelOpen)}
+              role="button"
+              aria-label={
+                snapshotPanelOpen
+                  ? "Close Snapshot Panel"
+                  : "Open Snapshot Panel"
               }
-            }}
-            className="px-sm py-xs rounded-lg bg-filon-surface text-filon-text text-sm outline-none transition-all duration-fast"
-            aria-label="Search nodes"
-          />
-          <button
-            onClick={addNode}
-            className="px-sm py-xs rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Add new node"
-          >
-            + Node
-          </button>
-          <button
-            onClick={clearGraph}
-            className="px-sm py-xs rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Clear graph"
-          >
-            Clear
-          </button>
-          <button
-            onClick={saveToServer}
-            className="px-sm py-xs rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Save graph to database"
-          >
-            💾 Save DB
-          </button>
-          <button
-            onClick={loadFromServer}
-            className="px-sm py-xs rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Load graph from database"
-          >
-            📥 Load DB
-          </button>
-          <button
-            onClick={() => setSnapshotPanelOpen(!snapshotPanelOpen)}
-            role="button"
-            aria-label={
-              snapshotPanelOpen ? "Close Snapshot Panel" : "Open Snapshot Panel"
-            }
-            className={`px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
-              snapshotPanelOpen
-                ? "bg-purple-700 hover:bg-purple-600 border-2 border-purple-400"
-                : "bg-purple-600 hover:bg-purple-500"
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-base">🕒</span>
-              <span>{snapshotPanelOpen ? "Close Snapshots" : "Snapshots"}</span>
-            </span>
-          </button>
-          <button
-            onClick={() => setBranchPanelOpen(!branchPanelOpen)}
-            role="button"
-            aria-label={
-              branchPanelOpen ? "Close Branch Panel" : "Open Branch Panel"
-            }
-            className={`px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
-              branchPanelOpen
-                ? "bg-green-700 hover:bg-green-600 border-2 border-green-400"
-                : "bg-green-600 hover:bg-green-500"
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <span className="text-base">🌿</span>
-              <span>{branchPanelOpen ? "Close Branches" : "Branches"}</span>
-            </span>
-          </button>
-          <select
-            value={currentMindState}
-            onChange={(e) => setCurrentMindState(e.target.value as MoodKey)}
-            className="px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Select mood state"
-          >
-            <option value="focus">🎯 Focus</option>
-            <option value="flow">💫 Flow</option>
-            <option value="insight">💡 Insight</option>
-            <option value="synthesis">🔮 Synthesis</option>
-            <option value="resonance">✨ Resonance</option>
-          </select>
-          <button
-            onClick={() => setMotionTest(!motionTest)}
-            className={`px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
-              motionTest
-                ? "bg-orange-600 hover:bg-orange-700 border-2 border-orange-400"
-                : "bg-slate-600 hover:bg-slate-700"
-            }`}
-            aria-label="Toggle motion test mode"
-          >
-            🧪 Motion Test
-          </button>
-          <button
-            onClick={() => {
-              const text = JSON.stringify({ nodes, edges }, null, 2);
-              navigator.clipboard.writeText(text);
-              setToast({
-                type: "save",
-                message: "📋 Graph JSON copied to clipboard!",
-              });
-              setTimeout(() => setToast(null), 2000);
-            }}
-            className="px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Copy current graph JSON"
-          >
-            📋 Copy Graph
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                const text = await navigator.clipboard.readText();
-                const parsed = JSON.parse(text);
-                if (!parsed.nodes) {
+              className={`focus-glow px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
+                snapshotPanelOpen
+                  ? "bg-purple-700 hover:bg-purple-600 border-2 border-purple-400"
+                  : "bg-purple-600 hover:bg-purple-500"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-base">🕒</span>
+                <span>
+                  {snapshotPanelOpen ? "Close Snapshots" : "Snapshots"}
+                </span>
+              </span>
+            </button>
+            <button
+              onClick={() => setBranchPanelOpen(!branchPanelOpen)}
+              role="button"
+              aria-label={
+                branchPanelOpen ? "Close Branch Panel" : "Open Branch Panel"
+              }
+              className={`focus-glow px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
+                branchPanelOpen
+                  ? "bg-green-700 hover:bg-green-600 border-2 border-green-400"
+                  : "bg-green-600 hover:bg-green-500"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <span className="text-base">🌿</span>
+                <span>{branchPanelOpen ? "Close Branches" : "Branches"}</span>
+              </span>
+            </button>
+            <select
+              value={currentMindState}
+              onChange={(e) => setCurrentMindState(e.target.value as MoodKey)}
+              className="focus-glow px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Select mood state"
+            >
+              <option value="focus">🎯 Focus</option>
+              <option value="flow">💫 Flow</option>
+              <option value="insight">💡 Insight</option>
+              <option value="synthesis">🔮 Synthesis</option>
+              <option value="resonance">✨ Resonance</option>
+            </select>
+            <button
+              onClick={() => setMotionTest(!motionTest)}
+              className={`focus-glow px-sm py-xs rounded-lg text-white text-sm font-medium shadow-md transition-all duration-fast ${
+                motionTest
+                  ? "bg-orange-600 hover:bg-orange-700 border-2 border-orange-400"
+                  : "bg-slate-600 hover:bg-slate-700"
+              }`}
+              aria-label="Toggle motion test mode"
+            >
+              🧪 Motion Test
+            </button>
+            <button
+              onClick={() => {
+                const text = JSON.stringify({ nodes, edges }, null, 2);
+                navigator.clipboard.writeText(text);
+                setToast({
+                  type: "save",
+                  message: "📋 Graph JSON copied to clipboard!",
+                });
+                setTimeout(() => setToast(null), 2000);
+              }}
+              className="focus-glow px-sm py-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Copy current graph JSON"
+            >
+              📋 Copy Graph
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const text = await navigator.clipboard.readText();
+                  const parsed = JSON.parse(text);
+                  if (!parsed.nodes) {
+                    setToast({
+                      type: "error",
+                      message: "❌ Invalid graph format",
+                    });
+                    setTimeout(() => setToast(null), 2000);
+                    return;
+                  }
+                  // Import via API
+                  const response = await fetch("/api/graph/import", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(parsed),
+                  });
+                  if (response.ok) {
+                    // Reload graph
+                    loadFromServer();
+                    setToast({
+                      type: "save",
+                      message: "✅ Graph imported successfully!",
+                    });
+                    setTimeout(() => setToast(null), 2000);
+                  } else {
+                    setToast({
+                      type: "error",
+                      message: "❌ Import failed",
+                    });
+                    setTimeout(() => setToast(null), 2000);
+                  }
+                } catch (err) {
+                  console.error("Import error:", err);
                   setToast({
                     type: "error",
-                    message: "❌ Invalid graph format",
+                    message: "❌ Failed to read clipboard",
+                  });
+                  setTimeout(() => setToast(null), 2000);
+                }
+              }}
+              className="focus-glow px-sm py-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Import graph from clipboard"
+            >
+              📥 Import Graph
+            </button>
+            <button
+              onClick={() => {
+                flowInstance?.fitView({ padding: 0.35, duration: 600 });
+              }}
+              className="focus-glow px-sm py-xs rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Reset viewport to fit all nodes"
+            >
+              🔍 Reset View
+            </button>
+            <button
+              onClick={() => {
+                if (!flowInstance || !nodes.length) return;
+                const result = normalizeNodes(nodes);
+                if (result.changed) {
+                  setNodes(result.nodes);
+                }
+                setLayoutTrigger((n) => n + 1);
+                setTimeout(() => {
+                  try {
+                    flowInstance.fitView({ padding: 0.35, duration: 600 });
+                  } catch (err) {
+                    console.warn("fitView recenter failed", err);
+                  }
+                }, 200);
+              }}
+              className="focus-glow px-sm py-xs rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Recenter graph and normalize positions"
+            >
+              🧭 Recenter Graph
+            </button>
+            <button
+              onClick={async () => {
+                if (!activeNodeId) {
+                  setToast({
+                    type: "error",
+                    message: "⚠️ Please select a node first",
                   });
                   setTimeout(() => setToast(null), 2000);
                   return;
                 }
-                // Import via API
-                const response = await fetch("/api/graph/import", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(parsed),
-                });
-                if (response.ok) {
-                  // Reload graph
-                  loadFromServer();
-                  setToast({
-                    type: "save",
-                    message: "✅ Graph imported successfully!",
+                try {
+                  const response = await fetch("/api/graph/duplicate", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ nodeId: activeNodeId }),
                   });
-                  setTimeout(() => setToast(null), 2000);
-                } else {
-                  setToast({
-                    type: "error",
-                    message: "❌ Import failed",
-                  });
-                  setTimeout(() => setToast(null), 2000);
-                }
-              } catch (err) {
-                console.error("Import error:", err);
-                setToast({
-                  type: "error",
-                  message: "❌ Failed to read clipboard",
-                });
-                setTimeout(() => setToast(null), 2000);
-              }
-            }}
-            className="px-sm py-xs rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Import graph from clipboard"
-          >
-            📥 Import Graph
-          </button>
-          <button
-            onClick={async () => {
-              if (!activeNodeId) {
-                setToast({
-                  type: "error",
-                  message: "⚠️ Please select a node first",
-                });
-                setTimeout(() => setToast(null), 2000);
-                return;
-              }
-              try {
-                const response = await fetch("/api/graph/duplicate", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ nodeId: activeNodeId }),
-                });
-                const result = await response.json();
-                if (result.ok) {
-                  // Reload from server
-                  loadFromServer();
-                  setToast({
-                    type: "save",
-                    message: `✅ Duplicated: ${result.duplicate.label}`,
-                  });
-                  setTimeout(() => setToast(null), 2000);
-                } else {
+                  const result = await response.json();
+                  if (result.ok) {
+                    // Reload from server
+                    loadFromServer();
+                    setToast({
+                      type: "save",
+                      message: `✅ Duplicated: ${result.duplicate.label}`,
+                    });
+                    setTimeout(() => setToast(null), 2000);
+                  } else {
+                    setToast({
+                      type: "error",
+                      message: "❌ Duplication failed",
+                    });
+                    setTimeout(() => setToast(null), 2000);
+                  }
+                } catch (err) {
+                  console.error("Duplicate error:", err);
                   setToast({
                     type: "error",
                     message: "❌ Duplication failed",
                   });
                   setTimeout(() => setToast(null), 2000);
                 }
-              } catch (err) {
-                console.error("Duplicate error:", err);
-                setToast({
-                  type: "error",
-                  message: "❌ Duplication failed",
-                });
-                setTimeout(() => setToast(null), 2000);
-              }
-            }}
-            className="px-sm py-xs rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
-            aria-label="Duplicate selected node"
-          >
-            🔄 Duplicate Node
-          </button>
-        </div>
+              }}
+              className="focus-glow px-sm py-xs rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
+              aria-label="Duplicate selected node"
+            >
+              🔄 Duplicate Node
+            </button>
+          </div>
+        </motion.header>
 
         {/* 💾 Status Badge */}
-        <div className="absolute top-3 right-4 z-50">
+        <div className="absolute top-20 right-4 z-50">
           <SaveStatusBadge state={saveState} />
         </div>
 
         {/* 🔵 Session Badge */}
-        <div className="absolute top-2 right-2 z-50">
+        <div className="absolute top-24 right-2 z-50">
           <SessionBadge
             status={
               saveState === "saving"
@@ -1146,7 +1367,7 @@ export default function GraphCanvas() {
 
         {/* 🌿 Branch Badge */}
         {activeBranch && (
-          <div className="absolute top-2 left-2 z-50">
+          <div className="absolute top-24 left-2 z-50">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1170,9 +1391,9 @@ export default function GraphCanvas() {
             <SnapshotPanel
               currentGraphState={{ nodes, edges }}
               onRestore={(restoredNodes, restoredEdges) => {
-                setNodes(restoredNodes);
+                setNodes(styleNodes(restoredNodes));
                 setEdges(restoredEdges);
-                setNodeCount(restoredNodes.length + 1);
+                setLayoutTrigger((n) => n + 1);
                 setToast({
                   type: "restore",
                   message: "✅ Snapshot restored",
@@ -1192,9 +1413,9 @@ export default function GraphCanvas() {
             <BranchPanel
               currentGraphState={{ nodes, edges }}
               onRestore={(restoredNodes, restoredEdges) => {
-                setNodes(restoredNodes);
+                setNodes(styleNodes(restoredNodes));
                 setEdges(restoredEdges);
-                setNodeCount(restoredNodes.length + 1);
+                setLayoutTrigger((n) => n + 1);
                 setToast({
                   type: "restore",
                   message: "✅ Branch switched",
@@ -1244,10 +1465,14 @@ export default function GraphCanvas() {
             onPaneClick={onPaneClick}
             onNodeDragStop={onNodeDragStop}
             onNodeContextMenu={onNodeContextMenu}
+            onNodeMouseEnter={onNodeMouseEnter}
+            onNodeMouseLeave={onNodeMouseLeave}
+            registerInstance={setFlowInstance}
             contextNode={contextNode}
             menuPos={menuPos}
             closeContextMenu={closeContextMenu}
             filteredNodes={filteredNodes}
+            rawNodes={nodes}
             edges={edges}
             setNodes={setNodes}
             withGlow={withGlow}
@@ -1517,10 +1742,14 @@ function GraphFlowWithHotkeys({
   onPaneClick,
   onNodeDragStop,
   onNodeContextMenu,
+  onNodeMouseEnter,
+  onNodeMouseLeave,
+  registerInstance,
   contextNode,
   menuPos,
   closeContextMenu,
   filteredNodes,
+  rawNodes,
   edges,
   setNodes,
   withGlow,
@@ -1537,13 +1766,17 @@ function GraphFlowWithHotkeys({
   onPaneClick: () => void;
   onNodeDragStop: NodeMouseHandler;
   onNodeContextMenu: NodeMouseHandler;
+  onNodeMouseEnter: NodeMouseHandler;
+  onNodeMouseLeave: NodeMouseHandler;
+  registerInstance: (instance: ReactFlowInstance) => void;
   contextNode: Node | null;
   menuPos: { x: number; y: number } | null;
   closeContextMenu: () => void;
-  filteredNodes: Node[];
+  filteredNodes?: Node[];
+  rawNodes: Node[];
   edges: Edge[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
-  withGlow: (n: Node, active: boolean) => Node;
+  withGlow: (n: Node, active: boolean, hovered?: boolean) => Node;
   setActiveNodeId: (id: string | null) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
   isEditableTarget: (e: EventTarget | null) => boolean;
@@ -1554,46 +1787,66 @@ function GraphFlowWithHotkeys({
   const { currentMindState } = useMindProgress();
   const mood = getMoodPreset(currentMindState);
 
+  // 🎯 Wrap registerInstance to trigger initial fitView
+  const handleInit = useCallback(
+    (instance: ReactFlowInstance) => {
+      registerInstance(instance);
+      if (DEBUG_MODE) {
+        attachRFDebug(instance, () => rawNodes); // Debug an Fenster hängen
+      }
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          try {
+            instance.fitView({ padding: 0.35, duration: 600 });
+          } catch (e) {
+            if (DEBUG_MODE) console.warn("fitView init failed", e);
+          }
+        }, 200);
+      });
+    },
+    [registerInstance, rawNodes]
+  );
+
   const addNodeAt = useCallback(
-    (pos: XYPosition) => {
+    (pos?: XYPosition) => {
       setNodes((nds) => {
         const id = `n_${Date.now()}`;
-        const cleared = nds.map((n) => ({
-          ...n,
-          selected: false,
-          style: {
-            ...n.style,
-            boxShadow: undefined,
-            outline: undefined,
-            outlineOffset: undefined,
-          },
-        }));
-        const newNode: Node = {
+        const cleared = nds.map((node) => withGlow(node, false));
+        const jitterX = Math.random() * 100 - 50;
+        const jitterY = Math.random() * 100 - 50;
+        const center = pos
+          ? pos
+          : rf.screenToFlowPosition({
+              x: window.innerWidth / 2 - 120 + jitterX,
+              y: window.innerHeight / 2 - 60 + jitterY,
+            });
+        const baseNode: Node = {
           id,
-          position: pos,
+          position: center,
           data: { label: "🧠 Neuer Gedanke", note: "" },
           type: "default",
           selected: true,
           style: {
-            ...(cleared[0]?.style ?? {}),
             background: "#475569",
             color: "white",
             padding: 10,
             borderRadius: 8,
             cursor: "pointer",
-            boxShadow: "0 0 14px rgba(47,243,255,0.9)",
-            outline: "2px solid #2FF3FF",
-            outlineOffset: "2px",
           },
         };
-        return [...cleared, newNode];
+        const styledNewNode = withGlow(baseNode, true);
+        return [...cleared, styledNewNode];
       });
-      // Zoom to fit all nodes after adding
-      setTimeout(() => {
-        rf.fitView({ padding: 0.2 });
-      }, 100);
+
+      window.setTimeout(() => {
+        try {
+          rf.fitView({ padding: 0.25, duration: 600 });
+        } catch (err) {
+          console.warn("fitView failed", err);
+        }
+      }, 200);
     },
-    [setNodes, rf]
+    [setNodes, rf, withGlow]
   );
 
   useEffect(() => {
@@ -1630,18 +1883,7 @@ function GraphFlowWithHotkeys({
       // "Escape" -> Selektion aufheben & Panel schließen
       if (e.key === "Escape") {
         e.preventDefault();
-        setNodes((nds) =>
-          nds.map((n) => ({
-            ...n,
-            selected: false,
-            style: {
-              ...n.style,
-              boxShadow: undefined,
-              outline: undefined,
-              outlineOffset: undefined,
-            },
-          }))
-        );
+        setNodes((nds) => nds.map((n) => withGlow(n, false)));
         setActiveNodeId(null);
         return;
       }
@@ -1649,21 +1891,31 @@ function GraphFlowWithHotkeys({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [rf, addNodeAt, setNodes, setActiveNodeId, searchRef, isEditableTarget]);
-
-  // ✅ Kein fitView → verhindert Viewport-Resets
+  }, [
+    rf,
+    addNodeAt,
+    setNodes,
+    setActiveNodeId,
+    searchRef,
+    isEditableTarget,
+    withGlow,
+  ]);
 
   return (
     <div
       id="canvas-shell"
-      className="flex w-full flex-1 justify-center bg-[#0a0a0a] px-6 pb-6 pt-4"
+      className="flex w-full flex-1 justify-center bg-[#0a0a0a] px-6 pb-6 pt-24"
     >
       <div
         id="graph-container"
         role="region"
         aria-label="Thought Graph"
-        className="relative flex-1 min-h-[80vh] w-full overflow-hidden rounded-[var(--radius-lg)] bg-[var(--background)] shadow-[var(--shadow-soft)]"
-        style={{ height: "calc(100vh - 4rem)" }}
+        className="relative flex-1 min-h-[80vh] w-full rounded-[var(--radius-lg)] bg-[var(--background)] shadow-[var(--shadow-soft)]"
+        style={{
+          height: "calc(100vh - 4rem)",
+          pointerEvents: "auto",
+          zIndex: 0,
+        }}
       >
         <style>
           {`
@@ -1682,8 +1934,8 @@ function GraphFlowWithHotkeys({
           `}
         </style>
         <ReactFlow
-          className="react-flow-canvas"
-          nodes={filteredNodes}
+          className="react-flow-subtle-cyan"
+          nodes={rawNodes}
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
@@ -1692,24 +1944,37 @@ function GraphFlowWithHotkeys({
           onPaneClick={onPaneClick}
           onNodeDragStop={onNodeDragStop}
           onNodeContextMenu={onNodeContextMenu}
+          onNodeMouseEnter={onNodeMouseEnter}
+          onNodeMouseLeave={onNodeMouseLeave}
           fitView
-          minZoom={0.25}
-          maxZoom={1.5}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          nodeOrigin={[0.5, 0.5]}
           panOnDrag
           zoomOnScroll
+          zoomOnPinch
+          selectionOnDrag
+          minZoom={0.25}
+          maxZoom={1.5}
           proOptions={{ hideAttribution: true }}
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "100%", zIndex: 1 }}
+          onInit={handleInit}
         >
           <Background color="rgba(47,243,255,0.08)" gap={20} size={1} />
-          <Controls
-            position="bottom-right"
-            style={{ color: "var(--accent)" }}
-            showInteractive
-          />
           <MiniMap
             nodeColor={() => "#2ff3ff"}
             maskColor="rgba(10,15,18,0.85)"
-            style={{ borderRadius: "8px" }}
+            style={{ borderRadius: "8px", zIndex: 2 }}
+          />
+          <Controls
+            showZoom
+            showFitView
+            showInteractive
+            position="bottom-left"
+            style={{
+              color: "var(--accent)",
+              zIndex: 3,
+              pointerEvents: "auto",
+            }}
           />
         </ReactFlow>
         {isLoading && (
@@ -1724,6 +1989,7 @@ function GraphFlowWithHotkeys({
             ⚠️ No nodes rendered
           </div>
         )}
+        {DEBUG_MODE && <RFDebugPanel rf={rf} nodesProvider={() => rawNodes} />}
       </div>
       {menuPos && contextNode && (
         <div

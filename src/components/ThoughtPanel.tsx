@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import localforage from "localforage";
 import ReactMarkdown from "react-markdown";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 
 export default function ThoughtPanel({
-  isForcedOpen,
+  isForcedOpen: _isForcedOpen,
   onPanelClose,
 }: {
   isForcedOpen?: boolean;
@@ -76,41 +77,46 @@ export default function ThoughtPanel({
     }
   }, [activeNodeId, showPreview]);
 
-  if (!activeNodeId) return null;
-
   return (
-    <aside
-      className="fixed right-0 top-0 h-full w-80 bg-filon-surface/95 border-l border-zinc-700 p-md text-filon-text z-[9999] backdrop-blur-md shadow-lg flex flex-col transition-all duration-medium"
-      role="dialog"
-      aria-label="Thought Node Details"
-      aria-description="Shows details and notes for the selected thought node"
-    >
-      <div className="flex justify-between items-center mb-md">
-        <h2 className="text-lg font-semibold">🧠 Node {activeNodeId}</h2>
-        <button
-          onClick={() => setShowPreview((p) => !p)}
-          className="text-xs px-sm py-xs rounded bg-zinc-700 hover:bg-zinc-600 transition-all duration-fast"
-          aria-label={
-            showPreview ? "Switch to edit mode" : "Switch to preview mode"
-          }
+    <AnimatePresence>
+      {activeNodeId && (
+        <motion.aside
+          initial={{ x: 320, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 320, opacity: 0 }}
+          transition={{ duration: 0.65, ease: [0.4, 0.0, 0.2, 1] }}
+          className="fixed right-0 top-0 z-[9999] flex h-full w-80 flex-col border-l border-zinc-700 bg-filon-surface/95 p-md text-filon-text shadow-lg backdrop-blur-md"
+          role="dialog"
+          aria-label="Thought Node Details"
         >
-          {showPreview ? "Bearbeiten" : "Vorschau"}
-        </button>
-      </div>
+          <div className="mb-md flex items-center justify-between">
+            <h2 className="text-lg font-semibold">🧠 Node {activeNodeId}</h2>
+            <button
+              onClick={() => setShowPreview((p) => !p)}
+              className="focus-glow rounded bg-zinc-700 px-sm py-xs text-xs transition-all duration-fast hover:bg-zinc-600"
+              aria-label={
+                showPreview ? "Switch to edit mode" : "Switch to preview mode"
+              }
+            >
+              {showPreview ? "Bearbeiten" : "Vorschau"}
+            </button>
+          </div>
 
-      {showPreview ? (
-        <div className="overflow-y-auto prose prose-invert max-w-none">
-          <ReactMarkdown>{note || "_(leer)_"}</ReactMarkdown>
-        </div>
-      ) : (
-        <textarea
-          ref={editorRef}
-          value={note}
-          onChange={handleChange}
-          placeholder="✏️ Schreibe deine Gedanken hier … (Markdown unterstützt)"
-          className="flex-1 bg-zinc-800 text-sm text-white rounded-md p-3 resize-none outline-none border border-zinc-700 focus:border-sky-400"
-        />
+          {showPreview ? (
+            <div className="prose prose-invert max-w-none overflow-y-auto">
+              <ReactMarkdown>{note || "_(leer)_"}</ReactMarkdown>
+            </div>
+          ) : (
+            <textarea
+              ref={editorRef}
+              value={note}
+              onChange={handleChange}
+              placeholder="✏️ Schreibe deine Gedanken hier … (Markdown unterstützt)"
+              className="focus-glow flex-1 resize-none rounded-md border border-zinc-700 bg-zinc-800 p-3 text-sm text-white outline-none"
+            />
+          )}
+        </motion.aside>
       )}
-    </aside>
+    </AnimatePresence>
   );
 }

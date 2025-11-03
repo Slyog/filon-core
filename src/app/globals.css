@@ -203,3 +203,58 @@ body.motion-test * {
   transition: all 0.3s;
   animation: node-active-pulse 2s ease-in-out infinite;
 }
+
+/* --- Focus Pulse Glow --- */
+@keyframes filon-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(47, 243, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(47, 243, 255, 0.8);
+  }
+}
+
+.focus-glow:focus-visible {
+  animation: filon-glow 1.6s ease-in-out infinite;
+  outline: none;
+}
+
+.react-flow__pane,
+.react-flow__node,
+.react-flow__edges {
+  pointer-events: auto !important;
+}
+
+.react-flow__background,
+.react-flow__minimap,
+.react-flow__controls {
+  z-index: 3 !important;
+}
+
+/* RF selbst positioniert Nodes via translate(...) → nicht überschreiben */
+.react-flow__node {
+  transform-origin: 0 0 !important;
+}
+
+/* Keine globalen *-Transitions auf RF-Innereien */
+.react-flow * {
+  transition: none !important;
+}
+
+/* Nur der innere Wrapper darf skalieren */
+.filon-node-inner {
+  transition: transform 0.25s ease, box-shadow 0.35s ease,
+    border-color 0.35s ease;
+  will-change: transform, box-shadow;
+}
+
+.filon-node-hovered {
+  transform: scale(1.03);
+  box-shadow: 0 0 10px rgba(47, 243, 255, 0.35);
+}
+
+.filon-node-selected {
+  border-color: rgba(47, 243, 255, 0.5) !important;
+  box-shadow: 0 0 20px rgba(47, 243, 255, 0.7);
+}
