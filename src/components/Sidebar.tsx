@@ -21,7 +21,10 @@ export default function Sidebar() {
       const matchesSearch = s.title
         .toLowerCase()
         .includes(search.toLowerCase());
-      const matchesFilter = filter === "All" || s.category === filter;
+      const matchesFilter =
+        filter === "All" ||
+        s.category === filter ||
+        (filter === "Other" && !s.category); // Include undefined categories in "Other"
       return matchesSearch && matchesFilter;
     });
   }, [sessions, search, filter]);
