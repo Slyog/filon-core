@@ -84,7 +84,12 @@ import { startVoiceCapture } from "@/lib/voiceInput";
 import { useThoughtType } from "@/hooks/useThoughtType";
 import ThoughtTypeSelector from "@/components/ThoughtTypeSelector";
 import { saveGraphToSession, loadGraphFromSession } from "@/lib/sessionStorage";
-import { useSessionStore } from "@/store/SessionStore";
+import {
+  useSessionStore,
+  setSessionBackupPayload,
+  type PendingThought,
+  type Session,
+} from "@/store/SessionStore";
 import { useGraphStore } from "@/store/GraphStore";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
@@ -142,6 +147,7 @@ export const GraphContext = createContext<{
 
 type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
 type ToastType = "restore" | "save" | "recovery" | "error" | null;
+const SESSION_STORAGE_KEY = "filon-sessions";
 
 export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
@@ -1202,6 +1208,130 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     }
   };
 
+  const saveDB = useCallback(async () => {
+    try {
+      const { sessions, activeSessionId, pendingThoughts } =
+        useSessionStore.getState();
+
+      const backupPayload: Record<string, unknown> = {};
+
+      await localforage.iterate((value, key) => {
+        if (key === SESSION_STORAGE_KEY) {
+          return undefined;
+        }
+        backupPayload[key] = value;
+        return undefined;
+      });
+
+      setSessionBackupPayload(backupPayload);
+
+      await localforage.setItem(SESSION_STORAGE_KEY, {
+        state: { sessions, activeSessionId, pendingThoughts },
+        version: 0,
+        payload: backupPayload,
+      });
+
+      addFeedback({
+        type: "success",
+        message: "💾 All workspaces saved.",
+      });
+    } catch (error) {
+      console.error("Failed to save workspaces:", error);
+      addFeedback({
+        type: "error",
+        message: "⚠️ Failed to save workspaces.",
+      });
+    }
+  }, [addFeedback]);
+
+  const loadDB = useCallback(async () => {
+    try {
+      const stored = await localforage.getItem<
+        | {
+            state: {
+              sessions?: Session[];
+              activeSessionId?: string | null;
+              pendingThoughts?: PendingThought[];
+            };
+            version?: number;
+            payload?: Record<string, unknown>;
+          }
+        | string
+      >(SESSION_STORAGE_KEY);
+      if (!stored) {
+        addFeedback({
+          type: "error",
+          message: "⚠️ No workspace data found.",
+        });
+        return;
+      }
+
+      const parsed =
+        typeof stored === "string" ? JSON.parse(stored) : stored;
+
+      const snapshot = (parsed?.state ??
+        parsed) as Partial<{
+        sessions: Session[];
+        activeSessionId: string | null;
+        pendingThoughts: PendingThought[];
+      }>;
+
+      const payload =
+        (parsed && typeof parsed === "object"
+          ? (parsed as { payload?: Record<string, unknown> }).payload
+          : undefined) ?? {};
+
+      if (!snapshot.sessions) {
+        addFeedback({
+          type: "error",
+          message: "⚠️ Workspace data incomplete.",
+        });
+        return;
+      }
+
+      setSessionBackupPayload(payload);
+
+      useSessionStore.setState((state) => {
+        const nextSessions = snapshot.sessions ?? state.sessions;
+        const nextActive =
+          snapshot.activeSessionId ??
+          state.activeSessionId ??
+          (nextSessions.length > 0 ? nextSessions[0].id : null);
+
+        return {
+          ...state,
+          sessions: nextSessions,
+          activeSessionId: nextActive,
+          pendingThoughts:
+            snapshot.pendingThoughts ?? state.pendingThoughts,
+        };
+      });
+
+      const entries = Object.entries(payload);
+      if (entries.length > 0) {
+        await Promise.all(
+          entries.map(([key, value]) => {
+            if (key === SESSION_STORAGE_KEY) {
+              return Promise.resolve();
+            }
+            return localforage.setItem(key, value);
+          })
+        );
+      }
+
+      addFeedback({
+        type: "success",
+        message: "📂 Workspaces loaded from storage.",
+      });
+    } catch (error) {
+      console.error("Failed to load workspaces:", error);
+      addFeedback({
+        type: "error",
+        message: "⚠️ Failed to load workspace data.",
+      });
+    }
+  }, [addFeedback]);
+
   // 🔍 Suchfunktion (memoized, um infinite loops zu vermeiden)
   const filteredNodes = useMemo(
     () =>
@@ -1414,14 +1544,14 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
               Clear
             </button>
             <button
-              onClick={saveToServer}
+              onClick={saveDB}
               className="focus-glow px-sm py-xs rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Save graph to database"
             >
               💾 Save DB
             </button>
             <button
-              onClick={loadFromServer}
+              onClick={loadDB}
               className="focus-glow px-sm py-xs rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Load graph from database"
             >

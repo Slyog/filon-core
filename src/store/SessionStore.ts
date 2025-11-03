@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, type PersistStorage } from "zustand/middleware";
+import localforage from "localforage";
 
 export type Session = {
   id: string;
@@ -28,21 +29,68 @@ export type PendingThought = {
   createdAt: number;
 };
 
+type PersistedSessionState = {
+  sessions: Session[];
+  activeSessionId: string | null;
+  pendingThoughts: PendingThought[];
+};
+
+const STORAGE_KEY = "filon-sessions";
+let latestPersistPayload: Record<string, unknown> | undefined;
+
+export const setSessionBackupPayload = (
+  payload?: Record<string, unknown>
+): void => {
+  latestPersistPayload = payload;
+};
+
+const storage: PersistStorage<PersistedSessionState> = {
+  getItem: async (name) => {
+    const stored = await localforage.getItem<{
+      state: PersistedSessionState;
+      version?: number;
+      payload?: Record<string, unknown>;
+    }>(name);
+
+    if (!stored) {
+      return null;
+    }
+
+    latestPersistPayload = stored.payload ?? latestPersistPayload;
+    return {
+      state: stored.state,
+      version: stored.version,
+    };
+  },
+  setItem: async (name, value) => {
+    await localforage.setItem(name, {
+      ...value,
+      payload: latestPersistPayload,
+    });
+  },
+  removeItem: (name) => localforage.removeItem(name),
+};
+
 type SessionState = {
   sessions: Session[];
   activeSessionId: string | null;
   pendingThoughts: PendingThought[];
-  addSession: (title?: string, category?: Session["category"]) => string;
+  hydrateSessions: () => Promise<void>;
+  addSession: (
+    title?: string,
+    category?: Session["category"]
+  ) => Promise<string>;
   createOrGetActive: (name?: string) => Promise<string>;
   removeSession: (id: string) => void;
+  deleteSession: (id: string) => void;
   closeSession: (id: string) => void;
   setActiveSession: (id: string | null) => void;
   getLastActive: () => string | null;
   updateMetadata: (id: string, meta: Session["meta"]) => void;
   updateCategory: (id: string, category: Session["category"]) => void;
-  updateSessionTitle: (id: string, title: string) => void;
-  generateTitleFromThought: (text: string) => string;
   openSession: (session: Session) => void;
+  updateSessionTitle: (id: string, title: string) => void;
+  generateTitleFromThought: (content: string) => string;
   enqueueThought: (
     t: Omit<PendingThought, "id" | "createdAt">
   ) => PendingThought["id"];
@@ -51,121 +99,228 @@ type SessionState = {
 
 export const useSessionStore = create<SessionState>()(
   persist(
-    (set, get) => ({
-      sessions: [],
-      activeSessionId: null,
-      pendingThoughts: [],
-      addSession: (
-        title = "New Graph",
-        category: Session["category"] = "Other"
-      ) => {
-        const id = crypto.randomUUID();
-        const newSession: Session = {
-          id,
-          title,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          category,
+    (set, get) => {
+      const persistSnapshot = async () => {
+        const snapshot: PersistedSessionState = {
+          sessions: get().sessions,
+          activeSessionId: get().activeSessionId,
+          pendingThoughts: get().pendingThoughts,
         };
-        set({ sessions: [...get().sessions, newSession], activeSessionId: id });
-        return id;
-      },
-      createOrGetActive: async (name?: string) => {
-        const state = get();
-        if (state.activeSessionId) return state.activeSessionId;
 
-        const newSession = {
-          id: crypto.randomUUID(),
-          title:
-            name || `Untitled Workspace #${Math.floor(Math.random() * 1000)}`,
-          category: "Other" as Session["category"],
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        set({
-          sessions: [...state.sessions, newSession],
-          activeSessionId: newSession.id,
-        });
-
-        // 🔹 wait a tiny bit to let Zustand persist
-        await new Promise((res) => setTimeout(res, 100));
-        return newSession.id;
-      },
-      updateSessionTitle: (id, title) => {
-        const { sessions } = get();
-        set({
-          sessions: sessions.map((s) =>
-            s.id === id ? { ...s, title, updatedAt: Date.now() } : s
-          ),
-        });
-      },
-      generateTitleFromThought: (text) => {
-        const base = text.split(" ").slice(0, 3).join(" ");
-        const id = Math.floor(Math.random() * 1000);
-        return base ? `${base} #${id}` : `Untitled Workspace #${id}`;
-      },
-      removeSession: (id) => {
-        const { sessions, activeSessionId } = get();
-        const updated = sessions.filter((s) => s.id !== id);
-        set({
-          sessions: updated,
-          activeSessionId:
-            id === activeSessionId && updated.length > 0
-              ? updated[0].id
-              : id === activeSessionId
-              ? null
-              : activeSessionId,
-        });
-      },
-      closeSession: (id) =>
-        set((state) => ({
-          sessions: state.sessions.filter((s) => s.id !== id),
-          activeSessionId:
-            state.activeSessionId === id ? null : state.activeSessionId,
-        })),
-      openSession: (session) =>
-        set((state) => ({
-          sessions: [...state.sessions, session],
-          activeSessionId: session.id,
-        })),
-      setActiveSession: (id) => set({ activeSessionId: id }),
-      getLastActive: () => get().activeSessionId,
-      updateMetadata: (id, meta) => {
-        set({
-          sessions: get().sessions.map((s) =>
-            s.id === id ? { ...s, meta, updatedAt: Date.now() } : s
-          ),
-        });
-      },
-      updateCategory: (id, category) => {
-        set({
-          sessions: get().sessions.map((s) =>
-            s.id === id ? { ...s, category, updatedAt: Date.now() } : s
-          ),
-        });
-      },
-      enqueueThought: ({ sessionId, content, thoughtType }) => {
-        const item: PendingThought = {
-          id: crypto.randomUUID(),
-          sessionId,
-          content,
-          thoughtType,
-          createdAt: Date.now(),
-        };
-        set({ pendingThoughts: [...get().pendingThoughts, item] });
-        return item.id;
-      },
-      drainThoughtsForSession: (sessionId) => {
-        const all = get().pendingThoughts;
-        const mine = all.filter((t) => t.sessionId === sessionId);
-        if (mine.length === 0) {
-          return [];
+        try {
+          await localforage.setItem(STORAGE_KEY, {
+            state: snapshot,
+            version: 0,
+            payload: latestPersistPayload,
+          });
+        } catch (error) {
+          console.error("Failed to persist sessions", error);
         }
-        const rest = all.filter((t) => t.sessionId !== sessionId);
-        set({ pendingThoughts: rest });
-        return mine;
-      },
-    }),
-    { name: "filon-session-store" }
+      };
+
+      return {
+        sessions: [],
+        activeSessionId: null,
+        pendingThoughts: [],
+        hydrateSessions: async () => {
+          try {
+            const stored = await localforage.getItem<{
+              state: PersistedSessionState;
+              version?: number;
+              payload?: Record<string, unknown>;
+            }>(STORAGE_KEY);
+            if (!stored) return;
+            latestPersistPayload =
+              stored.payload ?? latestPersistPayload ?? undefined;
+
+            const snapshot = stored.state;
+            if (!snapshot) return;
+
+            set((prev) => {
+              const nextSessions = snapshot.sessions ?? prev.sessions;
+              const nextActive =
+                snapshot.activeSessionId ??
+                prev.activeSessionId ??
+                (nextSessions.length > 0 ? nextSessions[0].id : null);
+
+              return {
+                ...prev,
+                sessions: nextSessions,
+                activeSessionId: nextActive,
+                pendingThoughts:
+                  snapshot.pendingThoughts ?? prev.pendingThoughts,
+              };
+            });
+          } catch (error) {
+            console.error("Failed to hydrate sessions", error);
+          }
+        },
+        addSession: async (
+          title = "New Graph",
+          category: Session["category"] = "Other"
+        ) => {
+          const id = crypto.randomUUID();
+          const timestamp = Date.now();
+          const newSession: Session = {
+            id,
+            title,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            category,
+          };
+
+          set((state) => ({
+            ...state,
+            sessions: [...state.sessions, newSession],
+            activeSessionId: id,
+          }));
+
+          await persistSnapshot();
+          return id;
+        },
+        createOrGetActive: async (name?: string) => {
+          const existing = get().activeSessionId;
+          if (existing) return existing;
+
+          const newId = await get().addSession(
+            name || "Untitled Workspace",
+            "Other"
+          );
+          return newId;
+        },
+        removeSession: (id) => {
+          get().deleteSession(id);
+        },
+        deleteSession: (id) => {
+          set((state) => {
+            const sessions = state.sessions.filter((s) => s.id !== id);
+            const activeSessionId =
+              state.activeSessionId === id
+                ? sessions[0]?.id ?? null
+                : state.activeSessionId;
+            return { ...state, sessions, activeSessionId };
+          });
+
+          void persistSnapshot();
+        },
+        closeSession: (id) => {
+          set((state) => ({
+            ...state,
+            sessions: state.sessions.filter((s) => s.id !== id),
+            activeSessionId:
+              state.activeSessionId === id ? null : state.activeSessionId,
+          }));
+
+          void persistSnapshot();
+        },
+        openSession: (session) => {
+          set((state) => {
+            const exists = state.sessions.some((s) => s.id === session.id);
+            const sessions = exists
+              ? state.sessions.map((s) =>
+                  s.id === session.id ? session : s
+                )
+              : [...state.sessions, session];
+            return { ...state, sessions, activeSessionId: session.id };
+          });
+
+          void persistSnapshot();
+        },
+        updateSessionTitle: (id, title) => {
+          const normalized = title.trim();
+          if (!normalized) return;
+
+          set((state) => ({
+            ...state,
+            sessions: state.sessions.map((s) =>
+              s.id === id
+                ? { ...s, title: normalized, updatedAt: Date.now() }
+                : s
+            ),
+          }));
+
+          void persistSnapshot();
+        },
+        generateTitleFromThought: (content) => {
+          const cleaned = content.trim();
+          if (!cleaned) return "Untitled Workspace";
+
+          const words = cleaned
+            .replace(/\s+/g, " ")
+            .split(" ")
+            .filter(Boolean)
+            .slice(0, 6)
+            .map((word) =>
+              word.length > 1
+                ? word[0].toUpperCase() + word.slice(1).toLowerCase()
+                : word.toUpperCase()
+            );
+
+          const title = words.join(" ");
+          return title || "Untitled Workspace";
+        },
+        setActiveSession: (id) => {
+          set((state) => ({ ...state, activeSessionId: id }));
+          void persistSnapshot();
+        },
+        getLastActive: () => get().activeSessionId,
+        updateMetadata: (id, meta) => {
+          set((state) => ({
+            ...state,
+            sessions: state.sessions.map((s) =>
+              s.id === id ? { ...s, meta, updatedAt: Date.now() } : s
+            ),
+          }));
+
+          void persistSnapshot();
+        },
+        updateCategory: (id, category) => {
+          set((state) => ({
+            ...state,
+            sessions: state.sessions.map((s) =>
+              s.id === id ? { ...s, category, updatedAt: Date.now() } : s
+            ),
+          }));
+
+          void persistSnapshot();
+        },
+        enqueueThought: ({ sessionId, content, thoughtType }) => {
+          const item: PendingThought = {
+            id: crypto.randomUUID(),
+            sessionId,
+            content,
+            thoughtType,
+            createdAt: Date.now(),
+          };
+
+          set((state) => ({
+            ...state,
+            pendingThoughts: [...state.pendingThoughts, item],
+          }));
+
+          void persistSnapshot();
+          return item.id;
+        },
+        drainThoughtsForSession: (sessionId) => {
+          const all = get().pendingThoughts;
+          const mine = all.filter((t) => t.sessionId === sessionId);
+          if (!mine.length) return [];
+          const rest = all.filter((t) => t.sessionId !== sessionId);
+
+          set((state) => ({ ...state, pendingThoughts: rest }));
+          void persistSnapshot();
+          return mine;
+        },
+      };
+    },
+    {
+      name: STORAGE_KEY,
+      storage,
+      partialize: (state) => ({
+        sessions: state.sessions,
+        activeSessionId: state.activeSessionId,
+        pendingThoughts: state.pendingThoughts,
+      }),
+    }
   )
 );

@@ -1,91 +1,92 @@
 "use client";
-import { useRouter, usePathname } from "next/navigation";
-import { useSessionStore } from "@/store/SessionStore";
+
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Folder, PlusCircle, Trash2 } from "lucide-react";
+import { useSessionStore } from "@/store/SessionStore";
 
 export default function WorkspaceList() {
-  const router = useRouter();
-  const pathname = usePathname();
   const {
     sessions,
     activeSessionId,
+    hydrateSessions,
+    addSession,
+    deleteSession,
     setActiveSession,
-    createOrGetActive,
-    removeSession,
   } = useSessionStore();
+  const router = useRouter();
 
   useEffect(() => {
-    // Wenn Route auf /f/:id → aktiviere entsprechende Session
-    if (pathname?.startsWith("/f/")) {
-      const id = pathname.split("/f/")[1];
-      if (id && id !== activeSessionId) {
-        setActiveSession(id);
-      }
-    }
-  }, [pathname, activeSessionId, setActiveSession]);
+    void hydrateSessions();
+  }, [hydrateSessions]);
 
-  const handleSwitch = (id: string) => {
+  const handleSelect = (id: string) => {
     setActiveSession(id);
     router.push(`/f/${id}`);
   };
 
   const handleNew = async () => {
-    const id = await createOrGetActive("New Workspace");
+    const name = window.prompt("New workspace name:");
+    if (!name || !name.trim()) return;
+    const id = await addSession(name.trim());
     router.push(`/f/${id}`);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Delete this workspace?")) {
-      removeSession(id);
-      // Wenn gelöschte Session aktiv war, wechsle zu erster verbleibender oder Home
-      const remaining = sessions.filter((s) => s.id !== id);
-      if (id === activeSessionId) {
-        if (remaining.length > 0) {
-          handleSwitch(remaining[0].id);
-        } else {
-          router.push("/");
-        }
-      }
-    }
-  };
-
-  return (
-    <div className="w-full border-b border-zinc-700 bg-zinc-900/80 p-2 flex items-center justify-between backdrop-blur">
-      <div className="flex gap-2 overflow-x-auto">
-        {sessions.length === 0 && (
-          <span className="text-zinc-500 text-sm px-2">No workspaces yet</span>
-        )}
-        {sessions.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => handleSwitch(s.id)}
-            className={
-              "px-3 py-1 rounded-md text-sm transition-all " +
-              (s.id === activeSessionId
-                ? "bg-cyan-600 text-black font-medium"
-                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700")
-            }
-          >
-            {s.title || "Untitled"}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2">
+  if (!sessions || sessions.length === 0) {
+    return (
+      <div className="px-4 py-3 text-sm text-zinc-500 flex items-center justify-between bg-zinc-900/60 border-b border-zinc-800">
+        <span>No workspaces yet</span>
         <button
           onClick={handleNew}
-          className="flex items-center gap-1 text-cyan-400 hover:text-cyan-200 text-sm px-2 py-1 rounded transition-colors"
+          className="ml-2 inline-flex items-center gap-1 text-cyan-400 hover:underline"
         >
-          <span>+</span> New
+          <PlusCircle size={16} />
+          <span>Create one</span>
         </button>
-        {activeSessionId && (
-          <button
-            onClick={() => handleDelete(activeSessionId)}
-            className="flex items-center gap-1 text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded transition-colors"
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2 border-b border-zinc-800 bg-zinc-900/60">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="font-semibold text-zinc-300 text-sm flex items-center gap-1">
+          <Folder size={16} /> Workspaces
+        </h2>
+        <button
+          onClick={handleNew}
+          className="text-cyan-400 hover:text-cyan-300 transition-colors"
+          aria-label="Create workspace"
+        >
+          <PlusCircle size={16} />
+        </button>
+      </div>
+
+      <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+        {sessions.map((session) => (
+          <div
+            key={session.id}
+            onClick={() => handleSelect(session.id)}
+            className={`flex items-center justify-between text-sm px-2 py-1 rounded cursor-pointer transition-colors ${
+              session.id === activeSessionId
+                ? "bg-cyan-800/40 text-cyan-200"
+                : "hover:bg-zinc-800/70 text-zinc-300"
+            }`}
           >
-            <span>🗑️</span> Delete
-          </button>
-        )}
+            <span className="truncate">{session.title}</span>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                deleteSession(session.id);
+              }}
+              className="text-zinc-400 hover:text-red-400 transition-colors"
+              aria-label={`Delete ${session.title}`}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );
