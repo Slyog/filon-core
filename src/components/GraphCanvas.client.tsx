@@ -82,6 +82,8 @@ import { bbox } from "@/utils/rfDebug";
 import dynamic from "next/dynamic";
 import { startVoiceCapture } from "@/lib/voiceInput";
 import { useThoughtType } from "@/hooks/useThoughtType";
+import { saveGraphToSession, loadGraphFromSession } from "@/lib/sessionStorage";
+import { useSessionStore } from "@/store/SessionStore";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -147,6 +149,9 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const addMemory = useMemoryStore((s) => s.addSnapshot);
   const getTrend = useMemoryStore((s) => s.getTrend);
   const { getType } = useThoughtType();
+  const getLastActive = useSessionStore((s) => s.getLastActive);
+  const setActiveSession = useSessionStore((s) => s.setActiveSession);
+  const updateMetadata = useSessionStore((s) => s.updateMetadata);
   const [motionTest, setMotionTest] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
@@ -155,6 +160,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null);
   const [activeNode, setActiveNode] = useState<Node | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false);
   const [nodes, setNodes] = useState<Node[]>([]);
   const [edges, setEdges] = useState<Edge[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -188,6 +194,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const lastSnapshotRef = useRef<number>(0);
   const nodeChangeCountRef = useRef<number>(0);
   const lastInsightCheckRef = useRef<number>(0);
+  const isInitialSessionLoadRef = useRef(true);
 
   // 🧪 Motion Test Toggle
   useEffect(() => {
@@ -204,6 +211,13 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     let mounted = true;
 
     (async () => {
+      // Skip legacy load if sessionId is present (session-based loading handles it)
+      if (sessionId) {
+        setIsLoading(false);
+        setGraphLoadedOnce(true);
+        return;
+      }
+
       setIsLoading(true);
       try {
         // Clean up expired snapshots and feedback events on mount
@@ -272,16 +286,73 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionId]);
 
   // 🔗 Session ID routing: Load graph when sessionId changes
   useEffect(() => {
-    if (sessionId) {
-      // Load the session-specific graph
-      loadFromServer();
+    async function loadSessionGraph() {
+      // Try to get sessionId from props, fallback to last active session
+      let activeId = sessionId;
+      if (!activeId) {
+        const storeId = getLastActive();
+        if (storeId) activeId = storeId;
+      }
+      if (!activeId) return;
+
+      isInitialSessionLoadRef.current = true; // Set flag before loading
+      const data = await loadGraphFromSession(activeId);
+      setNodes(data.nodes);
+      setEdges(data.edges);
+      setIsSessionLoaded(true);
+      setLayoutTrigger((n) => n + 1);
+      console.log(`[FILON] Graph loaded for session ${activeId}`);
+      // Reset flag after a short delay to allow for the first save
+      setTimeout(() => {
+        isInitialSessionLoadRef.current = false;
+      }, 1500);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId]);
+    loadSessionGraph();
+  }, [sessionId, getLastActive]);
+
+  // 💾 Session autosave
+  useEffect(() => {
+    if (!sessionId || !isSessionLoaded || isInitialSessionLoadRef.current)
+      return;
+    setStatus("saving", "💾 Saving...");
+    const timeout = setTimeout(async () => {
+      try {
+        await saveGraphToSession(sessionId, { nodes, edges });
+        updateMetadata(sessionId, {
+          nodeCount: nodes.length,
+          edgeCount: edges.length,
+          lastSaved: Date.now(),
+        });
+        setStatus("synced", "☁️ Synced to Session");
+        addFeedback({ type: "success", message: "💾 Synced to Session" });
+        setTimeout(() => setStatus("idle", ""), 1200);
+        console.log(`[FILON] Graph autosaved for session ${sessionId}`);
+      } catch (err) {
+        setStatus("offline", "⚠️ Failed to save");
+        console.error("Session save failed:", err);
+      }
+    }, 1000);
+    return () => clearTimeout(timeout);
+  }, [
+    sessionId,
+    nodes,
+    edges,
+    isSessionLoaded,
+    setStatus,
+    addFeedback,
+    updateMetadata,
+  ]);
+
+  // 🔗 Track active session for DB/snapshot imports
+  useEffect(() => {
+    if (sessionId) {
+      setActiveSession(sessionId);
+    }
+  }, [sessionId, setActiveSession]);
 
   // 🚨 Browser-Warnung bei ungespeicherten Änderungen
   useEffect(() => {

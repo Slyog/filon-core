@@ -6,6 +6,11 @@ type Session = {
   title: string;
   createdAt: number;
   updatedAt: number;
+  meta?: {
+    nodeCount: number;
+    edgeCount: number;
+    lastSaved: number;
+  };
 };
 
 type SessionState = {
@@ -14,6 +19,8 @@ type SessionState = {
   addSession: (title?: string) => string;
   removeSession: (id: string) => void;
   setActiveSession: (id: string) => void;
+  getLastActive: () => string | null;
+  updateMetadata: (id: string, meta: Session["meta"]) => void;
 };
 
 export const useSessionStore = create<SessionState>()(
@@ -35,6 +42,14 @@ export const useSessionStore = create<SessionState>()(
       removeSession: (id) =>
         set({ sessions: get().sessions.filter((s) => s.id !== id) }),
       setActiveSession: (id) => set({ activeSessionId: id }),
+      getLastActive: () => get().activeSessionId,
+      updateMetadata: (id, meta) => {
+        set({
+          sessions: get().sessions.map((s) =>
+            s.id === id ? { ...s, meta, updatedAt: Date.now() } : s
+          ),
+        });
+      },
     }),
     { name: "filon-session-store" }
   )

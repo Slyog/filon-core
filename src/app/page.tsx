@@ -1,22 +1,24 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { ActiveNodeProvider } from "@/context/ActiveNodeContext";
-import { MindProgressProvider } from "@/context/MindProgressContext";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSessionStore } from "@/store/SessionStore";
 
-const GraphCanvas = dynamic(
-  () => import("@/components/GraphCanvas.client").then((mod) => mod.default),
-  { ssr: false }
-);
+export default function HomePage() {
+  const router = useRouter();
+  const getLastActive = useSessionStore((s) => s.getLastActive);
 
-export default function Page() {
+  useEffect(() => {
+    const last = getLastActive();
+    if (last) {
+      router.push(`/graph/${last}`);
+    }
+  }, [router, getLastActive]);
+
   return (
-    <ActiveNodeProvider>
-      <MindProgressProvider>
-        <main className="min-h-screen flex flex-col w-full bg-filon-bg text-filon-text">
-          <GraphCanvas />
-        </main>
-      </MindProgressProvider>
-    </ActiveNodeProvider>
+    <main className="flex flex-col items-center justify-center h-screen text-[var(--foreground)]">
+      <h1 className="text-2xl font-semibold text-[var(--accent)]">FILON</h1>
+      <p className="opacity-80 mt-2">Loading your last workspace…</p>
+    </main>
   );
 }
