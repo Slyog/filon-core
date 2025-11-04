@@ -18,6 +18,11 @@ const config: Config = {
         glow: "#2FF3FF",
         accent: "#00C2D1",
         text: "#E6E6E6",
+        // Phase 2: Design Tokens
+        filament: "#2FF3FF",
+        base: "#0A0F12",
+        layer: "#101418",
+        panel: "#1C2229",
         filon: {
           bg: "var(--filon-bg)",
           surface: "var(--filon-surface)",
@@ -31,6 +36,7 @@ const config: Config = {
       },
       boxShadow: {
         glow: "var(--filon-glow-shadow)",
+        "glow-md": "0 0 20px rgba(47,243,255,0.5)",
       },
       transitionDuration: {
         fast: "150ms",
@@ -44,9 +50,34 @@ const config: Config = {
         lg: "2rem",
         xl: "3rem",
       },
+      borderRadius: {
+        xl: "1rem",
+        "2xl": "1.5rem",
+      },
+      transitionTimingFunction: {
+        out: "cubic-bezier(0.25,0.1,0.25,1)",
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        glowPulse: {
+          "0%,100%": { opacity: "0.6" },
+          "50%": { opacity: "1" },
+        },
+      },
+      animation: {
+        fadeIn: "fadeIn 0.3s ease-out",
+        glowPulse: "glowPulse 2s ease-in-out infinite",
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    // Note: Install @tailwindcss/forms and @tailwindcss/typography if needed
+    // require("@tailwindcss/forms"),
+    // require("@tailwindcss/typography"),
+  ],
 };
 
 export default config;

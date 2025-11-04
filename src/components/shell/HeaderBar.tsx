@@ -29,7 +29,7 @@ export default function HeaderBar() {
   }, [title]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 flex h-12 items-center justify-between border-b border-zinc-900 bg-black/75 backdrop-blur px-4 py-2">
+    <header className="flex items-center justify-between px-4 py-2 border-b border-cyan-900/30 shadow-glow-md">
       <div className="flex flex-1 items-center gap-2">
         <button
           type="button"
@@ -39,18 +39,13 @@ export default function HeaderBar() {
         >
           <PanelLeft size={18} />
         </button>
-        <div className="font-semibold tracking-wide text-zinc-200">
-          FILON —{" "}
-          <span className="text-zinc-400" title={title}>
-            {title}
-          </span>
-        </div>
+        <h1 className="text-filament font-semibold tracking-wide">FILON</h1>
       </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setExportOpen(true)}
-          className="px-3 py-1.5 rounded-md bg-cyan-700/40 hover:bg-cyan-500/50 text-cyan-100 text-sm font-medium transition-colors"
+          className="bg-cyan-700/40 hover:bg-cyan-500/40 text-cyan-100 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
           aria-label="Exportieren"
         >
           Exportieren
@@ -60,7 +55,7 @@ export default function HeaderBar() {
           onClick={() =>
             window.alert("Link teilen (Platzhalter) – Funktion folgt.")
           }
-          className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-800"
+          className="bg-cyan-700/40 hover:bg-cyan-500/40 text-cyan-100 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-2"
           title="Link teilen (Platzhalter)"
         >
           <Share2 size={16} />
@@ -71,7 +66,7 @@ export default function HeaderBar() {
           onClick={() =>
             window.alert("Einstellungen (Platzhalter) – demnächst verfügbar.")
           }
-          className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-1 text-sm text-zinc-300 transition hover:bg-zinc-800"
+          className="bg-cyan-700/40 hover:bg-cyan-500/40 text-cyan-100 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors flex items-center gap-2"
           title="Einstellungen (Platzhalter)"
         >
           <Settings size={16} />

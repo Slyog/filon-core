@@ -63,7 +63,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-[rgba(10,15,18,0.95)] border-r border-[var(--border-glow)] text-[var(--foreground)] flex flex-col p-4 z-40">
+    <aside className="fixed top-0 left-0 h-full w-64 bg-layer border-r border-[var(--border-glow)] text-[var(--foreground)] flex flex-col p-4 z-40 scrollbar">
       <h2 className="text-[var(--accent)] font-semibold mb-3">Workspaces</h2>
 
       <button
@@ -108,10 +108,10 @@ export default function Sidebar() {
         {filtered.map((s) => (
           <div
             key={s.id}
-            className={`p-2 rounded-lg cursor-pointer border ${
+            className={`p-2 rounded-lg cursor-pointer border transition-all ${
               s.id === activeSessionId
-                ? "border-[var(--accent)] bg-[rgba(47,243,255,0.1)]"
-                : "border-transparent hover:border-[rgba(47,243,255,0.25)]"
+                ? "bg-panel text-filament font-semibold border-[var(--accent)]"
+                : "border-transparent hover:shadow-[0_0_10px_rgba(47,243,255,0.4)]"
             }`}
             onClick={() => handleOpen(s.id)}
           >
@@ -147,7 +147,7 @@ export default function Sidebar() {
       </div>
 
       <hr className="opacity-30 my-3" />
-      
+
       {/* QA Section */}
       <button
         onClick={() => setQaPanelOpen(!qaPanelOpen)}

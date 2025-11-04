@@ -39,10 +39,50 @@ main {
 /* Theme variables are imported from filon-theme.css above */
 
 /* --- Global Styles --- */
+html,
+body,
+#root {
+  background-color: #0a0f12;
+  color: #e5e7eb;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: "Inter", system-ui, sans-serif;
+}
+
+::selection {
+  background: #2ff3ff40;
+  color: #fff;
+}
+
+a {
+  color: #2ff3ff;
+}
+
+button,
+input,
+select {
+  transition: all 0.2s ease-out;
+}
+
+.glow-border {
+  box-shadow: 0 0 8px rgba(47, 243, 255, 0.4);
+}
+
+.card {
+  background-color: #101418;
+  border-radius: 1rem;
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: #2ff3ff30;
+  border-radius: 3px;
 }
 
 /* Global transitions - exclude ReactFlow elements */
