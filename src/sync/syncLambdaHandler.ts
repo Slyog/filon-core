@@ -7,6 +7,7 @@ import type {
   SyncStatus,
 } from "./syncSchema";
 import { getBinary } from "./automergeAdapter";
+import { eventBus } from "@/core/eventBus";
 
 /**
  * Validates user authentication token
@@ -71,6 +72,14 @@ export async function syncLambdaHandler(
     await writeMetadata(metadata);
 
     console.log("[SYNC] Sync completed successfully", { s3Key });
+
+    // Emit sync success event for feedback loop
+    eventBus.emit("sync:success", {
+      userId: event.userId,
+      sessionId: event.sessionId,
+      s3Key,
+      metadata,
+    });
 
     return {
       status: "ok",

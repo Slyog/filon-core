@@ -1,10 +1,12 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFeature } from "@/config/featureFlags";
 import { usePanelFocus } from "@/store/PanelFocusStore";
 import PanelOverlay from "@/components/PanelOverlay";
 import ExplainModal from "@/components/ExplainModal";
+import { eventBus } from "@/core/eventBus";
+import { useFeedbackStore } from "@/store/feedbackStore";
 
 type DynamicPanelProps = {
   flag: keyof typeof import("@/config/featureFlags").FEATURE_FLAGS;
@@ -22,6 +24,32 @@ export default function DynamicPanel({
   const isFocused = activePanel === flag;
   const [hovered, setHovered] = useState(false);
   const [showExplain, setShowExplain] = useState(false);
+  const { addFeedback } = useFeedbackStore();
+
+  // Subscribe to feedback events
+  useEffect(() => {
+    const unsubscribe = eventBus.subscribe("ai:explain_feedback", (payload) => {
+      console.log("[FEEDBACK] AI explain feedback received:", payload);
+      addFeedback({
+        type: "ai_explain",
+        payload,
+      });
+    });
+
+    const unsubscribeSync = eventBus.subscribe("sync:success", (payload) => {
+      console.log("[FEEDBACK] Sync success event:", payload);
+      addFeedback({
+        type: "sync_success",
+        payload,
+        insight: "Sync operation completed successfully",
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeSync();
+    };
+  }, [addFeedback]);
 
   return (
     <>

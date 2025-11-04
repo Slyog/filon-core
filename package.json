@@ -15,6 +15,7 @@
   "dependencies": {
     "@automerge/automerge": "^3.2.0",
     "@prisma/client": "^6.18.0",
+    "dexie": "^4.2.1",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.24",
     "localforage": "^1.10.0",

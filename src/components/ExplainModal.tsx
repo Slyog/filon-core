@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { generatePanelSummary } from "@/ai/summarizerCore";
 import { useContextStreamStore } from "@/store/ContextStreamStore";
+import { eventBus } from "@/core/eventBus";
+import FeedbackModal from "@/components/FeedbackModal";
 
 export default function ExplainModal({
   title,
@@ -14,6 +16,7 @@ export default function ExplainModal({
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const { addSummary } = useContextStreamStore();
 
   useEffect(() => {
@@ -32,12 +35,26 @@ export default function ExplainModal({
     generate();
   }, [title, addSummary]);
 
+  const handleClose = () => {
+    // Emit feedback event when modal closes
+    if (summary) {
+      eventBus.emit("ai:explain_feedback", {
+        title,
+        summary,
+        confidence,
+      });
+      // Show feedback modal after explain
+      setShowFeedback(true);
+    }
+    onClose();
+  };
+
   return (
     <AnimatePresence mode="wait">
       <motion.div
         key="modal"
         className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50"
-        onClick={onClose}
+        onClick={handleClose}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -85,7 +102,7 @@ export default function ExplainModal({
 
           <div className="mt-4 text-right">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-cyan-300 text-sm"
             >
               Close
@@ -93,6 +110,12 @@ export default function ExplainModal({
           </div>
         </motion.div>
       </motion.div>
+      <FeedbackModal
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        type="ai_explain"
+        context={`AI Explanation for "${title}"`}
+      />
     </AnimatePresence>
   );
 }
