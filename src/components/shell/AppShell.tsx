@@ -1,28 +1,17 @@
 "use client";
 
-import { PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren } from "react";
 import { motion } from "framer-motion";
 import HeaderBar from "./HeaderBar";
 import SidebarNav from "./Sidebar";
 import { useHydrateUIShell } from "@/store/UIShellStore";
 import DynamicPanel from "@/components/DynamicPanel";
 import ContextStream from "@/components/ContextStream";
+import { usePanelHotkeys } from "@/hooks/usePanelHotkeys";
 
 export default function AppShell({ children }: PropsWithChildren) {
   useHydrateUIShell();
-
-  // Hotkey Support (Stub)
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "1") {
-        document
-          .querySelector('[aria-label="Context Stream"]')
-          ?.scrollIntoView({ behavior: "smooth" });
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
+  usePanelHotkeys();
 
   return (
     <motion.div
@@ -65,7 +54,7 @@ export default function AppShell({ children }: PropsWithChildren) {
 
       {/* Footer */}
       <footer className="row-start-3 py-4 text-center text-xs text-gray-500/70 border-t border-cyan-900/40">
-        FILON Core v0.3 • Panel Registry Active
+        FILON Core v0.4 • Hotkey Focus Active
       </footer>
     </motion.div>
   );
