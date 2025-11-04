@@ -5,7 +5,9 @@ import type { DiffResult } from "./diffEngine";
  * @param diff - Diff result containing all detected changes
  * @returns A concise text description of the changes
  */
-export async function generateSnapshotSummary(diff: DiffResult): Promise<string> {
+export async function generateSnapshotSummary(
+  diff: DiffResult
+): Promise<string> {
   try {
     const addedCount = diff.addedNodes.length;
     const removedCount = diff.removedNodes.length;
@@ -17,22 +19,40 @@ export async function generateSnapshotSummary(diff: DiffResult): Promise<string>
 
     // Add node changes
     if (addedCount > 0) {
-      parts.push(`${addedCount} new ${addedCount === 1 ? "idea" : "ideas"} added`);
+      parts.push(
+        `${addedCount} new ${addedCount === 1 ? "idea" : "ideas"} added`
+      );
     }
     if (removedCount > 0) {
-      parts.push(`${removedCount} ${removedCount === 1 ? "idea removed" : "ideas removed"}`);
+      parts.push(
+        `${removedCount} ${
+          removedCount === 1 ? "idea removed" : "ideas removed"
+        }`
+      );
     }
     if (changedCount > 0) {
-      parts.push(`${changedCount} ${changedCount === 1 ? "concept updated" : "concepts updated"}`);
+      parts.push(
+        `${changedCount} ${
+          changedCount === 1 ? "concept updated" : "concepts updated"
+        }`
+      );
     }
 
     // Add edge changes (optional, less verbose)
     if (addedEdgeCount > 0 || removedEdgeCount > 0) {
       const edgeDelta = addedEdgeCount - removedEdgeCount;
       if (edgeDelta > 0) {
-        parts.push(`${Math.abs(edgeDelta)} new ${edgeDelta === 1 ? "connection" : "connections"}`);
+        parts.push(
+          `${Math.abs(edgeDelta)} new ${
+            edgeDelta === 1 ? "connection" : "connections"
+          }`
+        );
       } else if (edgeDelta < 0) {
-        parts.push(`${Math.abs(edgeDelta)} ${edgeDelta === -1 ? "connection removed" : "connections removed"}`);
+        parts.push(
+          `${Math.abs(edgeDelta)} ${
+            edgeDelta === -1 ? "connection removed" : "connections removed"
+          }`
+        );
       } else {
         // Equal add/remove
         parts.push("connections restructured");
@@ -69,7 +89,7 @@ export async function generateAIContextualSummary(
   // 2. Include graph context (node types, labels, structure)
   // 3. Request natural language explanation
   // 4. Return contextual insights
-  
+
   console.log("🤖 AI contextual summarization (planned for future version)");
   console.log("Graph context:", {
     totalNodes: graphState.nodes.length,
@@ -85,3 +105,25 @@ export async function generateAIContextualSummary(
   return await generateSnapshotSummary(diff);
 }
 
+/**
+ * Generates AI summary for panel explanations
+ * Stub für spätere API (OpenAI / FILON AI Core)
+ * @param content - Panel content/context to summarize
+ * @returns Summary with confidence score
+ */
+export async function generatePanelSummary(content: string) {
+  try {
+    // Stub für spätere API (OpenAI / FILON AI Core)
+    // Simuliere Antwort mit pseudo-random Confidence Score
+    const confidence = Math.round(70 + Math.random() * 30);
+    await new Promise((res) => setTimeout(res, 800));
+
+    return {
+      summary: `🔍 AI Summary: Das Panel analysiert "${content}" und stellt den aktuellen Kontext dar.`,
+      confidence,
+    };
+  } catch (err) {
+    console.error("AI Summarizer error:", err);
+    return { summary: "⚠️ Summarizer failed to generate text.", confidence: 0 };
+  }
+}
