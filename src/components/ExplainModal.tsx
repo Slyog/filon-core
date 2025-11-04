@@ -2,6 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { generatePanelSummary } from "@/ai/summarizerCore";
+import { useContextStreamStore } from "@/store/ContextStreamStore";
 
 export default function ExplainModal({
   title,
@@ -13,6 +14,7 @@ export default function ExplainModal({
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<string | null>(null);
   const [confidence, setConfidence] = useState<number | null>(null);
+  const { addSummary } = useContextStreamStore();
 
   useEffect(() => {
     const generate = async () => {
@@ -23,10 +25,12 @@ export default function ExplainModal({
       );
       setSummary(result.text);
       setConfidence(result.confidence);
+      // Speichere Summary im ContextStreamStore
+      await addSummary(result);
       setLoading(false);
     };
     generate();
-  }, [title]);
+  }, [title, addSummary]);
 
   return (
     <AnimatePresence mode="wait">
