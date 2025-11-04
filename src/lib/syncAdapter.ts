@@ -1,3 +1,4 @@
+"use client";
 import localforage from "localforage";
 import type { Node, Edge } from "reactflow";
 import {
@@ -7,20 +8,7 @@ import {
 } from "./automergeAdapter";
 import { mergeWithStrategy } from "./conflictResolver";
 import { SilverbulletCore } from "./silverbullet/core";
-
-// Dynamic, SSR-safe Automerge import
-let Automerge: any = null;
-
-if (typeof window !== "undefined") {
-  import("@automerge/automerge")
-    .then((m) => {
-      Automerge = m;
-      console.info("[FILON] Automerge loaded in browser context");
-    })
-    .catch((err) => console.warn("[FILON] Automerge load failed:", err));
-} else {
-  console.info("[FILON] SSR context detected — skipping Automerge load");
-}
+import Automerge from "@/lib/automergeClient";
 
 export interface GraphData {
   nodes: Node[];

@@ -1,4 +1,5 @@
-import * as Automerge from "@automerge/automerge";
+"use client";
+import Automerge from "@/lib/automergeClient";
 
 /**
  * Vergleicht zwei Node-Listen und erzeugt eine Konfliktliste.
