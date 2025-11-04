@@ -9,7 +9,7 @@ import {
   useMemo,
 } from "react";
 import localforage from "localforage";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   ReactFlowProvider,
   ReactFlow,
@@ -51,17 +51,8 @@ import { attachRFDebug } from "@/utils/rfDebug";
 import { DEBUG_MODE } from "@/utils/env";
 import { useFeedbackStore } from "@/store/FeedbackStore";
 import { useMemoryStore } from "@/store/MemoryStore";
-import {
-  saveGraphRemote,
-  loadGraphSync,
-  syncAndResolve,
-} from "@/lib/syncAdapter";
-import {
-  saveSession,
-  saveGraphState,
-  loadGraphState,
-  type GraphState,
-} from "@/lib/sessionManager";
+import { saveGraphRemote, loadGraphSync } from "@/lib/syncAdapter";
+import { saveSession, saveGraphState, type GraphState } from "@/lib/sessionManager";
 import {
   saveSnapshot,
   clearSnapshots,
@@ -150,7 +141,7 @@ type SaveState = "idle" | "saving" | "saved" | "error" | "conflict";
 type ToastType = "restore" | "save" | "recovery" | "error" | null;
 const SESSION_STORAGE_KEY = "filon-sessions";
 
-export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
+function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
   const addFeedback = useFeedbackStore((s) => s.add);
@@ -229,89 +220,44 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     return () => document.body.classList.remove("motion-test");
   }, [motionTest]);
 
-  // 📥 Graph laden (CRDT-Sync mit Conflict-Resolution) + Session Recovery
+  // 📥 Startup cleanup scoped to active session
   useEffect(() => {
-    let mounted = true;
+    if (!sessionId) {
+      return;
+    }
 
     (async () => {
-      // Skip legacy load if sessionId is present (session-based loading handles it)
-      if (sessionId) {
-        setIsLoading(false);
-        setGraphLoadedOnce(true);
-        setGraphLoadedOnceStore(true);
-        return;
-      }
-
-      setIsLoading(true);
       try {
-        // Clean up expired snapshots and feedback events on mount
         await clearSnapshots();
         await cleanupOldFeedback();
+      } catch (err) {
+        console.error("Failed to run startup cleanup:", err);
+      }
+    })();
+  }, [sessionId]);
 
-        // Try to restore from session manager first
-        const savedGraphState = await loadGraphState();
-        if (!mounted) return;
+  useEffect(() => {
+    if (!sessionId) return;
 
-        if (savedGraphState) {
-          setNodes(styleNodes(savedGraphState.nodes ?? []));
-          setEdges(savedGraphState.edges ?? []);
-          setLayoutTrigger((n) => n + 1);
-          setToast({
-            type: "recovery",
-            message: `📦 Vorheriger Zustand wiederhergestellt (${
-              savedGraphState.nodes?.length ?? 0
-            } Nodes)`,
-          });
-          setTimeout(() => setToast(null), 4000);
-        }
+    let cancelled = false;
 
-        // Then sync with remote (CRDT-Sync)
-        const result = await syncAndResolve("mergeProps");
-        if (!mounted) return;
-
-        if (result?.merged) {
-          setNodes(styleNodes(result.merged.nodes ?? []));
-          setEdges(result.merged.edges ?? []);
-          setLayoutTrigger((n) => n + 1);
-
-          // Konflikte loggen
-          if (result.conflicts.length > 0) {
-            console.warn(
-              `⚠️ ${result.conflicts.length} Konflikte automatisch aufgelöst`
-            );
-          }
-        }
-
-        // 🌿 Load active branch
+    (async () => {
+      try {
         const activeBranchId = await getActiveBranch();
-        if (!mounted) return;
-
-        if (activeBranchId) {
-          const branch = await getBranch(activeBranchId);
-          if (branch) {
-            setActiveBranch(branch);
-          }
+        if (!activeBranchId || cancelled) return;
+        const branch = await getBranch(activeBranchId);
+        if (branch && !cancelled) {
+          setActiveBranch(branch);
         }
       } catch (err) {
-        console.error("Failed to load graph:", err);
-      } finally {
-        if (mounted) {
-          // Reset active node states after load to prevent stale data
-          setActiveNode(null);
-          setActiveNodeId(null);
-          setIsLoading(false);
-          setGraphLoadedOnce(true); // ✅ Lock the render after first success
-          setGraphLoadedOnceStore(true); // ✅ Update store
-          setTimeout(() => setHasAnimated(true), 100); // after fade
-        }
+        console.warn("Failed to restore active branch:", err);
       }
     })();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, setGraphLoadedOnceStore]);
+  }, [sessionId]);
 
   // 🔗 Session ID routing: Load graph when sessionId changes
   useEffect(() => {
@@ -322,7 +268,14 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
         const storeId = getLastActive();
         if (storeId) activeId = storeId;
       }
-      if (!activeId) return;
+    if (!activeId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setActiveNode(null);
+    setActiveNodeId(null);
 
       isInitialSessionLoadRef.current = true; // Set flag before loading
       const data = await loadGraphFromSession(activeId);
@@ -333,6 +286,8 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       setGraphLoadedOnceStore(true);
       setLayoutTrigger((n) => n + 1);
       console.log(`[FILON] Graph loaded for session ${activeId}`);
+      setIsLoading(false);
+      setTimeout(() => setHasAnimated(true), 100);
       // Reset flag after a short delay to allow for the first save
       setTimeout(() => {
         isInitialSessionLoadRef.current = false;
@@ -1046,7 +1001,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
 
       setNodes((nds) => {
         const updated = [...nds, withGlow(newNode, false)];
-        saveGraph(updated, edges);
+        setTimeout(() => saveGraph(updated, edges), 100);
         return updated;
       });
       setLayoutTrigger((n) => n + 1);
@@ -1063,7 +1018,7 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   );
 
   const createTextNode = useCallback(
-    (label: string, thoughtType: string) => {
+    async (label: string, thoughtType: string) => {
       const hasWindow = typeof window !== "undefined";
       const center = flowInstance
         ? flowInstance.screenToFlowPosition({
@@ -1079,21 +1034,29 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
         type: "default",
       };
 
+      let nextLength = 0;
       setNodes((nds) => {
         const updated = [...nds, withGlow(newNode, false)];
-        saveGraph(updated, edges);
+        nextLength = updated.length;
+        setTimeout(() => saveGraph(updated, edges), 100);
         return updated;
       });
 
+      console.log(`🧠 Created node from queued thought: "${label}"`);
+      if (nextLength === 0) {
+        console.warn(
+          "⚠️ Node list appears empty after creation attempt from queued thought."
+        );
+      }
+
       setLayoutTrigger((n) => n + 1);
 
-      setTimeout(() => {
-        try {
-          flowInstance?.fitView({ padding: 0.3, duration: 600 });
-        } catch {
-          // FitView can fail if instance unmounted; ignore.
-        }
-      }, 150);
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      try {
+        flowInstance?.fitView({ padding: 0.3, duration: 600 });
+      } catch (error) {
+        console.warn("fitView failed for queued thought node", error);
+      }
     },
     [edges, flowInstance, saveGraph, setLayoutTrigger, withGlow]
   );
@@ -1117,35 +1080,92 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
     [router]
   );
 
+  const flushThoughtQueue = useCallback(
+    async (sessionId: string, source: "ready" | "retry") => {
+      console.log(
+        `🌀 Draining queued thoughts for ${sessionId} (${source})…`
+      );
+      const queued = await drainThoughtsForSession(sessionId);
+      if (!queued.length) {
+        console.log(
+          `ℹ️ No queued thoughts found for ${sessionId} (${source}).`
+        );
+        return false;
+      }
+
+      for (const thought of queued) {
+        const label = thought.content.trim() || "New Thought";
+        await createTextNode(label, thought.thoughtType);
+      }
+
+      console.log(
+        `✅ Finished draining queued thoughts for ${sessionId} (${source}).`
+      );
+      addFeedback({
+        type: "success",
+        message:
+          queued.length === 1
+            ? "🪄 Thought materialized into your graph."
+            : `🪄 ${queued.length} thoughts materialized into your graph.`,
+      });
+
+      return true;
+    },
+    [drainThoughtsForSession, createTextNode, addFeedback]
+  );
+
   useEffect(() => {
     if (!graphLoadedOnce || isLoading || !activeSessionId) return;
 
-    const hasPendingForSession = pendingThoughts.some(
-      (t) => t.sessionId === activeSessionId
-    );
-    if (!hasPendingForSession) return;
+    if (!pendingThoughts.some((t) => t.sessionId === activeSessionId)) return;
 
-    const queued = drainThoughtsForSession(activeSessionId);
-    if (!queued.length) return;
-
-    queued.forEach((thought) => {
-      const label = thought.content.trim() || "New Thought";
-      createTextNode(label, thought.thoughtType);
-    });
-
-    addFeedback({
-      type: "success",
-      message: `✨ ${queued.length} Thought(s) hinzugefügt`,
-    });
+    void flushThoughtQueue(activeSessionId, "ready");
   }, [
     graphLoadedOnce,
     isLoading,
     activeSessionId,
     pendingThoughts,
-    drainThoughtsForSession,
-    createTextNode,
-    addFeedback,
+    flushThoughtQueue,
   ]);
+
+  useEffect(() => {
+    if (!activeSessionId) return;
+    if (
+      !useSessionStore
+        .getState()
+        .pendingThoughts.some((t) => t.sessionId === activeSessionId)
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const attemptDrain = async () => {
+      console.log(
+        `⏳ Waiting for graph readiness to drain queued thoughts for ${activeSessionId}…`
+      );
+      for (let i = 0; i < 10 && !cancelled; i += 1) {
+        const { graphLoadedOnce: ready } = useGraphStore.getState();
+        if (ready) {
+          await flushThoughtQueue(activeSessionId, "retry");
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      if (!cancelled) {
+        console.warn(
+          "⚠️ Graph never reached ready state; thoughts remain queued."
+        );
+      }
+    };
+
+    attemptDrain();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSessionId, flushThoughtQueue, pendingThoughts]);
 
   const startVoiceInput = useCallback(async () => {
     console.log("🎙 Voice input started...");
@@ -2206,6 +2226,25 @@ export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
       </div>
     </GraphContext.Provider>
   );
+}
+
+export default function GraphCanvas({
+  sessionId,
+}: {
+  sessionId?: string;
+}) {
+  const pathname = usePathname();
+  const match = pathname?.match(/^\/f\/([^/]+)/);
+  const derivedSessionId = sessionId ?? (match ? match[1] : undefined);
+
+  if (!derivedSessionId) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("GraphCanvas skipped: no active session for path", pathname);
+    }
+    return null;
+  }
+
+  return <GraphCanvasInner sessionId={derivedSessionId} />;
 }
 
 // 🔧 Innere Komponente korrigiert

@@ -7,5 +7,8 @@ type GraphState = {
 
 export const useGraphStore = create<GraphState>((set) => ({
   graphLoadedOnce: false,
-  setGraphLoadedOnce: (loaded: boolean) => set({ graphLoadedOnce: loaded }),
+  setGraphLoadedOnce: (loaded: boolean) => {
+    console.log("🔄 Graph loaded state:", loaded);
+    set({ graphLoadedOnce: loaded });
+  },
 }));

@@ -94,7 +94,7 @@ type SessionState = {
   enqueueThought: (
     t: Omit<PendingThought, "id" | "createdAt">
   ) => PendingThought["id"];
-  drainThoughtsForSession: (sessionId: string) => PendingThought[];
+  drainThoughtsForSession: (sessionId: string) => Promise<PendingThought[]>;
 };
 
 export const useSessionStore = create<SessionState>()(
@@ -179,50 +179,65 @@ export const useSessionStore = create<SessionState>()(
           return id;
         },
         createOrGetActive: async (autoTitle?: string) => {
-          const { activeSessionId } = get();
-          if (activeSessionId) return activeSessionId;
+          const {
+            sessions,
+            activeSessionId,
+            addSession,
+            setActiveSession,
+          } = get();
+
+          const hasActive =
+            activeSessionId &&
+            sessions.some((session) => session.id === activeSessionId);
+
+          if (hasActive && sessions.length > 0) {
+            return activeSessionId!;
+          }
 
           const fallbackName =
             autoTitle && autoTitle.trim().length > 0
               ? autoTitle.trim()
-              : `Untitled Workspace #${Math.max(
-                  1,
-                  Math.floor(Math.random() * 999)
-                )}`;
+              : `New Workspace ${new Date().toLocaleTimeString()}`;
 
-          const id = crypto.randomUUID();
-          const timestamp = Date.now();
-          const newSession: Session = {
-            id,
-            title: fallbackName,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-            category: "Other",
-          };
+          const newId = await addSession(fallbackName, "Other");
+          setActiveSession(newId);
 
-          set((state) => ({
-            ...state,
-            sessions: [...state.sessions, newSession],
-            activeSessionId: id,
-          }));
+          try {
+            await localforage.setItem("filon-active-session", newId);
+          } catch (error) {
+            console.warn("Failed to persist active session id", error);
+          }
 
-          await persistSnapshot();
-          return id;
+          return newId;
         },
         removeSession: (id) => {
           get().deleteSession(id);
         },
-        deleteSession: (id) => {
-          set((state) => {
-            const sessions = state.sessions.filter((s) => s.id !== id);
-            const activeSessionId =
-              state.activeSessionId === id
-                ? sessions[0]?.id ?? null
-                : state.activeSessionId;
-            return { ...state, sessions, activeSessionId };
+        deleteSession: async (id) => {
+          const { sessions, activeSessionId } = get();
+          const updatedSessions = sessions.filter((s) => s.id !== id);
+
+          set((state) => ({
+            ...state,
+            sessions: updatedSessions,
+            activeSessionId:
+              state.activeSessionId === id ? null : state.activeSessionId,
+          }));
+
+          await localforage.setItem(STORAGE_KEY, {
+            state: {
+              sessions: updatedSessions,
+              activeSessionId:
+                activeSessionId === id ? null : activeSessionId,
+              pendingThoughts: get().pendingThoughts,
+            },
+            version: 0,
+            payload: latestPersistPayload,
           });
 
-          void persistSnapshot();
+          if (typeof window !== "undefined" && activeSessionId === id) {
+            window.history.replaceState({}, "", "/");
+          }
         },
         closeSession: (id) => {
           set((state) => ({
@@ -322,14 +337,14 @@ export const useSessionStore = create<SessionState>()(
           void persistSnapshot();
           return item.id;
         },
-        drainThoughtsForSession: (sessionId) => {
+        drainThoughtsForSession: async (sessionId) => {
           const all = get().pendingThoughts;
           const mine = all.filter((t) => t.sessionId === sessionId);
           if (!mine.length) return [];
           const rest = all.filter((t) => t.sessionId !== sessionId);
 
           set((state) => ({ ...state, pendingThoughts: rest }));
-          void persistSnapshot();
+          await persistSnapshot();
           return mine;
         },
       };

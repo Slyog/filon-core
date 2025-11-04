@@ -1,6 +1,6 @@
 "use client";
 import { ReactNode, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { ActiveNodeProvider } from "@/context/ActiveNodeContext";
 import { MindProgressProvider } from "@/context/MindProgressContext";
@@ -23,6 +23,7 @@ export default function WorkspaceShell({
   sessionId?: string;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
   const sessions = useSessionStore((s) => s.sessions);
   const setActiveSession = useSessionStore((s) => s.setActiveSession);
@@ -40,6 +41,20 @@ export default function WorkspaceShell({
       }
     }
   }, [pathname, activeSessionId, sessions, setActiveSession]);
+
+  useEffect(() => {
+    if (!activeSessionId && pathname?.startsWith("/f/")) {
+      router.replace("/");
+    }
+  }, [activeSessionId, pathname, router]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const current = sessions.find((s) => s.id === activeSessionId);
+    document.title = current?.title
+      ? `FILON — ${current.title}`
+      : "FILON — Visual Workspace";
+  }, [sessions, activeSessionId]);
 
   return (
     <ActiveNodeProvider>

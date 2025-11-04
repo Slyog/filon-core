@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useFeedbackStore } from "@/store/FeedbackStore";
 import { useSessionStore } from "@/store/SessionStore";
+import { useGraphStore } from "@/store/GraphStore";
 
 const TYPES = [
   "Idea",
@@ -24,6 +25,15 @@ export default function ThoughtTypeSelector() {
     (s) => s.generateTitleFromThought
   );
   const enqueueThought = useSessionStore((s) => s.enqueueThought);
+  const waitForGraphReady = useCallback(async () => {
+    for (let i = 0; i < 20; i += 1) {
+      if (useGraphStore.getState().graphLoadedOnce) {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return false;
+  }, []);
 
   const [selected, setSelected] = useState<(typeof TYPES)[number]>("Idea");
   const [custom, setCustom] = useState("");
@@ -49,13 +59,28 @@ export default function ThoughtTypeSelector() {
 
     const content = text.trim();
 
-    let sessionId = activeSessionId;
-    let navigated = false;
+    const previousSessionId = activeSessionId;
+    const titleSuggestion = generateTitleFromThought(content);
+    const sessionId = await createOrGetActive(titleSuggestion);
+
     if (!sessionId) {
-      const titleSuggestion = generateTitleFromThought(content);
-      sessionId = await createOrGetActive(titleSuggestion);
+      addFeedback({
+        type: "error",
+        message: "⚠️ Could not create workspace automatically.",
+      });
+      return;
+    }
+
+    if (!pathname.includes(`/f/${sessionId}`)) {
       router.push(`/f/${sessionId}`);
-      navigated = true;
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+
+    const graphReady = await waitForGraphReady();
+    if (!graphReady) {
+      console.warn(
+        "Graph not ready after waiting; thoughts remain queued until drain runs"
+      );
     }
 
     enqueueThought({
@@ -63,19 +88,24 @@ export default function ThoughtTypeSelector() {
       content,
       thoughtType: currentType,
     });
-
-    if (!navigated && pathname !== `/f/${sessionId}`) {
-      router.push(`/f/${sessionId}`);
-    }
+    addFeedback({
+      type: "info",
+      message: "✨ Thought queued — will appear once workspace is ready.",
+    });
 
     setText("");
     if (selected === "Custom") {
       setCustom("");
     }
 
+    const createdNewWorkspace =
+      !previousSessionId || previousSessionId !== sessionId;
+
     addFeedback({
       type: "success",
-      message: "🧠 Thought wird hinzugefügt…",
+      message: createdNewWorkspace
+        ? "✨ Workspace erstellt und Thought wird hinzugefügt…"
+        : "🧠 Thought wird hinzugefügt…",
     });
   }
 

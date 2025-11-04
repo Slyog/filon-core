@@ -24,6 +24,14 @@ jest.mock('localforage', () => ({
   removeItem: jest.fn(async () => {}),
 }));
 
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+}));
+
 describe('GraphCanvas', () => {
   beforeEach(() => {
     // reset in-memory localStorage polyfill from jest.setup
