@@ -103,9 +103,14 @@ button {
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
 }
-button:focus-visible {
-  outline: 2px solid var(--glow);
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #2ff3ff;
   outline-offset: 2px;
+  outline-style: solid;
 }
 
 /* --- Animation --- */

@@ -64,13 +64,17 @@ export default function QAPanel({ className = "" }: QAPanelProps) {
   };
 
   return (
-    <div className={`flex flex-col h-full bg-zinc-900/95 border border-zinc-800 rounded-lg ${className}`}>
+    <div
+      className={`flex flex-col h-full bg-layer border border-zinc-800 rounded-lg ${className}`}
+      style={{ zIndex: 100 }}
+    >
       {/* Header */}
       <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-zinc-200">QA History</h2>
         <button
           onClick={handleClear}
           className="text-xs px-2 py-1 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded transition-colors"
+          aria-label="Clear all QA entries"
         >
           Clear
         </button>

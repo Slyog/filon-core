@@ -285,8 +285,17 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
       isInitialSessionLoadRef.current = true; // Set flag before loading
       const data = await loadGraphFromSession(activeId);
-      setNodes(data.nodes);
-      setEdges(data.edges);
+      const loadedNodes = data?.nodes ?? [];
+      const loadedEdges = data?.edges ?? [];
+
+      setNodes(loadedNodes);
+      setEdges(loadedEdges);
+      console.debug(
+        "Hydration complete",
+        loadedNodes.length,
+        loadedEdges.length
+      );
+
       setIsSessionLoaded(true);
       setGraphLoadedOnce(true);
       setGraphLoadedOnceStore(true);
@@ -1904,7 +1913,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         {/* ⏳ Timeline Playback Panel */}
         <AnimatePresence>
           {playbackPanelOpen && (
-            <div className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
               <TimelinePlayer
                 onSnapshotChange={handlePlaybackSnapshotChange}
                 onClose={handlePlaybackClose}
@@ -1962,37 +1971,35 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         )}
 
         {/* 🧠 React Flow Graph */}
-        {nodes.length > 0 && (
-          <ReactFlowProvider>
-            <GraphFlowWithHotkeys
-              onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
-              onConnect={onConnect}
-              onNodeClick={onNodeClick}
-              onPaneClick={onPaneClick}
-              onNodeDragStop={onNodeDragStop}
-              onNodeContextMenu={onNodeContextMenu}
-              onNodeMouseEnter={onNodeMouseEnter}
-              onNodeMouseLeave={onNodeMouseLeave}
-              registerInstance={setFlowInstance}
-              contextNode={contextNode}
-              menuPos={menuPos}
-              closeContextMenu={closeContextMenu}
-              filteredNodes={filteredNodes}
-              rawNodes={nodes}
-              edges={edges}
-              setNodes={setNodes}
-              withGlow={withGlow}
-              setActiveNodeId={setActiveNodeId}
-              searchRef={searchRef}
-              isEditableTarget={isEditableTarget}
-              isLoading={isLoading}
-              hasNodes={nodes?.length > 0}
-              hasAnimated={hasAnimated}
-              graphLoadedOnce={graphLoadedOnce}
-            />
-          </ReactFlowProvider>
-        )}
+        <ReactFlowProvider>
+          <GraphFlowWithHotkeys
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            onNodeDragStop={onNodeDragStop}
+            onNodeContextMenu={onNodeContextMenu}
+            onNodeMouseEnter={onNodeMouseEnter}
+            onNodeMouseLeave={onNodeMouseLeave}
+            registerInstance={setFlowInstance}
+            contextNode={contextNode}
+            menuPos={menuPos}
+            closeContextMenu={closeContextMenu}
+            filteredNodes={filteredNodes}
+            rawNodes={nodes}
+            edges={edges}
+            setNodes={setNodes}
+            withGlow={withGlow}
+            setActiveNodeId={setActiveNodeId}
+            searchRef={searchRef}
+            isEditableTarget={isEditableTarget}
+            isLoading={isLoading}
+            hasNodes={nodes?.length > 0}
+            hasAnimated={hasAnimated}
+            graphLoadedOnce={graphLoadedOnce}
+          />
+        </ReactFlowProvider>
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel
@@ -2220,7 +2227,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.9 }}
               transition={{ duration: 0.3 }}
-              className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] 
+              className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[150] 
                          bg-zinc-800 text-white px-4 py-3 rounded-lg shadow-2xl
                          border border-zinc-700 min-w-[300px] text-center"
             >

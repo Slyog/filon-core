@@ -85,7 +85,7 @@ export default function ThoughtPanel({
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 320, opacity: 0 }}
           transition={{ duration: 0.65, ease: [0.4, 0.0, 0.2, 1] }}
-          className="fixed right-0 top-0 z-[9999] flex h-full w-80 flex-col border-l border-zinc-700 bg-filon-surface/95 p-md text-filon-text shadow-lg backdrop-blur-md"
+          className="fixed right-0 top-0 z-[150] flex h-full w-80 flex-col border-l border-zinc-700 bg-filon-surface/95 p-md text-filon-text shadow-lg backdrop-blur-md"
           role="dialog"
           aria-label="Thought Node Details"
         >

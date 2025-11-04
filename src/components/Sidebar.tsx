@@ -108,12 +108,21 @@ export default function Sidebar() {
         {filtered.map((s) => (
           <div
             key={s.id}
-            className={`p-2 rounded-lg cursor-pointer border transition-all ${
+            role="button"
+            tabIndex={0}
+            aria-label={`Open workspace: ${s.title}`}
+            className={`p-2 rounded-lg cursor-pointer border transition-all focus:outline-none focus:ring-2 focus:ring-filament focus:ring-offset-2 focus:ring-offset-layer ${
               s.id === activeSessionId
                 ? "bg-panel text-filament font-semibold border-[var(--accent)]"
                 : "border-transparent hover:shadow-[0_0_10px_rgba(47,243,255,0.4)]"
             }`}
             onClick={() => handleOpen(s.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleOpen(s.id);
+              }
+            }}
           >
             <div className="flex justify-between items-center mb-1">
               <span className="truncate">{s.title}</span>

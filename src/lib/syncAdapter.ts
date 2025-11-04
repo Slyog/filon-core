@@ -1,6 +1,5 @@
 import localforage from "localforage";
 import type { Node, Edge } from "reactflow";
-import * as Automerge from "@automerge/automerge";
 import {
   initGraphDoc,
   persistGraphDoc,
@@ -8,6 +7,20 @@ import {
 } from "./automergeAdapter";
 import { mergeWithStrategy } from "./conflictResolver";
 import { SilverbulletCore } from "./silverbullet/core";
+
+// Dynamic, SSR-safe Automerge import
+let Automerge: any = null;
+
+if (typeof window !== "undefined") {
+  import("@automerge/automerge")
+    .then((m) => {
+      Automerge = m;
+      console.info("[FILON] Automerge loaded in browser context");
+    })
+    .catch((err) => console.warn("[FILON] Automerge load failed:", err));
+} else {
+  console.info("[FILON] SSR context detected — skipping Automerge load");
+}
 
 export interface GraphData {
   nodes: Node[];
@@ -66,6 +79,11 @@ export async function syncAndResolve(
   strategy: "preferLocal" | "preferRemote" | "mergeProps" = "mergeProps"
 ) {
   try {
+    if (!Automerge) {
+      console.warn("[FILON] Automerge not loaded — skipping syncAndResolve");
+      return null;
+    }
+
     const localDoc = await initGraphDoc();
     const res = await fetch("/api/graph");
     const remoteJson = await res.json();
@@ -106,7 +124,7 @@ export async function syncAndResolve(
 
     return { merged, conflicts };
   } catch (err) {
-    console.error("Sync + Conflict Resolution failed:", err);
+    console.error("[FILON] Sync + Conflict Resolution failed:", err);
     return null;
   }
 }

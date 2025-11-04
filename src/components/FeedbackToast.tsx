@@ -5,7 +5,7 @@ import { useFeedbackStore } from "@/store/FeedbackStore";
 export default function FeedbackToast() {
   const { items } = useFeedbackStore();
   return (
-    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9999] space-y-2">
+    <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[150] space-y-2">
       <AnimatePresence>
         {items.map((f) => (
           <motion.div
