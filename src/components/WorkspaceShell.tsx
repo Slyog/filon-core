@@ -1,6 +1,7 @@
 "use client";
 import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import type { QAEntry } from "@/store/QAStore";
 import dynamic from "next/dynamic";
 import { ActiveNodeProvider } from "@/context/ActiveNodeContext";
 import { MindProgressProvider } from "@/context/MindProgressContext";
@@ -55,6 +56,18 @@ export default function WorkspaceShell({
       ? `FILON — ${current.title}`
       : "FILON — Visual Workspace";
   }, [sessions, activeSessionId]);
+
+  // 🔔 Global QA Event Hook (optional: for toast/counter updates)
+  useEffect(() => {
+    const onQA = (e: Event) => {
+      const detail = (e as CustomEvent<QAEntry>).detail;
+      // Optional: set local state "lastQA" or trigger a toast
+      // Example: could update a badge counter or show a notification
+      console.debug("[WorkspaceShell] QA event received:", detail);
+    };
+    window.addEventListener("filon:qa", onQA as EventListener);
+    return () => window.removeEventListener("filon:qa", onQA as EventListener);
+  }, []);
 
   return (
     <ActiveNodeProvider>

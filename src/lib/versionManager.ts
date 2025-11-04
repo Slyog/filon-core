@@ -1,6 +1,7 @@
 import localforage from "localforage";
 import type { Node, Edge } from "reactflow";
 import { GraphState } from "./sessionManager";
+import { logSuccess, logError } from "@/utils/qaLogger";
 
 export interface SnapshotMeta {
   id: string;
@@ -84,9 +85,20 @@ export async function saveSnapshot(
       `💾 Snapshot saved: ${id} (${snapshot.nodeCount} nodes, ${snapshot.edgeCount} edges)`
     );
 
+    logSuccess({
+      step: "autosave",
+      notes: `Session snapshot saved (${snapshot.nodeCount} nodes, ${snapshot.edgeCount} edges)`,
+      meta: { snapshotId: id, nodeCount: snapshot.nodeCount, edgeCount: snapshot.edgeCount },
+    });
+
     return id;
   } catch (err) {
     console.warn("Failed to save snapshot:", err);
+    logError({
+      step: "autosave",
+      notes: err instanceof Error ? err.message : "Unknown save error",
+      meta: { error: String(err) },
+    });
     return null;
   }
 }

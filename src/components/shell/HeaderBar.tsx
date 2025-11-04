@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PanelLeft, Share2, Settings } from "lucide-react";
 import { useUIShellStore } from "@/store/UIShellStore";
 import { useSessionStore } from "@/store/SessionStore";
+import ExportDialog from "@/components/ExportDialog";
 
 export default function HeaderBar() {
   const toggle = useUIShellStore((state) => state.toggleSidebar);
   const pathname = usePathname();
   const sessions = useSessionStore((state) => state.sessions);
   const activeSessionId = useSessionStore((state) => state.activeSessionId);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const title = useMemo(() => {
     if (pathname?.startsWith("/f/") && activeSessionId) {
@@ -27,8 +29,8 @@ export default function HeaderBar() {
   }, [title]);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-40 flex h-12 items-center border-b border-zinc-900 bg-black/75 backdrop-blur">
-      <div className="flex flex-1 items-center gap-2 px-3">
+    <header className="fixed inset-x-0 top-0 z-50 flex h-12 items-center justify-between border-b border-zinc-900 bg-black/75 backdrop-blur px-4 py-2">
+      <div className="flex flex-1 items-center gap-2">
         <button
           type="button"
           onClick={toggle}
@@ -44,7 +46,15 @@ export default function HeaderBar() {
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2 px-3">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setExportOpen(true)}
+          className="px-3 py-1.5 rounded-md bg-cyan-700/40 hover:bg-cyan-500/50 text-cyan-100 text-sm font-medium transition-colors"
+          aria-label="Exportieren"
+        >
+          Exportieren
+        </button>
         <button
           type="button"
           onClick={() =>
@@ -68,6 +78,11 @@ export default function HeaderBar() {
           <span className="hidden sm:inline">Settings</span>
         </button>
       </div>
+      <ExportDialog
+        isOpen={exportOpen}
+        onClose={() => setExportOpen(false)}
+        sessionId={activeSessionId || undefined}
+      />
     </header>
   );
 }

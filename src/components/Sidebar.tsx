@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { useSessionStore, type Session } from "@/store/SessionStore";
 import { useRouter } from "next/navigation";
 import GraphPreview from "./GraphPreview";
+import QAPanel from "./QAPanel";
 
 export default function Sidebar() {
   const {
@@ -15,6 +16,7 @@ export default function Sidebar() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Session["category"] | "All">("All");
+  const [qaPanelOpen, setQaPanelOpen] = useState(false);
 
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
@@ -143,6 +145,22 @@ export default function Sidebar() {
           </div>
         ))}
       </div>
+
+      <hr className="opacity-30 my-3" />
+      
+      {/* QA Section */}
+      <button
+        onClick={() => setQaPanelOpen(!qaPanelOpen)}
+        className="w-full px-3 py-2 mb-2 text-sm text-left bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] rounded-md transition-colors flex items-center justify-between"
+      >
+        <span className="text-[var(--accent)]">🔍 QA History</span>
+        <span className="text-xs opacity-60">{qaPanelOpen ? "▼" : "▶"}</span>
+      </button>
+      {qaPanelOpen && (
+        <div className="mb-3">
+          <QAPanel className="h-[400px]" />
+        </div>
+      )}
 
       <hr className="opacity-30 my-3" />
       <h3 className="text-sm font-semibold text-[var(--accent)]">

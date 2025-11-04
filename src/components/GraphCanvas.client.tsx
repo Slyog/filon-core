@@ -52,7 +52,11 @@ import { DEBUG_MODE } from "@/utils/env";
 import { useFeedbackStore } from "@/store/FeedbackStore";
 import { useMemoryStore } from "@/store/MemoryStore";
 import { saveGraphRemote, loadGraphSync } from "@/lib/syncAdapter";
-import { saveSession, saveGraphState, type GraphState } from "@/lib/sessionManager";
+import {
+  saveSession,
+  saveGraphState,
+  type GraphState,
+} from "@/lib/sessionManager";
 import {
   saveSnapshot,
   clearSnapshots,
@@ -83,6 +87,7 @@ import {
   type Session,
 } from "@/store/SessionStore";
 import { useGraphStore } from "@/store/GraphStore";
+import { logSuccess, logError, logInfo } from "@/utils/qaLogger";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -208,6 +213,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     addFeedback({ type: "info", message: "📡 Graph initialized" });
     setStatus("idle");
+    logInfo({ step: "mount", notes: "GraphCanvas mounted" });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 🧪 Motion Test Toggle
@@ -268,14 +274,14 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         const storeId = getLastActive();
         if (storeId) activeId = storeId;
       }
-    if (!activeId) {
-      setIsLoading(false);
-      return;
-    }
+      if (!activeId) {
+        setIsLoading(false);
+        return;
+      }
 
-    setIsLoading(true);
-    setActiveNode(null);
-    setActiveNodeId(null);
+      setIsLoading(true);
+      setActiveNode(null);
+      setActiveNodeId(null);
 
       isInitialSessionLoadRef.current = true; // Set flag before loading
       const data = await loadGraphFromSession(activeId);
@@ -424,6 +430,11 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           });
           addFeedback({ type: "success", message: "☁️ Synced to cloud" });
           setStatus("synced", "☁️ Synced to cloud");
+          logSuccess({
+            step: "autosave",
+            notes: "Graph state persisted",
+            meta: { nodeCount: n.length, edgeCount: e.length },
+          });
 
           // Create version snapshot conditionally: every ~5 min or 20+ node changes
           const timeSinceLastSnapshot = when - lastSnapshotRef.current;
@@ -546,6 +557,15 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
             message: "⚠️ Offline – local backup only",
           });
           setStatus("offline", "⚠️ Offline – local backup only");
+          logError({
+            step: "autosave",
+            notes: err instanceof Error ? err.message : "Unknown save error",
+            meta: {
+              nodeCount: n.length,
+              edgeCount: e.length,
+              error: String(err),
+            },
+          });
 
           await localforage.setItem("noion-graph", { nodes: n, edges: e });
           // Still save to session manager for recovery
@@ -1082,9 +1102,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
   const flushThoughtQueue = useCallback(
     async (sessionId: string, source: "ready" | "retry") => {
-      console.log(
-        `🌀 Draining queued thoughts for ${sessionId} (${source})…`
-      );
+      console.log(`🌀 Draining queued thoughts for ${sessionId} (${source})…`);
       const queued = await drainThoughtsForSession(sessionId);
       if (!queued.length) {
         console.log(
@@ -1333,11 +1351,9 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         return;
       }
 
-      const parsed =
-        typeof stored === "string" ? JSON.parse(stored) : stored;
+      const parsed = typeof stored === "string" ? JSON.parse(stored) : stored;
 
-      const snapshot = (parsed?.state ??
-        parsed) as Partial<{
+      const snapshot = (parsed?.state ?? parsed) as Partial<{
         sessions: Session[];
         activeSessionId: string | null;
         pendingThoughts: PendingThought[];
@@ -1369,8 +1385,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           ...state,
           sessions: nextSessions,
           activeSessionId: nextActive,
-          pendingThoughts:
-            snapshot.pendingThoughts ?? state.pendingThoughts,
+          pendingThoughts: snapshot.pendingThoughts ?? state.pendingThoughts,
         };
       });
 
@@ -2228,11 +2243,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   );
 }
 
-export default function GraphCanvas({
-  sessionId,
-}: {
-  sessionId?: string;
-}) {
+export default function GraphCanvas({ sessionId }: { sessionId?: string }) {
   const pathname = usePathname();
   const match = pathname?.match(/^\/f\/([^/]+)/);
   const derivedSessionId = sessionId ?? (match ? match[1] : undefined);
