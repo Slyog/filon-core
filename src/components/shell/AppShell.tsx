@@ -1,13 +1,28 @@
 "use client";
 
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { motion } from "framer-motion";
 import HeaderBar from "./HeaderBar";
 import SidebarNav from "./Sidebar";
 import { useHydrateUIShell } from "@/store/UIShellStore";
+import DynamicPanel from "@/components/DynamicPanel";
+import ContextStream from "@/components/ContextStream";
 
 export default function AppShell({ children }: PropsWithChildren) {
   useHydrateUIShell();
+
+  // Hotkey Support (Stub)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "1") {
+        document
+          .querySelector('[aria-label="Context Stream"]')
+          ?.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   return (
     <motion.div
@@ -30,8 +45,19 @@ export default function AppShell({ children }: PropsWithChildren) {
         <div className="flex-1 overflow-y-auto">
           <motion.div
             layout
-            className="relative flex flex-col items-center justify-center min-h-[75vh] mx-auto w-full max-w-7xl p-6"
+            className="relative flex flex-col items-center justify-center min-h-[75vh] mx-auto w-full max-w-7xl p-6 space-y-6"
           >
+            {/* Core Panels */}
+            <DynamicPanel flag="CONTEXT_STREAM" title="Context Stream">
+              <ContextStream />
+            </DynamicPanel>
+
+            <DynamicPanel flag="SESSION_FEEDBACK" title="Session Feedback">
+              <p className="text-gray-400 text-sm">
+                Feedback system currently disabled.
+              </p>
+            </DynamicPanel>
+
             {children}
           </motion.div>
         </div>
@@ -39,7 +65,7 @@ export default function AppShell({ children }: PropsWithChildren) {
 
       {/* Footer */}
       <footer className="row-start-3 py-4 text-center text-xs text-gray-500/70 border-t border-cyan-900/40">
-        FILON Core v0.1 • Grid Aligned
+        FILON Core v0.2 • Dynamic Panels Active
       </footer>
     </motion.div>
   );
