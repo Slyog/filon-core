@@ -3,6 +3,7 @@ import { db } from "@/store/db";
 import { syncLambdaHandler } from "@/sync/syncLambdaHandler";
 import type { SyncEvent } from "@/sync/syncSchema";
 import { registerOnlineSync, isOnline } from "@/utils/network";
+import { logTelemetry } from "@/utils/telemetryLogger";
 
 interface SyncJob {
   id: string;
@@ -60,6 +61,14 @@ export function useAutosaveQueue(
       return;
     }
 
+    // Log commit start
+    await logTelemetry(
+      "commit_start",
+      "Autosave commit started",
+      { jobId: job.id },
+      job.sessionId
+    );
+
     try {
       // Create sync event with binary data
       // The change object contains the binary for the sync handler
@@ -92,6 +101,14 @@ export function useAutosaveQueue(
           // Ignore errors on cleanup
         });
 
+        // Log commit success
+        await logTelemetry(
+          "commit_success",
+          "Commit synced successfully",
+          { jobId: job.id },
+          job.sessionId
+        );
+
         console.log("[AUTOSAVE] Sync successful:", job.id);
       } else {
         // Error response but not a network error
@@ -104,6 +121,14 @@ export function useAutosaveQueue(
       setLastError(errorMessage);
       setErrorCount((prev) => prev + 1);
 
+      // Log error
+      await logTelemetry(
+        "error",
+        "Sync error occurred",
+        { jobId: job.id, error: errorMessage, retryCount: job.retryCount },
+        job.sessionId
+      );
+
       job.retryCount += 1;
       job.lastRetryAt = Date.now();
       setTotalRetries((prev) => prev + 1);
@@ -111,6 +136,15 @@ export function useAutosaveQueue(
       if (job.retryCount < MAX_RETRIES) {
         // Exponential backoff: 1s, 2s, 4s, 8s, 16s
         const delay = 1000 * Math.pow(2, job.retryCount - 1);
+
+        // Log retry
+        await logTelemetry(
+          "retry",
+          "Retry triggered",
+          { attempt: job.retryCount, jobId: job.id, delay },
+          job.sessionId
+        );
+
         console.log(
           `[AUTOSAVE] Retrying job ${job.id} in ${delay}ms (attempt ${job.retryCount}/${MAX_RETRIES})`
         );
@@ -126,6 +160,15 @@ export function useAutosaveQueue(
           `[AUTOSAVE] Job failed permanently after ${MAX_RETRIES} attempts:`,
           job.id
         );
+
+        // Log final error (max retries reached)
+        await logTelemetry(
+          "error",
+          "Job failed permanently after max retries",
+          { jobId: job.id, retryCount: job.retryCount, error: errorMessage },
+          job.sessionId
+        );
+
         queue.current.shift();
         setQueueSize(queue.current.length);
         // Keep in Dexie for manual retry later
@@ -252,15 +295,26 @@ export function useAutosaveQueue(
 
   // Online event handler - trigger sync when coming back online
   useEffect(() => {
-    const cleanup = registerOnlineSync(() => {
+    const cleanup = registerOnlineSync(async () => {
       console.log("[AUTOSAVE] Online event detected, triggering sync");
+
+      // Log network change
+      if (sessionId) {
+        await logTelemetry(
+          "network_change",
+          "Network connection restored",
+          { queueSize: queue.current.length },
+          sessionId
+        );
+      }
+
       if (queue.current.length > 0 && !isProcessing.current) {
         syncNextJob();
       }
     });
 
     return cleanup;
-  }, [syncNextJob]);
+  }, [syncNextJob, sessionId]);
 
   // Load pending jobs from Dexie on mount
   useEffect(() => {

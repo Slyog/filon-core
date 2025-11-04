@@ -26,11 +26,21 @@ export interface KV {
   value: any;
 }
 
+export interface TelemetryLog {
+  id?: number;
+  type: 'commit_start' | 'commit_success' | 'retry' | 'error' | 'queue_flush' | 'network_change';
+  sessionId?: string;
+  message: string;
+  detail?: any;
+  timestamp: number;
+}
+
 class FilonDB extends Dexie {
   sessions!: Table<Session>;
   snapshots!: Table<Snapshot>;
   assets!: Table<Asset>;
   kv!: Table<KV>;
+  telemetry!: Table<TelemetryLog>;
 
   constructor() {
     super("FilonDB");
@@ -39,6 +49,13 @@ class FilonDB extends Dexie {
       snapshots: "key, sessionId, updatedAt",
       assets: "assetId, mimeType",
       kv: "key",
+    });
+    this.version(2).stores({
+      sessions: "id, updatedAt",
+      snapshots: "key, sessionId, updatedAt",
+      assets: "assetId, mimeType",
+      kv: "key",
+      telemetry: "++id, type, timestamp",
     });
   }
 }

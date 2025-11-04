@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAutosaveQueue } from "@/hooks/useAutosaveQueue";
 import { isOnline } from "@/utils/network";
+import { getRecentTelemetry } from "@/utils/telemetryLogger";
+import type { TelemetryLog } from "@/store/db";
 
 interface SyncDashboardProps {
   sessionId: string | null;
@@ -30,6 +32,7 @@ export default function SyncDashboard({
 
   const [isOnlineStatus, setIsOnlineStatus] = useState(true);
   const [currentJobRetries, setCurrentJobRetries] = useState(0);
+  const [logs, setLogs] = useState<TelemetryLog[]>([]);
 
   // Update online status
   useEffect(() => {
@@ -46,6 +49,19 @@ export default function SyncDashboard({
       setCurrentJobRetries(0);
     }
   }, [queue]);
+
+  // Load telemetry logs
+  useEffect(() => {
+    const load = async () => {
+      const recentLogs = await getRecentTelemetry(10);
+      setLogs(recentLogs);
+    };
+
+    load(); // Load immediately
+    const interval = setInterval(load, 3000); // Refresh every 3 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Format time ago
   const formatTimeAgo = (timestamp: number | null): string => {
@@ -247,6 +263,49 @@ export default function SyncDashboard({
           >
             Refresh
           </button>
+        </div>
+
+        {/* Telemetry Logs */}
+        <div className="mt-3 border-t border-cyan-800/30 pt-2">
+          <div className="mb-1 text-xs font-semibold text-cyan-400/80">
+            Recent Logs:
+          </div>
+          <div className="max-h-40 overflow-y-auto text-xs font-mono">
+            {logs.length === 0 ? (
+              <div className="text-cyan-500/50 text-xs py-2">
+                No logs yet...
+              </div>
+            ) : (
+              logs.map((log) => {
+                const typeColors: Record<string, string> = {
+                  commit_start: "text-sky-400",
+                  commit_success: "text-emerald-400",
+                  retry: "text-amber-400",
+                  error: "text-rose-400",
+                  queue_flush: "text-cyan-400",
+                  network_change: "text-purple-400",
+                };
+                const color = typeColors[log.type] || "text-cyan-200";
+
+                return (
+                  <div
+                    key={log.id}
+                    className="mb-1 flex items-start gap-2 text-xs leading-tight"
+                  >
+                    <span className="text-cyan-400/60 shrink-0">
+                      [{new Date(log.timestamp).toLocaleTimeString()}]
+                    </span>
+                    <span className={`${color} shrink-0 font-semibold`}>
+                      {log.type}:
+                    </span>
+                    <span className="text-cyan-200/80 break-words">
+                      {log.message}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Hint */}
