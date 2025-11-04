@@ -88,6 +88,9 @@ import {
 } from "@/store/SessionStore";
 import { useGraphStore } from "@/store/GraphStore";
 import { logSuccess, logError, logInfo } from "@/utils/qaLogger";
+import { useAutosaveQueue } from "@/hooks/useAutosaveQueue";
+import { updateAutomergeBinary } from "@/lib/automergeHelper";
+import SyncIndicator from "@/components/ui/SyncIndicator";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -208,6 +211,31 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   const nodeChangeCountRef = useRef<number>(0);
   const lastInsightCheckRef = useRef<number>(0);
   const isInitialSessionLoadRef = useRef(true);
+  const [automergeBinary, setAutomergeBinary] = useState<Uint8Array | null>(
+    null
+  );
+
+  // 🔄 Update Automerge binary when nodes/edges change
+  useEffect(() => {
+    if (!isSessionLoaded || isInitialSessionLoadRef.current) return;
+
+    const updateBinary = async () => {
+      const binary = await updateAutomergeBinary(nodes, edges);
+      if (binary) {
+        setAutomergeBinary(binary);
+      }
+    };
+
+    // Debounce binary updates (same as autosave delay)
+    const timeout = setTimeout(updateBinary, 1000);
+    return () => clearTimeout(timeout);
+  }, [nodes, edges, isSessionLoaded]);
+
+  // 🔄 Autosave Queue Integration
+  const { isSyncing, queueSize } = useAutosaveQueue(
+    sessionId,
+    automergeBinary || undefined
+  );
 
   // 🚀 Top-level initialization: Set initial feedback and status
   useEffect(() => {
@@ -2245,6 +2273,9 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           visible={insightsPanelOpen}
           onClose={() => setInsightsPanelOpen(false)}
         />
+
+        {/* 🔄 Sync Indicator */}
+        <SyncIndicator isSyncing={isSyncing} queueSize={queueSize} />
       </div>
     </GraphContext.Provider>
   );
