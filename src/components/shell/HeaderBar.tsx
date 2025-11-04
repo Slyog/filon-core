@@ -29,7 +29,7 @@ export default function HeaderBar() {
   }, [title]);
 
   return (
-    <header className="flex items-center justify-between px-4 py-2 border-b border-cyan-900/30 shadow-glow-md">
+    <header className="sticky top-0 z-50 backdrop-blur-sm flex items-center justify-between px-4 py-2 border-b border-cyan-900/30 shadow-glow-md">
       <div className="flex flex-1 items-center gap-2">
         <button
           type="button"

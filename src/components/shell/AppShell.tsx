@@ -14,15 +14,33 @@ export default function AppShell({ children }: PropsWithChildren) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="min-h-screen flex flex-col bg-base text-neutral-200 transition-colors duration-200"
+      className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-[#0A0F12] text-gray-100"
     >
-      <HeaderBar />
-      <main className="flex flex-1 overflow-hidden">
+      {/* Header */}
+      <div className="row-start-1">
+        <HeaderBar />
+      </div>
+
+      {/* Main Content Area with Sidebar */}
+      <main className="row-start-2 flex overflow-hidden">
+        {/* Sidebar - bereits animiert in SidebarNav Komponente */}
         <SidebarNav />
-        <div className="flex-1 min-h-[calc(100vh-48px)] px-6 pb-10">
-          {children}
+
+        {/* Centered Content Container */}
+        <div className="flex-1 overflow-y-auto">
+          <motion.div
+            layout
+            className="relative flex flex-col items-center justify-center min-h-[75vh] mx-auto w-full max-w-7xl p-6"
+          >
+            {children}
+          </motion.div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="row-start-3 py-4 text-center text-xs text-gray-500/70 border-t border-cyan-900/40">
+        FILON Core v0.1 • Grid Aligned
+      </footer>
     </motion.div>
   );
 }
