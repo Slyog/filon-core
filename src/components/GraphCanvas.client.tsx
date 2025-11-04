@@ -91,6 +91,8 @@ import { logSuccess, logError, logInfo } from "@/utils/qaLogger";
 import { useAutosaveQueue } from "@/hooks/useAutosaveQueue";
 import { updateAutomergeBinary } from "@/lib/automergeHelper";
 import SyncIndicator from "@/components/ui/SyncIndicator";
+import SyncDashboard from "@/components/dev/SyncDashboard";
+import { registerDashboardToggle } from "@/utils/hotkeys";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -214,6 +216,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   const [automergeBinary, setAutomergeBinary] = useState<Uint8Array | null>(
     null
   );
+  const [showSyncDashboard, setShowSyncDashboard] = useState(false);
 
   // 🔄 Update Automerge binary when nodes/edges change
   useEffect(() => {
@@ -236,6 +239,14 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     sessionId,
     automergeBinary || undefined
   );
+
+  // 🔧 Dashboard Toggle Hotkey
+  useEffect(() => {
+    const cleanup = registerDashboardToggle(() => {
+      setShowSyncDashboard((prev) => !prev);
+    });
+    return cleanup;
+  }, []);
 
   // 🚀 Top-level initialization: Set initial feedback and status
   useEffect(() => {
@@ -2276,6 +2287,14 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
         {/* 🔄 Sync Indicator */}
         <SyncIndicator isSyncing={isSyncing} queueSize={queueSize} />
+
+        {/* 🔧 Sync Dashboard (Dev/QA) */}
+        {showSyncDashboard && (
+          <SyncDashboard
+            sessionId={sessionId}
+            onClose={() => setShowSyncDashboard(false)}
+          />
+        )}
       </div>
     </GraphContext.Provider>
   );

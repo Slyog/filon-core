@@ -32,10 +32,117 @@ export function useAutosaveQueue(
 ) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [queueSize, setQueueSize] = useState(0);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [totalRetries, setTotalRetries] = useState(0);
+  const [successCount, setSuccessCount] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
   const queue = useRef<SyncJob[]>([]);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const isProcessing = useRef(false);
   const lastBinaryRef = useRef<Uint8Array | null>(null);
+  const forceSyncRef = useRef<(() => void) | null>(null);
+  const syncNextJobRef = useRef<(() => void) | null>(null);
+
+  // Sync function with retry logic
+  const syncNextJob = useCallback(async () => {
+    if (isProcessing.current || queue.current.length === 0 || !isOnline()) {
+      return;
+    }
+
+    isProcessing.current = true;
+    setIsSyncing(true);
+
+    const job = queue.current[0];
+    if (!job) {
+      isProcessing.current = false;
+      setIsSyncing(false);
+      return;
+    }
+
+    try {
+      // Create sync event with binary data
+      // The change object contains the binary for the sync handler
+      // Note: Currently syncLambdaHandler creates a mock doc, but binary is passed
+      // for future use when handler is updated to use actual binary
+      const syncEvent: SyncEvent = {
+        userId: job.userId,
+        sessionId: job.sessionId,
+        diffSummary: job.diffSummary,
+        change: {
+          binary: job.binary,
+          // Pass as both typed array and regular array for compatibility
+          data: Array.from(job.binary),
+        },
+        timestamp: job.createdAt,
+      };
+
+      const response = await syncLambdaHandler(syncEvent);
+
+      if (response.status === "ok") {
+        // Success: remove from queue
+        queue.current.shift();
+        setQueueSize(queue.current.length);
+        setLastSyncTime(Date.now());
+        setSuccessCount((prev) => prev + 1);
+        setLastError(null);
+
+        // Remove from Dexie snapshots (already synced)
+        await db.snapshots.delete(job.id).catch(() => {
+          // Ignore errors on cleanup
+        });
+
+        console.log("[AUTOSAVE] Sync successful:", job.id);
+      } else {
+        // Error response but not a network error
+        throw new Error(response.error || "Sync failed");
+      }
+    } catch (err: any) {
+      console.warn("[AUTOSAVE] Sync error:", err);
+
+      const errorMessage = err.message || String(err);
+      setLastError(errorMessage);
+      setErrorCount((prev) => prev + 1);
+
+      job.retryCount += 1;
+      job.lastRetryAt = Date.now();
+      setTotalRetries((prev) => prev + 1);
+
+      if (job.retryCount < MAX_RETRIES) {
+        // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+        const delay = 1000 * Math.pow(2, job.retryCount - 1);
+        console.log(
+          `[AUTOSAVE] Retrying job ${job.id} in ${delay}ms (attempt ${job.retryCount}/${MAX_RETRIES})`
+        );
+
+        setTimeout(() => {
+          if (isOnline()) {
+            syncNextJob();
+          }
+        }, delay);
+      } else {
+        // Max retries reached, remove from queue but keep in Dexie
+        console.error(
+          `[AUTOSAVE] Job failed permanently after ${MAX_RETRIES} attempts:`,
+          job.id
+        );
+        queue.current.shift();
+        setQueueSize(queue.current.length);
+        // Keep in Dexie for manual retry later
+      }
+    } finally {
+      isProcessing.current = false;
+      setIsSyncing(false);
+
+      // Process next job if available
+      if (queue.current.length > 0 && isOnline()) {
+        setTimeout(() => syncNextJob(), 100);
+      }
+    }
+  }, []);
+
+  // Store syncNextJob in ref for use in queueJob
+  syncNextJobRef.current = syncNextJob;
 
   // Debounced function to add job to queue
   const queueJob = useCallback(
@@ -90,8 +197,8 @@ export function useAutosaveQueue(
           });
 
         // Trigger sync if online and not already processing
-        if (isOnline() && !isProcessing.current) {
-          syncNextJob();
+        if (isOnline() && !isProcessing.current && syncNextJobRef.current) {
+          syncNextJobRef.current();
         }
       }, DEBOUNCE_DELAY);
     },
@@ -109,95 +216,6 @@ export function useAutosaveQueue(
       }
     };
   }, [binary, queueJob]);
-
-  // Sync function with retry logic
-  const syncNextJob = useCallback(async () => {
-    if (isProcessing.current || queue.current.length === 0 || !isOnline()) {
-      return;
-    }
-
-    isProcessing.current = true;
-    setIsSyncing(true);
-
-    const job = queue.current[0];
-    if (!job) {
-      isProcessing.current = false;
-      setIsSyncing(false);
-      return;
-    }
-
-    try {
-      // Create sync event with binary data
-      // The change object contains the binary for the sync handler
-      // Note: Currently syncLambdaHandler creates a mock doc, but binary is passed
-      // for future use when handler is updated to use actual binary
-      const syncEvent: SyncEvent = {
-        userId: job.userId,
-        sessionId: job.sessionId,
-        diffSummary: job.diffSummary,
-        change: {
-          binary: job.binary,
-          // Pass as both typed array and regular array for compatibility
-          data: Array.from(job.binary),
-        },
-        timestamp: job.createdAt,
-      };
-
-      const response = await syncLambdaHandler(syncEvent);
-
-      if (response.status === "ok") {
-        // Success: remove from queue
-        queue.current.shift();
-        setQueueSize(queue.current.length);
-
-        // Remove from Dexie snapshots (already synced)
-        await db.snapshots.delete(job.id).catch(() => {
-          // Ignore errors on cleanup
-        });
-
-        console.log("[AUTOSAVE] Sync successful:", job.id);
-      } else {
-        // Error response but not a network error
-        throw new Error(response.error || "Sync failed");
-      }
-    } catch (err: any) {
-      console.warn("[AUTOSAVE] Sync error:", err);
-
-      job.retryCount += 1;
-      job.lastRetryAt = Date.now();
-
-      if (job.retryCount < MAX_RETRIES) {
-        // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-        const delay = 1000 * Math.pow(2, job.retryCount - 1);
-        console.log(
-          `[AUTOSAVE] Retrying job ${job.id} in ${delay}ms (attempt ${job.retryCount}/${MAX_RETRIES})`
-        );
-
-        setTimeout(() => {
-          if (isOnline()) {
-            syncNextJob();
-          }
-        }, delay);
-      } else {
-        // Max retries reached, remove from queue but keep in Dexie
-        console.error(
-          `[AUTOSAVE] Job failed permanently after ${MAX_RETRIES} attempts:`,
-          job.id
-        );
-        queue.current.shift();
-        setQueueSize(queue.current.length);
-        // Keep in Dexie for manual retry later
-      }
-    } finally {
-      isProcessing.current = false;
-      setIsSyncing(false);
-
-      // Process next job if available
-      if (queue.current.length > 0 && isOnline()) {
-        setTimeout(() => syncNextJob(), 100);
-      }
-    }
-  }, []);
 
   // Idle callback trigger for sync
   useEffect(() => {
@@ -288,9 +306,40 @@ export function useAutosaveQueue(
     loadPendingJobs();
   }, [sessionId, userId, syncNextJob]);
 
+  // Force sync function exposed for manual trigger
+  const forceSync = useCallback(() => {
+    if (queue.current.length > 0 && !isProcessing.current && isOnline()) {
+      syncNextJob();
+    } else if (queue.current.length === 0 && lastBinaryRef.current) {
+      // Force create a new job from last binary
+      const job: SyncJob = {
+        id: `${sessionId}-${Date.now()}-force-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`,
+        sessionId: sessionId!,
+        userId,
+        binary: lastBinaryRef.current,
+        diffSummary: `Manual sync at ${new Date().toISOString()}`,
+        createdAt: Date.now(),
+        retryCount: 0,
+      };
+      queue.current.push(job);
+      setQueueSize(queue.current.length);
+      syncNextJob();
+    }
+  }, [sessionId, userId, syncNextJob]);
+
+  forceSyncRef.current = forceSync;
+
   return {
     queue: queue.current,
     queueSize,
     isSyncing,
+    lastSyncTime,
+    lastError,
+    totalRetries,
+    successCount,
+    errorCount,
+    forceSync,
   };
 }
