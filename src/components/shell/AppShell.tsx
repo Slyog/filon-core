@@ -1,6 +1,6 @@
 "use client";
 
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useEffect } from "react";
 import { motion } from "framer-motion";
 import HeaderBar from "./HeaderBar";
 import SidebarNav from "./Sidebar";
@@ -8,10 +8,16 @@ import { useHydrateUIShell } from "@/store/UIShellStore";
 import DynamicPanel from "@/components/DynamicPanel";
 import ContextStream from "@/components/ContextStream";
 import { usePanelHotkeys } from "@/hooks/usePanelHotkeys";
+import { useExplainCache } from "@/store/ExplainCache";
 
 export default function AppShell({ children }: PropsWithChildren) {
   useHydrateUIShell();
   usePanelHotkeys();
+  const { loadCache } = useExplainCache();
+
+  useEffect(() => {
+    loadCache();
+  }, [loadCache]);
 
   return (
     <motion.div
