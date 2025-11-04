@@ -65,7 +65,7 @@ export default function AppShell({ children }: PropsWithChildren) {
 
       {/* Footer */}
       <footer className="row-start-3 py-4 text-center text-xs text-gray-500/70 border-t border-cyan-900/40">
-        FILON Core v0.2 • Dynamic Panels Active
+        FILON Core v0.3 • Panel Registry Active
       </footer>
     </motion.div>
   );

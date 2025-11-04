@@ -1,35 +1,29 @@
 import { create } from "zustand";
 import { FEATURE_FLAGS } from "@/config/featureFlags";
 
-export type PanelInfo = {
+export type PanelEntry = {
   key: keyof typeof FEATURE_FLAGS;
   title: string;
   active: boolean;
 };
 
 interface PanelRegistryState {
-  panels: PanelInfo[];
-  register: (key: PanelInfo["key"], title: string) => void;
+  panels: PanelEntry[];
   refresh: () => void;
 }
 
-export const usePanelRegistry = create<PanelRegistryState>((set, get) => ({
-  panels: [],
-  register: (key, title) => {
-    const exists = get().panels.find((p) => p.key === key);
-    if (!exists)
-      set((state) => ({
-        panels: [
-          ...state.panels,
-          { key, title, active: FEATURE_FLAGS[key] ?? false },
-        ],
-      }));
-  },
+export const usePanelRegistry = create<PanelRegistryState>((set) => ({
+  panels: Object.keys(FEATURE_FLAGS).map((key) => ({
+    key: key as keyof typeof FEATURE_FLAGS,
+    title: key.replaceAll("_", " "),
+    active: FEATURE_FLAGS[key as keyof typeof FEATURE_FLAGS],
+  })),
   refresh: () =>
-    set((state) => ({
-      panels: state.panels.map((p) => ({
-        ...p,
-        active: FEATURE_FLAGS[p.key] ?? false,
+    set({
+      panels: Object.keys(FEATURE_FLAGS).map((key) => ({
+        key: key as keyof typeof FEATURE_FLAGS,
+        title: key.replaceAll("_", " "),
+        active: FEATURE_FLAGS[key as keyof typeof FEATURE_FLAGS],
       })),
-    })),
+    }),
 }));

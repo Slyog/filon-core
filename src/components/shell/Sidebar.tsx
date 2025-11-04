@@ -11,15 +11,18 @@ import {
   Settings,
   Upload,
   Database,
+  Circle,
 } from "lucide-react";
 import Section from "./Section";
 import WorkspaceListLite from "@/components/WorkspaceListLite";
 import { useUIShellStore } from "@/store/UIShellStore";
+import { usePanelRegistry } from "@/store/PanelRegistry";
 
 export default function SidebarNav() {
   const router = useRouter();
   const sidebarOpen = useUIShellStore((state) => state.sidebarOpen);
   const [quickOpen, setQuickOpen] = useState(true);
+  const { panels } = usePanelRegistry();
 
   return (
     <AnimatePresence mode="wait">
@@ -66,7 +69,9 @@ export default function SidebarNav() {
               >
                 <Plus size={14} />
                 Quick Actions
-                <span className={`ml-auto text-xs ${quickOpen ? "" : "rotate-180"}`}>
+                <span
+                  className={`ml-auto text-xs ${quickOpen ? "" : "rotate-180"}`}
+                >
                   ▼
                 </span>
               </button>
@@ -76,7 +81,9 @@ export default function SidebarNav() {
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                     onClick={() =>
-                      window.alert("Import (Platzhalter) – folgt in zukünftiger Version.")
+                      window.alert(
+                        "Import (Platzhalter) – folgt in zukünftiger Version."
+                      )
                     }
                   >
                     <Upload size={16} /> Import
@@ -85,7 +92,9 @@ export default function SidebarNav() {
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                     onClick={() =>
-                      window.alert("Snapshots (Platzhalter) – später hinzufügen.")
+                      window.alert(
+                        "Snapshots (Platzhalter) – später hinzufügen."
+                      )
                     }
                   >
                     <Database size={16} /> Snapshots
@@ -94,7 +103,9 @@ export default function SidebarNav() {
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                     onClick={() =>
-                      window.alert("Settings (Platzhalter) – demnächst verfügbar.")
+                      window.alert(
+                        "Settings (Platzhalter) – demnächst verfügbar."
+                      )
                     }
                   >
                     <Settings size={16} /> Settings
@@ -102,6 +113,39 @@ export default function SidebarNav() {
                 </div>
               )}
             </div>
+
+            <Section title="Active Panels" icon={<Circle size={14} />}>
+              <div className="space-y-2">
+                {panels.map((panel) => (
+                  <motion.div
+                    key={panel.key}
+                    layout
+                    className="flex items-center gap-2 px-2 py-1"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    role="status"
+                    aria-label={`${panel.title} ${
+                      panel.active ? "active" : "inactive"
+                    }`}
+                  >
+                    <Circle
+                      size={10}
+                      className={
+                        panel.active ? "text-emerald-400" : "text-gray-600"
+                      }
+                      fill={panel.active ? "currentColor" : "none"}
+                    />
+                    <span
+                      className={
+                        panel.active ? "text-gray-100" : "text-gray-500"
+                      }
+                    >
+                      {panel.title}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            </Section>
 
             <Section title="Archiv" icon={<Archive size={14} />}>
               <button

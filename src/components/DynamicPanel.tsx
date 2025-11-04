@@ -1,8 +1,6 @@
 "use client";
-import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFeature } from "@/config/featureFlags";
-import { usePanelRegistry } from "@/store/PanelRegistry";
 
 type DynamicPanelProps = {
   flag: keyof typeof import("@/config/featureFlags").FEATURE_FLAGS;
@@ -16,11 +14,6 @@ export default function DynamicPanel({
   children,
 }: DynamicPanelProps) {
   const enabled = useFeature(flag);
-  const register = usePanelRegistry((s) => s.register);
-
-  useEffect(() => {
-    register(flag, title);
-  }, [flag, title, register]);
 
   return (
     <AnimatePresence initial={false}>
