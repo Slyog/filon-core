@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const CACHE_PREFIX = "explain-cache/";
 
@@ -11,13 +11,16 @@ function getCacheKey(nodeId: string): string {
 
 /**
  * Get cached summary for a node
+ * @param nodeId - The node ID to get cache for
+ * @returns Cached summary string or null if not found
  */
 export function getExplainCache(nodeId: string): string | null {
   if (typeof window === "undefined") return null;
   
   try {
     const cached = localStorage.getItem(getCacheKey(nodeId));
-    return cached ? JSON.parse(cached) : null;
+    if (!cached) return null;
+    return JSON.parse(cached) as string;
   } catch (err) {
     console.warn(`[EXPLAIN_CACHE] Failed to get cache for ${nodeId}:`, err);
     return null;
@@ -26,6 +29,8 @@ export function getExplainCache(nodeId: string): string | null {
 
 /**
  * Set cached summary for a node
+ * @param nodeId - The node ID to cache for
+ * @param summary - The summary string to cache
  */
 export function setExplainCache(nodeId: string, summary: string): void {
   if (typeof window === "undefined") return;
@@ -39,6 +44,7 @@ export function setExplainCache(nodeId: string, summary: string): void {
 
 /**
  * Clear cached summary for a node
+ * @param nodeId - The node ID to clear cache for
  */
 export function clearExplainCache(nodeId: string): void {
   if (typeof window === "undefined") return;
@@ -70,19 +76,29 @@ export function clearAllExplainCache(): void {
 
 /**
  * Hook for managing explain cache for a specific node
- * @param nodeId - The node ID to cache explanations for
+ * Follows React + Zustand safe-read pattern with localStorage persistence
+ * @param nodeId - The node ID to cache explanations for (can be null)
  * @returns Object with cached summary, set, and clear functions
  */
 export function useExplainCache(nodeId: string | null) {
-  const cachedSummary = useMemo(() => {
-    if (!nodeId) return null;
-    return getExplainCache(nodeId);
+  const [cachedSummary, setCachedSummary] = useState<string | null>(null);
+
+  // Load cache when nodeId changes
+  useEffect(() => {
+    if (!nodeId) {
+      setCachedSummary(null);
+      return;
+    }
+
+    const cached = getExplainCache(nodeId);
+    setCachedSummary(cached);
   }, [nodeId]);
 
   const setCache = useCallback(
     (summary: string) => {
       if (!nodeId) return;
       setExplainCache(nodeId, summary);
+      setCachedSummary(summary);
     },
     [nodeId]
   );
@@ -90,6 +106,7 @@ export function useExplainCache(nodeId: string | null) {
   const clearCache = useCallback(() => {
     if (!nodeId) return;
     clearExplainCache(nodeId);
+    setCachedSummary(null);
   }, [nodeId]);
 
   return {

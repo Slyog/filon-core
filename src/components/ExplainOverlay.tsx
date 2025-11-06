@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { X, Sparkles } from "lucide-react";
 import { generateSummary } from "@/ai/summarizerCore";
 import { useFeedbackStore } from "@/store/FeedbackStore";
-import { useExplainCache } from "@/store/ExplainCache";
+import { useExplainCache } from "@/hooks/useExplainCache";
 
 export interface ExplainOverlayProps {
   onClose: () => void;
@@ -19,7 +19,7 @@ export default function ExplainOverlay({
   nodeLabel,
 }: ExplainOverlayProps) {
   const addFeedback = useFeedbackStore((state) => state.addFeedback);
-  const { getEntry, saveEntry, loadCache } = useExplainCache();
+  const { cachedSummary, setCache } = useExplainCache(nodeId);
   const [summary, setSummary] = useState<string | null>(null);
   const [confidencePercent, setConfidencePercent] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
@@ -38,21 +38,18 @@ export default function ExplainOverlay({
     let cancelled = false;
 
     const run = async () => {
-      // Load cache on mount
-      await loadCache();
-      
       setLoading(true);
       setError(null);
       
       const title = nodeLabel?.trim() || "Unbenannter Gedanke";
-      const cacheKey = `${nodeId}-${title}`;
       
       // Check cache first
-      const cached = getEntry(cacheKey);
-      if (cached) {
+      if (cachedSummary) {
         if (cancelled) return;
-        setSummary(cached.summary);
-        setConfidencePercent(Math.round(cached.confidence * 100));
+        console.info("ExplainCache hit", nodeId);
+        setSummary(cachedSummary);
+        // Use default confidence for cached entries (since cache only stores summary)
+        setConfidencePercent(90);
         setLoading(false);
         return;
       }
@@ -66,13 +63,8 @@ export default function ExplainOverlay({
         setConfidencePercent(Math.round(safeConfidence * 100));
         setLoading(false);
 
-        // Save to cache
-        await saveEntry(cacheKey, {
-          title,
-          summary: text,
-          confidence: safeConfidence,
-          timestamp: Date.now(),
-        });
+        // Update cache after successful generation
+        setCache(text);
 
         addFeedback({
           type: "ai_summary",
@@ -97,7 +89,7 @@ export default function ExplainOverlay({
     return () => {
       cancelled = true;
     };
-  }, [nodeId, nodeLabel, addFeedback, getEntry, saveEntry, loadCache]);
+  }, [nodeId, nodeLabel, addFeedback, cachedSummary, setCache]);
 
   const confidenceTone =
     confidencePercent >= 90

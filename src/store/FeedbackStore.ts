@@ -77,6 +77,8 @@ export const useFeedbackStore = create<FeedbackState>()(
           timestamp: Date.now(),
         };
 
+        // Use immer-style immutable update: create new arrays/objects
+        // This automatically triggers Zustand persist middleware to save state
         set((state) => {
           const updatedEvents = [...state.events, newEvent];
           // Recalculate overall score
@@ -89,7 +91,7 @@ export const useFeedbackStore = create<FeedbackState>()(
               : 0;
 
           // Generate insight for negative feedback
-          let newInsights = [...state.insights];
+          const newInsights = [...state.insights];
           if (event.score !== undefined && event.score < 0) {
             const insight: FeedbackInsight = {
               id: `${Date.now()}-insight`,
@@ -101,6 +103,7 @@ export const useFeedbackStore = create<FeedbackState>()(
             newInsights.push(insight);
           }
 
+          // Return new state object to trigger persistence rehydration
           return {
             events: updatedEvents,
             insights: newInsights,
@@ -147,15 +150,18 @@ export const useFeedbackStore = create<FeedbackState>()(
 
       togglePin: (nodeId) => {
         set((state) => {
+          // Use immer-style immutable update: create new array with updated events
           const updatedEvents = state.events.map((event) => {
             if (event.nodeId === nodeId) {
+              // Flip isPinned: default to false if undefined, then toggle
               return {
                 ...event,
-                isPinned: !event.isPinned,
+                isPinned: !(event.isPinned ?? false),
               };
             }
             return event;
           });
+          // Return new state object to trigger rehydration
           return { events: updatedEvents };
         });
       },
