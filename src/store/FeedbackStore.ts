@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 
 export type FeedbackType =
   | "ai_explain"
+  | "ai_summary"
   | "sync_success"
   | "sync_failed"
   | "node_added"
@@ -18,6 +19,9 @@ export interface FeedbackEvent {
   score?: number; // -1 to 1 (thumbs down to thumbs up)
   comment?: string;
   insight?: string; // AI-generated insight
+  nodeId?: string;
+  message?: string;
+  confidence?: number;
 }
 
 export interface FeedbackInsight {
@@ -47,8 +51,26 @@ export const useFeedbackStore = create<FeedbackState>()(
       score: 0,
 
       addFeedback: (event) => {
+        const payloadMessage =
+          typeof event.payload?.message === "string"
+            ? event.payload.message
+            : typeof event.payload === "string"
+            ? event.payload
+            : undefined;
+        const payloadNodeId =
+          typeof event.payload?.nodeId === "string"
+            ? event.payload.nodeId
+            : undefined;
+        const payloadConfidence =
+          typeof event.payload?.confidence === "number"
+            ? event.payload.confidence
+            : undefined;
+
         const newEvent: FeedbackEvent = {
           ...event,
+          nodeId: event.nodeId ?? payloadNodeId,
+          message: event.message ?? payloadMessage,
+          confidence: event.confidence ?? payloadConfidence,
           id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           timestamp: Date.now(),
         };

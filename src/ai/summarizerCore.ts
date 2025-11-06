@@ -16,6 +16,25 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+export async function generateSummary(
+  input: string
+): Promise<{ text: string; confidence: number }> {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return {
+      text: "Kein Eingabetext vorhanden. Füge eine Beschreibung hinzu, um eine Erklärung zu erhalten.",
+      confidence: 0.8,
+    };
+  }
+
+  await new Promise((res) => setTimeout(res, 600));
+
+  return {
+    text: `Kurze AI-Zusammenfassung für „${trimmed}“ – der Gedanke fokussiert die aktuell markierte Wissenseinheit und verknüpft relevante Beziehungen.`,
+    confidence: 0.92,
+  };
+}
+
 export async function generatePanelSummary(
   title: string,
   context: string

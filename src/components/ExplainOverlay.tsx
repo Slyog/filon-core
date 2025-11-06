@@ -3,48 +3,77 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X, Sparkles } from "lucide-react";
+import { generateSummary } from "@/ai/summarizerCore";
+import { useFeedbackStore } from "@/store/FeedbackStore";
 
 export interface ExplainOverlayProps {
   onClose: () => void;
-  activeNodeLabel?: string | null;
-}
-
-interface OverlayState {
-  summary: string | null;
-  confidence: number;
-  loading: boolean;
+  nodeId: string | null;
+  nodeLabel?: string | null;
 }
 
 export default function ExplainOverlay({
   onClose,
-  activeNodeLabel,
+  nodeId,
+  nodeLabel,
 }: ExplainOverlayProps) {
-  const [{ summary, confidence, loading }, setState] = useState<OverlayState>({
-    summary: null,
-    confidence: 0,
-    loading: true,
-  });
+  const addFeedback = useFeedbackStore((state) => state.addFeedback);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [confidencePercent, setConfidencePercent] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      const generatedConfidence = Math.floor(80 + Math.random() * 20);
-      setState({
-        summary:
-          "Dies ist eine simulierte AI-Zusammenfassung des ausgewählten Gedankens.",
-        confidence: generatedConfidence,
-        loading: false,
-      });
-    }, 800);
+    if (!nodeId) {
+      setError("Kein Node ausgewählt.");
+      setLoading(false);
+      return;
+    }
 
-    return () => {
-      window.clearTimeout(timeoutId);
+    let cancelled = false;
+
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const title = nodeLabel?.trim() || "Unbenannter Gedanke";
+        const { text, confidence } = await generateSummary(title);
+        if (cancelled) return;
+
+        const safeConfidence = Math.max(0, Math.min(1, confidence));
+        setSummary(text);
+        setConfidencePercent(Math.round(safeConfidence * 100));
+        setLoading(false);
+
+        addFeedback({
+          type: "ai_summary",
+          payload: {
+            message: text,
+            nodeId,
+            confidence: safeConfidence,
+          },
+          nodeId,
+          message: text,
+          confidence: safeConfidence,
+        });
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[ExplainOverlay] Failed to generate summary", err);
+        setError("Fehler beim Laden der Zusammenfassung.");
+        setLoading(false);
+      }
     };
-  }, []);
+
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [nodeId, nodeLabel, addFeedback]);
 
   const confidenceTone =
-    confidence >= 90
+    confidencePercent >= 90
       ? "text-emerald-400"
-      : confidence >= 80
+      : confidencePercent >= 80
       ? "text-yellow-400"
       : "text-orange-400";
 
@@ -76,21 +105,29 @@ export default function ExplainOverlay({
           <Sparkles className="text-cyan-400" size={18} />
           <h3 className="text-sm font-medium text-neutral-100">
             AI Erklärung
-            {activeNodeLabel ? ` – ${activeNodeLabel}` : ""}
+            {nodeLabel ? ` – ${nodeLabel}` : ""}
           </h3>
         </div>
 
-        {loading ? (
+        {loading && (
           <div className="text-sm text-neutral-500">
             Generiere Zusammenfassung…
           </div>
-        ) : (
+        )}
+
+        {error && (
+          <div className="text-sm text-orange-400" role="alert">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && summary && (
           <div className="space-y-3 text-sm text-neutral-200">
             <p>{summary}</p>
             <div className="text-xs text-neutral-500">
               Confidence:{" "}
               <span className={`font-medium ${confidenceTone}`}>
-                {confidence}%
+                {confidencePercent}%
               </span>
             </div>
           </div>

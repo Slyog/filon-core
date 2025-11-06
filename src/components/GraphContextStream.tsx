@@ -19,7 +19,7 @@ interface GraphContextStreamProps {
 
 interface StreamEvent {
   id: string;
-  type: FeedbackEvent["type"] | "ai_summary";
+  type: FeedbackEvent["type"];
   message: string;
   timestamp: number;
   nodeId: string | null;
@@ -27,22 +27,27 @@ interface StreamEvent {
 
 function toStreamEvent(event: FeedbackEvent): StreamEvent {
   const payload = event.payload as
-    | { message?: string; nodeId?: string; summary?: string }
+    | { message?: string; nodeId?: string; summary?: string; confidence?: number }
     | undefined;
 
   const message =
+    event.message ??
     payload?.message ??
     payload?.summary ??
     (typeof event.payload === "string"
       ? event.payload
       : JSON.stringify(event.payload ?? {}));
 
+  const nodeId =
+    event.nodeId ??
+    (typeof payload?.nodeId === "string" ? payload.nodeId : null);
+
   return {
     id: event.id,
     type: event.type,
     message,
     timestamp: event.timestamp,
-    nodeId: payload?.nodeId ?? null,
+    nodeId,
   };
 }
 
@@ -159,7 +164,11 @@ export default function GraphContextStream({
           filteredEvents.map((event, index) => (
             <motion.div
               key={event.id}
-              className="border border-neutral-800 bg-neutral-900/70 p-3 transition-colors hover:bg-neutral-900"
+              className={`border p-3 transition-colors ${
+                activeNodeId && event.nodeId === activeNodeId
+                  ? "border-cyan-500/40 bg-cyan-900/30 hover:bg-cyan-900/40"
+                  : "border-neutral-800 bg-neutral-900/70 hover:bg-neutral-900"
+              }`}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
@@ -201,7 +210,8 @@ export default function GraphContextStream({
         {showExplain && (
           <ExplainOverlay
             onClose={() => setShowExplain(false)}
-            activeNodeLabel={activeNodeLabel}
+            nodeId={activeNodeId}
+            nodeLabel={activeNodeLabel}
           />
         )}
       </AnimatePresence>
