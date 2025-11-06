@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 export type FeedbackType =
   | "ai_explain"
   | "ai_summary"
+  | "ai_summary_v2"
   | "sync_success"
   | "sync_failed"
   | "node_added"
@@ -43,6 +44,7 @@ interface FeedbackState {
   addInsight: (insight: Omit<FeedbackInsight, "id" | "createdAt">) => void;
   clearFeedback: () => void;
   togglePin: (nodeId: string) => void;
+  addSummary: (nodeId: string, text: string, confidence: number) => void;
 }
 
 export const useFeedbackStore = create<FeedbackState>()(
@@ -116,6 +118,20 @@ export const useFeedbackStore = create<FeedbackState>()(
 
       getFeedbackByType: (type) => {
         return get().events.filter((e) => e.type === type);
+      },
+
+      addSummary: (nodeId: string, text: string, confidence: number) => {
+        get().addFeedback({
+          type: "ai_summary_v2",
+          payload: {
+            message: text,
+            nodeId,
+            confidence,
+          },
+          nodeId,
+          message: text,
+          confidence,
+        });
       },
 
       computeScore: () => {

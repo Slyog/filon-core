@@ -42,12 +42,12 @@ export default function GraphMiniMap({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoverPosition, setHoverPosition] = useState<XYPosition | null>(null);
   const [isHovering, setIsHovering] = useState(false);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const pulseControls = useAnimation();
 
   // 🔄 Subscribe to viewport changes from UIStore
   useEffect(() => {
-    const unsubscribe = useUIStore.subscribeMiniMap((viewport) => {
+    const unsubscribe = useUIStore.getState().subscribeMiniMap((viewport) => {
       if (!viewport) return;
 
       const currentViewport = getViewport();

@@ -8,6 +8,7 @@ import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import { useFeedbackStore, type FeedbackEvent } from "@/store/FeedbackStore";
 import { useActiveNode } from "@/context/ActiveNodeContext";
 import ExplainOverlay from "@/components/ExplainOverlay";
+import { useExplainConfidenceColor } from "@/hooks/useExplainConfidenceColor";
 import localforage from "localforage";
 
 type FilterMode = "all" | "ai" | "events";
@@ -56,6 +57,46 @@ function toStreamEvent(event: FeedbackEvent): StreamEvent {
   };
 }
 
+// Component for inline AI summary display
+function AISummaryInline({
+  summary,
+  nodeId,
+  onOpenExplain,
+}: {
+  summary: { text: string; confidence: number; eventId: string };
+  nodeId: string;
+  onOpenExplain: () => void;
+}) {
+  const confidenceColor = useExplainConfidenceColor(summary.confidence);
+  const truncatedText = summary.text.length > 100
+    ? `${summary.text.slice(0, 100)}...`
+    : summary.text;
+  
+  const colorClass = confidenceColor === "emerald-400" ? "text-emerald-400" :
+                     confidenceColor === "yellow-400" ? "text-yellow-400" :
+                     "text-orange-400";
+  
+  return (
+    <div className="mt-2 pt-2 border-t border-neutral-800">
+      <div
+        className="group relative"
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpenExplain();
+        }}
+      >
+        <div className="text-xs text-neutral-400 line-clamp-2 cursor-pointer hover:text-cyan-400 transition-colors">
+          {truncatedText}
+        </div>
+        {/* Tooltip with full text on hover */}
+        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 w-64 p-2 bg-neutral-800 rounded text-xs text-neutral-200 shadow-lg border border-neutral-700">
+          {summary.text}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GraphContextStream({
   activeNode,
   nodes = [],
@@ -75,6 +116,8 @@ export default function GraphContextStream({
   const events = useFeedbackStore((state) => state.events);
   const { activeNodeId: contextNodeId } = useActiveNode();
   const reduced = useReducedMotion();
+  const [showExplainOverlay, setShowExplainOverlay] = useState(false);
+  const [explainNodeId, setExplainNodeId] = useState<string | null>(null);
 
   const activeNodeId = activeNode?.id ?? contextNodeId ?? null;
   const activeNodeLabel =
@@ -104,11 +147,11 @@ export default function GraphContextStream({
     
     if (filter === "ai") {
       result = streamEvents.filter(
-        (event) => event.type === "ai_explain" || event.type === "ai_summary"
+        (event) => event.type === "ai_explain" || event.type === "ai_summary" || event.type === "ai_summary_v2"
       );
     } else if (filter === "events") {
       result = streamEvents.filter(
-        (event) => event.type !== "ai_explain" && event.type !== "ai_summary"
+        (event) => event.type !== "ai_explain" && event.type !== "ai_summary" && event.type !== "ai_summary_v2"
       );
     } else {
       result = streamEvents;
@@ -117,6 +160,23 @@ export default function GraphContextStream({
     console.timeEnd("[GraphContextStream] filteredEvents computation");
     return result;
   }, [streamEvents, filter]);
+
+  // Get last AI summary for each node
+  const nodeSummaries = useMemo(() => {
+    const summaries = new Map<string, { text: string; confidence: number; eventId: string }>();
+    events
+      .filter((e) => e.type === "ai_summary_v2" && e.nodeId)
+      .forEach((e) => {
+        if (e.nodeId && e.message) {
+          summaries.set(e.nodeId, {
+            text: e.message,
+            confidence: e.confidence || 0.8,
+            eventId: e.id,
+          });
+        }
+      });
+    return summaries;
+  }, [events]);
 
   // Performance checkpoint: Filtered + pinned events (memoized)
   // Note: pinnedEventIds Set reference changes on state update, triggering recomputation
@@ -477,6 +537,18 @@ export default function GraphContextStream({
                     >
                       {event.message || "(kein Text)"}
                     </div>
+                    
+                    {/* Display last AI summary inline under related feedback entry */}
+                    {event.nodeId && nodeSummaries.has(event.nodeId) && (
+                      <AISummaryInline
+                        summary={nodeSummaries.get(event.nodeId)!}
+                        nodeId={event.nodeId!}
+                        onOpenExplain={() => {
+                          setExplainNodeId(event.nodeId);
+                          setShowExplainOverlay(true);
+                        }}
+                      />
+                    )}
                   </motion.div>
                 </div>
               );
@@ -512,6 +584,16 @@ export default function GraphContextStream({
             onClose={() => setShowExplain(false)}
             nodeId={activeNodeId}
             nodeLabel={activeNodeLabel}
+          />
+        )}
+        {showExplainOverlay && explainNodeId && (
+          <ExplainOverlay
+            onClose={() => {
+              setShowExplainOverlay(false);
+              setExplainNodeId(null);
+            }}
+            nodeId={explainNodeId}
+            nodeLabel={nodes.find((n) => n.id === explainNodeId)?.data?.label || null}
           />
         )}
       </AnimatePresence>

@@ -48,11 +48,11 @@ jest.mock("reactflow", () => {
 // Mock UIStore
 jest.mock("../store/UIStore", () => ({
   useUIStore: {
-    subscribeMiniMap: jest.fn((callback) => {
-      // Return unsubscribe function
-      return () => {};
-    }),
     getState: () => ({
+      subscribeMiniMap: jest.fn((callback) => {
+        // Return unsubscribe function
+        return () => {};
+      }),
       setViewportState: jest.fn(),
     }),
   },

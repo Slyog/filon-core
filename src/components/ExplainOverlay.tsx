@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { X, Sparkles } from "lucide-react";
-import { generateSummary } from "@/ai/summarizerCore";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
+import { X, Sparkles, RefreshCw } from "lucide-react";
+import { generateSummaryV2, getConfidenceColor } from "@/ai/summarizerCore";
 import { useFeedbackStore } from "@/store/FeedbackStore";
 import { useExplainCache } from "@/hooks/useExplainCache";
+import { useExplainConfidenceColor } from "@/hooks/useExplainConfidenceColor";
 
 export interface ExplainOverlayProps {
   onClose: () => void;
@@ -19,16 +20,18 @@ export default function ExplainOverlay({
   nodeLabel,
 }: ExplainOverlayProps) {
   const addFeedback = useFeedbackStore((state) => state.addFeedback);
-  const { cachedSummary, setCache } = useExplainCache(nodeId);
+  const { cachedSummary, setCache, clearCache } = useExplainCache(nodeId);
   const [summary, setSummary] = useState<string | null>(null);
-  const [confidencePercent, setConfidencePercent] = useState<number>(0);
+  const [confidence, setConfidence] = useState<number>(0);
+  const [fromCache, setFromCache] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+  const confidenceColor = useExplainConfidenceColor(confidence);
 
-  useEffect(() => {
+  const generateSummary = useCallback(async (forceRegenerate = false) => {
     if (!nodeId) {
       setError("Kein Node ausgewählt.");
       setLoading(false);
@@ -41,40 +44,48 @@ export default function ExplainOverlay({
       setLoading(true);
       setError(null);
       
-      const title = nodeLabel?.trim() || "Unbenannter Gedanke";
+      const content = nodeLabel?.trim() || "Unbenannter Gedanke";
       
-      // Check cache first
-      if (cachedSummary) {
+      // Check cache first (unless forcing regenerate)
+      if (!forceRegenerate && cachedSummary) {
         if (cancelled) return;
         console.info("ExplainCache hit", nodeId);
         setSummary(cachedSummary);
-        // Use default confidence for cached entries (since cache only stores summary)
-        setConfidencePercent(90);
+        setConfidence(0.9); // Default confidence for cached entries
+        setFromCache(true);
         setLoading(false);
         return;
       }
 
+      // Clear cache if regenerating
+      if (forceRegenerate) {
+        clearCache();
+      }
+
       try {
-        const { text, confidence } = await generateSummary(title);
+        const result = await generateSummaryV2(nodeId, content);
         if (cancelled) return;
 
-        const safeConfidence = Math.max(0, Math.min(1, confidence));
-        setSummary(text);
-        setConfidencePercent(Math.round(safeConfidence * 100));
+        const safeConfidence = Math.max(0, Math.min(1, result.confidence));
+        setSummary(result.text);
+        setConfidence(safeConfidence);
+        setFromCache(result.fromCache || false);
         setLoading(false);
 
         // Update cache after successful generation
-        setCache(text);
+        if (!result.fromCache) {
+          setCache(result.text);
+        }
 
         addFeedback({
-          type: "ai_summary",
+          type: "ai_summary_v2",
           payload: {
-            message: text,
+            message: result.text,
             nodeId,
             confidence: safeConfidence,
           },
           nodeId,
-          message: text,
+          message: result.text,
           confidence: safeConfidence,
         });
       } catch (err) {
@@ -89,14 +100,13 @@ export default function ExplainOverlay({
     return () => {
       cancelled = true;
     };
-  }, [nodeId, nodeLabel, addFeedback, cachedSummary, setCache]);
+  }, [nodeId, nodeLabel, addFeedback, cachedSummary, setCache, clearCache]);
 
-  const confidenceTone =
-    confidencePercent >= 90
-      ? "text-emerald-400"
-      : confidencePercent >= 80
-      ? "text-yellow-400"
-      : "text-orange-400";
+  useEffect(() => {
+    generateSummary(false);
+  }, [generateSummary]); // Regenerate when nodeId/nodeLabel changes (via generateSummary dependency)
+
+  const confidencePercent = Math.round(confidence * 100);
 
   // Focus trap: Keep focus within dialog
   useEffect(() => {
@@ -148,7 +158,7 @@ export default function ExplainOverlay({
       initial={reduced ? { opacity: 1 } : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={reduced ? { opacity: 1 } : { opacity: 0 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.3 }}
+      transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
       onClick={(e) => {
         // Close on backdrop click
         if (e.target === e.currentTarget) {
@@ -165,8 +175,10 @@ export default function ExplainOverlay({
         initial={reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
-        transition={reduced ? { duration: 0 } : { duration: 0.3 }}
+        transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
         onClick={(e) => e.stopPropagation()}
+        data-test="explain-overlay"
+        data-conf={confidence}
       >
         <button
           ref={closeButtonRef}
@@ -187,8 +199,17 @@ export default function ExplainOverlay({
         </div>
 
         {loading && (
-          <div className="text-sm text-neutral-500">
-            Generiere Zusammenfassung…
+          <div className="space-y-3">
+            {/* Shimmer placeholder while summary loads */}
+            <div className="space-y-2">
+              <div className="h-4 bg-neutral-800 rounded animate-pulse" />
+              <div className="h-4 bg-neutral-800 rounded animate-pulse w-3/4" />
+            </div>
+            <div className="text-sm text-neutral-500">
+              {typeof navigator !== "undefined" && !navigator.onLine
+                ? "Waiting for connection…"
+                : "Generiere Zusammenfassung…"}
+            </div>
           </div>
         )}
 
@@ -199,15 +220,61 @@ export default function ExplainOverlay({
         )}
 
         {!loading && !error && summary && (
-          <div className="space-y-3 text-sm text-neutral-200">
+          <motion.div
+            initial={reduced ? { opacity: 1 } : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduced ? { opacity: 1 } : { opacity: 0 }}
+            transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+            className="space-y-4 text-sm text-neutral-200"
+          >
             <p>{summary}</p>
-            <div className="text-xs text-neutral-500">
-              Confidence:{" "}
-              <span className={`font-medium ${confidenceTone}`}>
-                {confidencePercent}%
-              </span>
+            
+            {/* Confidence Bar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-neutral-500">
+                <span>Confidence</span>
+                <span className={`font-medium ${
+                  confidenceColor === "emerald-400" ? "text-emerald-400" :
+                  confidenceColor === "yellow-400" ? "text-yellow-400" :
+                  "text-orange-400"
+                }`}>
+                  {confidencePercent}%
+                </span>
+              </div>
+              <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                <motion.div
+                  className={`h-full ${
+                    confidenceColor === "emerald-400" ? "bg-emerald-400" :
+                    confidenceColor === "yellow-400" ? "bg-yellow-400" :
+                    "bg-orange-400"
+                  }`}
+                  initial={{ width: 0 }}
+                  animate={{ width: `${confidencePercent}%` }}
+                  transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+                />
+              </div>
             </div>
-          </div>
+
+            {/* Offline badge */}
+            {fromCache && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs px-2 py-1 rounded bg-neutral-800 text-neutral-400">
+                  Offline (cached)
+                </span>
+              </div>
+            )}
+
+            {/* Regenerate button */}
+            <button
+              type="button"
+              onClick={() => generateSummary(true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-800 text-xs text-neutral-300 hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+              Regenerate
+            </button>
+          </motion.div>
         )}
       </motion.div>
     </motion.div>
