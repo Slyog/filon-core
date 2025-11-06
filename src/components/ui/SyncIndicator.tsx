@@ -23,25 +23,25 @@ export default function SyncIndicator({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className={`fixed bottom-4 right-4 z-50 rounded-lg border border-zinc-800 bg-zinc-900/95 px-3 py-2 shadow-lg backdrop-blur-sm ${className}`}
+        className={`fixed bottom-4 right-4 z-50 rounded-lg border border-surface-active/50 bg-[hsl(var(--filon-bg))]/95 px-3 py-2 shadow-glow backdrop-blur-sm hover:shadow-glow transition-all duration-300 ease-filon ${className}`}
       >
         <div className="flex items-center gap-2">
           {isSyncing ? (
             <>
               <div className="h-2 w-2 animate-pulse rounded-full bg-sky-400" />
-              <span className="text-sm text-zinc-300">Speichern...</span>
+              <span className="text-sm text-[hsl(var(--filon-primary))]">Speichern...</span>
             </>
           ) : queueSize > 0 ? (
             <>
               <div className="h-2 w-2 rounded-full bg-amber-400" />
-              <span className="text-sm text-zinc-300">
+              <span className="text-sm text-[hsl(var(--filon-primary))]">
                 {queueSize} {queueSize === 1 ? "Änderung" : "Änderungen"} wartet
               </span>
             </>
           ) : (
             <>
               <div className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-sm text-zinc-300">Synchronisiert</span>
+              <span className="text-sm text-[hsl(var(--filon-primary))]">Synchronisiert</span>
             </>
           )}
         </div>

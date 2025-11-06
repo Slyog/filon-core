@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import { filonTokens } from "./src/design/filonTokens";
 
 const config: Config = {
   darkMode: "class",
@@ -12,15 +13,16 @@ const config: Config = {
         "noion-accent": "#00c2ff",
         "noion-glow": "#38bdf8",
         "noion-muted": "#1a1b1e",
-        // New FILON Design System colors
-        background: "#0A0F12",
-        surface: "#12181C",
-        glow: "#2FF3FF",
-        accent: "#00C2D1",
-        text: "#E6E6E6",
-        // Phase 2: Design Tokens
-        filament: "#2FF3FF",
-        base: "#0A0F12",
+        // FILON Design Tokens - Synchronized from filonTokens
+        // Direct color mappings for backward compatibility
+        background: filonTokens.colors.background,
+        surface: filonTokens.colors.surface,
+        glow: filonTokens.colors.glow,
+        accent: filonTokens.colors.accent,
+        text: filonTokens.colors.text.primary,
+        // Phase 2: Design Tokens (backward compatibility)
+        filament: filonTokens.colors.brand.DEFAULT,
+        base: filonTokens.colors.surfaceVariants.base,
         layer: "#101418",
         panel: "#1C2229",
         filon: {
@@ -30,56 +32,32 @@ const config: Config = {
           accent: "var(--filon-accent)",
           text: "var(--filon-text)",
         },
-        // FILON Step 16.9 - Unified Design Tokens
-        brand: {
-          DEFAULT: "#2FF3FF",
-          soft: "#A8FFF9",
-          dark: "#0B3A45",
-        },
+        // FILON Step 16.9 - Unified Design Tokens (synced from filonTokens)
+        brand: filonTokens.colors.brand,
         surface: {
-          base: "#0B0C10",
-          hover: "#111218",
-          active: "#181A22",
+          base: filonTokens.colors.surfaceVariants.base,
+          hover: filonTokens.colors.surfaceVariants.hover,
+          active: filonTokens.colors.surfaceVariants.active,
         },
         accent: {
-          glow: "#39E5FF",
-          warning: "#FFC857",
-          error: "#FF5964",
+          glow: filonTokens.colors.accentVariants.glow,
+          warning: filonTokens.colors.accentVariants.warning,
+          error: filonTokens.colors.accentVariants.error,
         },
-        text: {
-          primary: "#E6E6E6",
-          secondary: "#9CA3AF",
-          muted: "#6B7280",
-        },
+        text: filonTokens.colors.text,
       },
-      fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
-      },
+      fontFamily: filonTokens.typography.fontFamily,
       boxShadow: {
-        glow: "0 0 12px 2px rgba(47,243,255,0.4)",
-        inner: "inset 0 0 8px rgba(47,243,255,0.15)",
-        "glow-md": "0 0 20px rgba(47,243,255,0.5)",
+        ...filonTokens.shadows,
+        glow: "0 0 12px 0 hsl(var(--filon-glow)/0.5)",
       },
-      transitionDuration: {
-        fast: "150ms",
-        medium: "300ms",
-        slow: "600ms",
-      },
-      spacing: {
-        xs: "0.5rem",
-        sm: "1rem",
-        md: "1.5rem",
-        lg: "2rem",
-        xl: "3rem",
-      },
-      borderRadius: {
-        xl: "1rem",
-        "2xl": "1.5rem",
-      },
+      transitionDuration: filonTokens.motion.duration,
+      spacing: filonTokens.spacing,
+      borderRadius: filonTokens.radius,
       transitionTimingFunction: {
-        out: "cubic-bezier(0.25,0.1,0.25,1)",
-        smooth: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        filon: filonTokens.motion.easingString.smooth,
+        out: filonTokens.motion.easingString.default,
+        smooth: filonTokens.motion.easingString.smooth,
       },
       keyframes: {
         fadeIn: {

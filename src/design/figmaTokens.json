@@ -1,0 +1,249 @@
+{
+  "meta": {
+    "source": "Figma",
+    "url": "https://www.figma.com/make/oHAjBERkKbEIaErY5nkhjc/Untitled?t=hTEUzJl1FGy2iGCd-0",
+    "extractedAt": "2024-01-01",
+    "version": "1.0.0"
+  },
+  "colors": {
+    "primary": {
+      "value": "#2FF3FF",
+      "type": "color",
+      "description": "Primary brand color - cyan glow"
+    },
+    "accent": {
+      "value": "#00C2D1",
+      "type": "color",
+      "description": "Accent color - teal"
+    },
+    "background": {
+      "value": "#0A0F12",
+      "type": "color",
+      "description": "Main background color"
+    },
+    "surface": {
+      "value": "#12181C",
+      "type": "color",
+      "description": "Surface/elevated background"
+    },
+    "glow": {
+      "value": "#2FF3FF",
+      "type": "color",
+      "description": "Glow effect color - matches primary"
+    },
+    "text": {
+      "primary": {
+        "value": "#E6E6E6",
+        "type": "color",
+        "description": "Primary text color"
+      },
+      "secondary": {
+        "value": "#9CA3AF",
+        "type": "color",
+        "description": "Secondary text color"
+      },
+      "muted": {
+        "value": "#6B7280",
+        "type": "color",
+        "description": "Muted text color"
+      }
+    },
+    "brand": {
+      "DEFAULT": {
+        "value": "#2FF3FF",
+        "type": "color"
+      },
+      "soft": {
+        "value": "#A8FFF9",
+        "type": "color"
+      },
+      "dark": {
+        "value": "#0B3A45",
+        "type": "color"
+      }
+    },
+    "accent": {
+      "glow": {
+        "value": "#39E5FF",
+        "type": "color"
+      },
+      "warning": {
+        "value": "#FFC857",
+        "type": "color"
+      },
+      "error": {
+        "value": "#FF5964",
+        "type": "color"
+      }
+    },
+    "surface": {
+      "base": {
+        "value": "#0B0C10",
+        "type": "color"
+      },
+      "hover": {
+        "value": "#111218",
+        "type": "color"
+      },
+      "active": {
+        "value": "#181A22",
+        "type": "color"
+      }
+    }
+  },
+  "spacing": {
+    "xs": {
+      "value": "0.5rem",
+      "type": "spacing"
+    },
+    "sm": {
+      "value": "1rem",
+      "type": "spacing"
+    },
+    "base": {
+      "value": "1rem",
+      "type": "spacing"
+    },
+    "md": {
+      "value": "1.5rem",
+      "type": "spacing"
+    },
+    "lg": {
+      "value": "2rem",
+      "type": "spacing"
+    },
+    "xl": {
+      "value": "3rem",
+      "type": "spacing"
+    }
+  },
+  "radius": {
+    "sm": {
+      "value": "1rem",
+      "type": "borderRadius"
+    },
+    "xl": {
+      "value": "1.5rem",
+      "type": "borderRadius"
+    },
+    "2xl": {
+      "value": "2rem",
+      "type": "borderRadius"
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": {
+        "value": ["Inter", "system-ui", "sans-serif"],
+        "type": "fontFamily"
+      },
+      "mono": {
+        "value": ["JetBrains Mono", "monospace"],
+        "type": "fontFamily"
+      }
+    },
+    "fontWeight": {
+      "normal": {
+        "value": "400",
+        "type": "fontWeight"
+      },
+      "medium": {
+        "value": "500",
+        "type": "fontWeight"
+      },
+      "semibold": {
+        "value": "600",
+        "type": "fontWeight"
+      },
+      "bold": {
+        "value": "700",
+        "type": "fontWeight"
+      }
+    },
+    "fontSize": {
+      "xs": {
+        "value": "0.75rem",
+        "type": "fontSize"
+      },
+      "sm": {
+        "value": "0.875rem",
+        "type": "fontSize"
+      },
+      "base": {
+        "value": "1rem",
+        "type": "fontSize"
+      },
+      "lg": {
+        "value": "1.125rem",
+        "type": "fontSize"
+      },
+      "xl": {
+        "value": "1.25rem",
+        "type": "fontSize"
+      },
+      "2xl": {
+        "value": "1.5rem",
+        "type": "fontSize"
+      }
+    }
+  },
+  "motion": {
+    "duration": {
+      "fast": {
+        "value": "150ms",
+        "type": "duration"
+      },
+      "medium": {
+        "value": "300ms",
+        "type": "duration"
+      },
+      "slow": {
+        "value": "600ms",
+        "type": "duration"
+      }
+    },
+    "easing": {
+      "default": {
+        "value": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+        "type": "cubicBezier"
+      },
+      "smooth": {
+        "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "type": "cubicBezier"
+      }
+    }
+  },
+  "shadows": {
+    "glow": {
+      "value": "0 0 12px 2px rgba(47, 243, 255, 0.4)",
+      "type": "boxShadow"
+    },
+    "glow-md": {
+      "value": "0 0 20px rgba(47, 243, 255, 0.5)",
+      "type": "boxShadow"
+    },
+    "inner": {
+      "value": "inset 0 0 8px rgba(47, 243, 255, 0.15)",
+      "type": "boxShadow"
+    }
+  },
+  "components": {
+    "Button": {
+      "variants": ["default", "destructive", "outline", "secondary", "ghost", "link"],
+      "sizes": ["default", "sm", "lg", "icon"]
+    },
+    "Card": {
+      "variants": ["default", "elevated", "outlined"],
+      "sizes": ["sm", "md", "lg"]
+    },
+    "Panel": {
+      "variants": ["default", "floating", "sidebar"],
+      "sizes": ["sm", "md", "lg", "xl"]
+    },
+    "Modal": {
+      "variants": ["default", "fullscreen", "centered"],
+      "sizes": ["sm", "md", "lg", "xl"]
+    }
+  }
+}
+

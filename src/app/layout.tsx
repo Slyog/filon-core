@@ -1,4 +1,5 @@
 import { ThemeProvider } from "next-themes";
+import "@/app/globals.css";
 
 export default function RootLayout({
   children,

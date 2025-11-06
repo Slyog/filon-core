@@ -2,6 +2,25 @@
 @import "tailwindcss/preflight";
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --filon-primary: 180 100% 50%;
+    --filon-accent: 47 243 255;
+    --filon-bg: 210 15% 8%;
+    --filon-glow: 180 100% 60%;
+  }
+
+  body {
+    @apply bg-[hsl(var(--filon-bg))] text-[hsl(var(--filon-primary))] antialiased;
+    background-color: hsl(var(--filon-bg));
+    color: hsl(var(--filon-primary));
+  }
+
+  a {
+    @apply text-[hsl(var(--filon-accent))] hover:underline;
+  }
+}
+
 /* FILON Theme System */
 @import "../styles/filon-theme.css";
 
