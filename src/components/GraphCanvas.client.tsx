@@ -96,6 +96,7 @@ import { registerDashboardToggle } from "@/utils/hotkeys";
 import Brainbar from "@/components/Brainbar";
 import GraphMiniMap from "@/components/GraphMiniMap";
 import GraphContextStream from "@/components/GraphContextStream";
+import { useUIStore } from "@/store/UIStore";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -2456,6 +2457,8 @@ function GraphFlowWithHotkeys({
   const rf = useReactFlow();
   const { currentMindState } = useMindProgress();
   const mood = getMoodPreset(currentMindState);
+  const setViewportState = useUIStore((s) => s.setViewportState);
+  const viewportUpdateRef = useRef<number | null>(null);
 
   // 🎯 Wrap registerInstance to trigger initial fitView
   const handleInit = useCallback(
@@ -2476,6 +2479,46 @@ function GraphFlowWithHotkeys({
     },
     [registerInstance, rawNodes]
   );
+
+  // 🔄 Viewport synchronization: Throttle updates with requestAnimationFrame
+  const handleViewportMove = useCallback(() => {
+    if (viewportUpdateRef.current !== null) {
+      cancelAnimationFrame(viewportUpdateRef.current);
+    }
+
+    viewportUpdateRef.current = requestAnimationFrame(() => {
+      try {
+        const viewport = rf.getViewport();
+        setViewportState({
+          x: viewport.x,
+          y: viewport.y,
+          zoom: viewport.zoom,
+        });
+      } catch (err) {
+        if (DEBUG_MODE) console.warn("Viewport sync failed", err);
+      }
+      viewportUpdateRef.current = null;
+    });
+  }, [rf, setViewportState]);
+
+  // 🔄 Viewport synchronization: Broadcast final state on move end
+  const handleViewportMoveEnd = useCallback(() => {
+    if (viewportUpdateRef.current !== null) {
+      cancelAnimationFrame(viewportUpdateRef.current);
+      viewportUpdateRef.current = null;
+    }
+
+    try {
+      const viewport = rf.getViewport();
+      setViewportState({
+        x: viewport.x,
+        y: viewport.y,
+        zoom: viewport.zoom,
+      });
+    } catch (err) {
+      if (DEBUG_MODE) console.warn("Viewport sync failed on move end", err);
+    }
+  }, [rf, setViewportState]);
 
   const addNodeAt = useCallback(
     (pos?: XYPosition) => {
@@ -2625,6 +2668,8 @@ function GraphFlowWithHotkeys({
           onNodeContextMenu={onNodeContextMenu}
           onNodeMouseEnter={onNodeMouseEnter}
           onNodeMouseLeave={onNodeMouseLeave}
+          onMove={handleViewportMove}
+          onMoveEnd={handleViewportMoveEnd}
           fitView
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
           nodeOrigin={[0.5, 0.5]}

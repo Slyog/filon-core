@@ -1,16 +1,45 @@
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
+  // --- Basis --------------------------------------------------------------
+  preset: "ts-jest",
+  testEnvironment: "jsdom",
+  clearMocks: true,
+
+  // --- Dateitypen ---------------------------------------------------------
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
+    "^.+\\.(t|j)sx?$": "ts-jest",
   },
-  testMatch: ['**/__tests__/**/*.test.(ts|tsx)'],
+
+  // --- Alias-Resolver (Next/TS kompatibel) -------------------------------
   moduleNameMapper: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    "^@/(.*)$": "<rootDir>/src/$1",
+    // Statische Assets stubben
+    "\\.(css|less|scss|sass)$": "identity-obj-proxy",
+    "\\.(jpg|jpeg|png|gif|webp|svg)$": "<rootDir>/__mocks__/fileMock.js",
   },
+
+  // --- Test-Suche ---------------------------------------------------------
+  testMatch: ["**/__tests__/**/*.(test|spec).(ts|tsx)"],
+
+  // --- Setup-Dateien ------------------------------------------------------
+  setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
+
+  // --- Abdeckungs-Ordner (optional) --------------------------------------
+  collectCoverageFrom: [
+    "src/**/*.{ts,tsx}",
+    "!src/**/*.d.ts",
+    "!src/**/index.ts",
+    "!src/**/types.ts",
+  ],
+
+  // --- Performance --------------------------------------------------------
+  maxWorkers: "50%",
+
+  // --- Transform ESM modules ----------------------------------------------
+  transformIgnorePatterns: [
+    "node_modules/(?!(react-markdown|remark-gfm|unified|unist-util-.*|vfile|vfile-message|micromark|micromark-.*|decode-named-character-reference|character-entities|mdast-.*|unist-util-.*|bail|is-plain-obj|trough|remark-.*|rehype-.*|hast-.*|property-information|space-separated-tokens|comma-separated-tokens|html-void-elements|zwitch|longest-streak|ccount|escape-string-regexp)/)",
+  ],
 };
 
 export default config;
