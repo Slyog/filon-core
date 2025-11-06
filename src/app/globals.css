@@ -103,6 +103,13 @@ button {
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
 }
+/* Global focus-visible styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #2ff3ff;
+  outline-offset: 2px;
+  outline-style: solid;
+}
+
 button:focus-visible,
 [role="button"]:focus-visible,
 a:focus-visible,
@@ -421,4 +428,22 @@ body.motion-test * {
     transparent 70%
   );
   color: #fff;
+}
+
+/* --- Reduced Motion Support --- */
+@media (prefers-reduced-motion: reduce) {
+  .motion-soft,
+  .motion-soft * {
+    transition: none !important;
+    animation: none !important;
+  }
+  
+  /* Disable all transitions and animations when reduced motion is preferred */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

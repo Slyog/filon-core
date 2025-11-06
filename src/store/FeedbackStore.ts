@@ -22,6 +22,7 @@ export interface FeedbackEvent {
   nodeId?: string;
   message?: string;
   confidence?: number;
+  isPinned?: boolean;
 }
 
 export interface FeedbackInsight {
@@ -41,6 +42,7 @@ interface FeedbackState {
   computeScore: () => number;
   addInsight: (insight: Omit<FeedbackInsight, "id" | "createdAt">) => void;
   clearFeedback: () => void;
+  togglePin: (nodeId: string) => void;
 }
 
 export const useFeedbackStore = create<FeedbackState>()(
@@ -141,6 +143,21 @@ export const useFeedbackStore = create<FeedbackState>()(
 
       clearFeedback: () => {
         set({ events: [], insights: [], score: 0 });
+      },
+
+      togglePin: (nodeId) => {
+        set((state) => {
+          const updatedEvents = state.events.map((event) => {
+            if (event.nodeId === nodeId) {
+              return {
+                ...event,
+                isPinned: !event.isPinned,
+              };
+            }
+            return event;
+          });
+          return { events: updatedEvents };
+        });
       },
     }),
     {

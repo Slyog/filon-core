@@ -1,11 +1,14 @@
 import type { NextConfig } from "next";
 
+const enableAutomergeAsyncWasm =
+  process.env.AUTOMERGE_ASYNC_WASM !== "false";
+
 const nextConfig: NextConfig = {
   // Webpack config needed for Automerge WebAssembly support
   webpack: (config, { isServer }) => {
     config.experiments = {
       ...(config.experiments || {}),
-      asyncWebAssembly: true, // wichtig für browser-wasm
+      asyncWebAssembly: enableAutomergeAsyncWasm,
       layers: true,
     };
 
