@@ -1,7 +1,7 @@
 "use client";
 
 import { PropsWithChildren, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import HeaderBar from "./HeaderBar";
 import SidebarNav from "./Sidebar";
 import { useHydrateUIShell } from "@/store/UIShellStore";
@@ -9,15 +9,31 @@ import DynamicPanel from "@/components/DynamicPanel";
 import ContextStream from "@/components/ContextStream";
 import { usePanelHotkeys } from "@/hooks/usePanelHotkeys";
 import { useExplainCache } from "@/store/ExplainCache";
+import { useFramePerf } from "@/hooks/useFramePerf";
 
 export default function AppShell({ children }: PropsWithChildren) {
   useHydrateUIShell();
   usePanelHotkeys();
   const { loadCache } = useExplainCache();
+  const { fps, avg } = useFramePerf();
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     loadCache();
   }, [loadCache]);
+
+  // Expose performance metrics to window for QA
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      (window as any).__filonPerf = {
+        fps,
+        avg,
+        logKeystrokeDelay: (delay: number) => {
+          console.log(`[PERF] Keystroke to action delay: ${delay.toFixed(2)}ms`);
+        },
+      };
+    }
+  }, [fps, avg]);
 
   return (
     <motion.div
@@ -62,6 +78,19 @@ export default function AppShell({ children }: PropsWithChildren) {
       <footer className="row-start-3 py-4 text-center text-xs text-gray-500/70 border-t border-cyan-900/40">
         FILON Core v0.4 • Hotkey Focus Active
       </footer>
+
+      {/* Performance overlay (non-intrusive, bottom-right) */}
+      {!reduced && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
+          className="fixed bottom-4 right-4 bg-neutral-900/90 backdrop-blur-sm border border-neutral-800 rounded-lg px-3 py-2 text-xs text-neutral-300 font-mono z-50"
+          data-perf-overlay
+        >
+          FPS: {fps} (avg: {avg.toFixed(1)}ms)
+        </motion.div>
+      )}
     </motion.div>
   );
 }

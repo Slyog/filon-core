@@ -56,6 +56,7 @@ const config: Config = {
       },
       transitionTimingFunction: {
         out: "cubic-bezier(0.25,0.1,0.25,1)",
+        smooth: "cubic-bezier(0.2, 0.8, 0.2, 1)",
       },
       keyframes: {
         fadeIn: {

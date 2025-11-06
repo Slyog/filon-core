@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { Sparkles, Mic } from "lucide-react";
 import { startVoiceCapture } from "@/lib/voiceInput";
 import { useSessionStore } from "@/store/SessionStore";
@@ -15,6 +15,8 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
   const [inputValue, setInputValue] = useState("");
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [submitAnnouncement, setSubmitAnnouncement] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastKeyTime, setLastKeyTime] = useState<number>(0);
   const enqueueThought = useSessionStore((s) => s.enqueueThought);
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
   const addFeedback = useFeedbackStore((s) => s.addFeedback);
@@ -31,6 +33,27 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
         setSubmitAnnouncement("Bitte zuerst Text eingeben.");
         return;
       }
+
+      // QA: Log keystroke to action delay
+      if (lastKeyTime > 0) {
+        const delay = performance.now() - lastKeyTime;
+        if (
+          typeof window !== "undefined" &&
+          (
+            window as unknown as {
+              __filonPerf?: { logKeystrokeDelay: (delay: number) => void };
+            }
+          ).__filonPerf
+        ) {
+          (
+            window as unknown as {
+              __filonPerf: { logKeystrokeDelay: (delay: number) => void };
+            }
+          ).__filonPerf.logKeystrokeDelay(delay);
+        }
+      }
+
+      setIsSaving(true);
 
       // Default to "Idea" if no type provided
       // TODO: Integrate ThoughtTypeSelector modal for type selection
@@ -58,12 +81,17 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
         }" wurde hinzugefügt.`
       );
 
+      // Hide saving indicator after short delay
+      setTimeout(() => {
+        setIsSaving(false);
+      }, 150);
+
       // Clear announcement after a delay
       setTimeout(() => {
         setSubmitAnnouncement("");
       }, 3000);
     },
-    [onThoughtSubmit, enqueueThought, activeSessionId, addFeedback]
+    [onThoughtSubmit, enqueueThought, activeSessionId, addFeedback, lastKeyTime]
   );
 
   const handleVoiceInput = useCallback(async () => {
@@ -87,12 +115,23 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Track keystroke time for QA
+      setLastKeyTime(performance.now());
+
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit(inputValue);
       }
     },
     [inputValue, handleSubmit]
+  );
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(e.target.value);
+      setLastKeyTime(performance.now());
+    },
+    []
   );
 
   return (
@@ -109,7 +148,11 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
         className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800 motion-soft"
         initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={reduced ? { duration: 0 } : { duration: 0.3 }}
+        transition={
+          reduced
+            ? { duration: 0 }
+            : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
+        }
       >
         <Sparkles className="text-cyan-400 shrink-0" size={20} />
 
@@ -120,12 +163,27 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
           id="brainbar-input"
           type="text"
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Denke hier... (Tippe oder sprich)"
           aria-label="Gedanken eingeben"
           className="flex-1 bg-transparent outline-none text-neutral-100 placeholder-neutral-500 text-sm"
         />
+
+        {/* Saving indicator with Framer Motion fade < 150ms */}
+        <AnimatePresence>
+          {isSaving && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+              className="text-xs text-cyan-400"
+            >
+              Saving…
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Voice Input Button */}
         <button

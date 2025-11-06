@@ -46,6 +46,11 @@ export function useAutosaveQueue(
 
   // Sync function with retry logic
   const syncNextJob = useCallback(async () => {
+    // Skip processing if document is hidden (performance optimization)
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      return;
+    }
+
     if (isProcessing.current || queue.current.length === 0 || !isOnline()) {
       return;
     }
@@ -59,6 +64,9 @@ export function useAutosaveQueue(
       setIsSyncing(false);
       return;
     }
+
+    // Performance tracking: start timestamp
+    const startTime = performance.now();
 
     // Log commit start
     await logTelemetry(
@@ -119,15 +127,19 @@ export function useAutosaveQueue(
           // Ignore errors on cleanup
         });
 
-        // Log commit success
+        // Performance tracking: end timestamp and log diff
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+
+        // Log commit success with performance metrics
         await logTelemetry(
           "commit_success",
           "Commit synced successfully",
-          { jobId: job.id },
+          { jobId: job.id, duration },
           job.sessionId
         );
 
-        console.log("[AUTOSAVE] Sync successful:", job.id);
+        console.log(`[AUTOSAVE] Sync successful: ${job.id} (${duration.toFixed(2)}ms)`);
       } else {
         // Error response but not a network error
         throw new Error(response.error || "Sync failed");
@@ -278,12 +290,16 @@ export function useAutosaveQueue(
     };
   }, [binary, queueJob]);
 
-  // Idle callback trigger for sync
+  // Idle callback trigger for sync - replaced setTimeout with requestIdleCallback
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     // Use requestIdleCallback if available, otherwise fallback to setTimeout
     const scheduleSync = () => {
+      // Skip if document is hidden
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       if (queue.current.length > 0 && !isProcessing.current && isOnline()) {
         syncNextJob();
       }
@@ -309,6 +325,23 @@ export function useAutosaveQueue(
         }
       }
     };
+  }, [syncNextJob]);
+
+  // Flush idle method for manual QA trigger
+  const flushIdle = useCallback(() => {
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      (window as any).requestIdleCallback(() => {
+        if (queue.current.length > 0 && !isProcessing.current && isOnline()) {
+          syncNextJob();
+        }
+      }, { timeout: 100 });
+    } else {
+      setTimeout(() => {
+        if (queue.current.length > 0 && !isProcessing.current && isOnline()) {
+          syncNextJob();
+        }
+      }, 100);
+    }
   }, [syncNextJob]);
 
   // Online event handler - trigger sync when coming back online
@@ -413,5 +446,6 @@ export function useAutosaveQueue(
     successCount,
     errorCount,
     forceSync,
+    flushIdle, // Expose for QA testing
   };
 }

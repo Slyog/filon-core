@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useRef, useCallback, useEffect, memo } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Node, Edge } from "reactflow";
 import { Sparkles, Pin, Filter, Info } from "lucide-react";
@@ -83,12 +83,19 @@ export default function GraphContextStream({
     null;
 
   // Performance checkpoint: Stream events transformation
+  // Avoid re-render when feedback array length unchanged
+  const eventsLengthRef = useRef(events.length);
+  const streamEventsCacheRef = useRef<StreamEvent[]>([]);
   const streamEvents = useMemo<StreamEvent[]>(() => {
-    console.time("[GraphContextStream] streamEvents transformation");
+    // Skip transformation if length unchanged (optimization)
+    if (events.length === eventsLengthRef.current && events.length > 0) {
+      return streamEventsCacheRef.current;
+    }
+    eventsLengthRef.current = events.length;
     const result = events.map(toStreamEvent).reverse();
-    console.timeEnd("[GraphContextStream] streamEvents transformation");
+    streamEventsCacheRef.current = result;
     return result;
-  }, [events]);
+  }, [events.length]); // Only depend on length, not full array
 
   // Performance checkpoint: Filtered events
   const filteredEvents = useMemo<StreamEvent[]>(() => {
@@ -249,20 +256,45 @@ export default function GraphContextStream({
     scrollElementRef.current = element instanceof HTMLElement ? element : null;
   }, []);
 
-  // Set up scroll listener with cleanup
+  // Scroll Idle Optimization: Debounce scroll callbacks with requestIdleCallback
+  const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const updateScrollTop = useCallback((scrollTop: number) => {
+    scrollPositionRef.current = scrollTop;
+  }, []);
+
+  // Set up scroll listener with cleanup and debounce
   useEffect(() => {
     const element = scrollElementRef.current;
     if (!element) return;
 
     const handleScroll = () => {
-      scrollPositionRef.current = element.scrollTop;
+      const scrollTop = element.scrollTop;
+      
+      // Clear existing debounce
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+      }
+
+      // Debounce scroll updates to 100ms
+      scrollDebounceRef.current = setTimeout(() => {
+        if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+          (window as any).requestIdleCallback(() => {
+            updateScrollTop(scrollTop);
+          }, { timeout: 100 });
+        } else {
+          updateScrollTop(scrollTop);
+        }
+      }, 100);
     };
 
     element.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       element.removeEventListener("scroll", handleScroll);
+      if (scrollDebounceRef.current) {
+        clearTimeout(scrollDebounceRef.current);
+      }
     };
-  }, [filteredAndPinnedEvents.length]); // Re-attach when list changes
+  }, [filteredAndPinnedEvents.length, updateScrollTop]); // Re-attach when list changes
 
   // Track scroll position using Virtuoso's rangeChanged callback as backup
   const handleRangeChanged = useCallback((range: { startIndex: number; endIndex: number }) => {
@@ -277,7 +309,7 @@ export default function GraphContextStream({
       className="relative flex h-full w-[360px] flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900/95 motion-soft"
       initial={reduced ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.4 }}
+      transition={reduced ? { duration: 0 } : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
     >
       <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/60 p-3 text-sm text-neutral-300 backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-2">
@@ -347,6 +379,7 @@ export default function GraphContextStream({
         role="feed"
         aria-label="Context Stream"
         className="flex-1 overflow-hidden"
+        data-perf-id="context-stream"
       >
         {filteredAndPinnedEvents.length === 0 ? (
           <div className="mt-6 text-center text-xs text-neutral-600 px-3">
@@ -358,6 +391,7 @@ export default function GraphContextStream({
             scrollerRef={handleScrollerRef}
             data={filteredAndPinnedEvents}
             totalCount={filteredAndPinnedEvents.length}
+            increaseViewportBy={200}
             itemContent={(index, event) => {
               const eventFocused = isFocused(event);
               return (
@@ -390,7 +424,7 @@ export default function GraphContextStream({
                     transition={
                       reduced
                         ? { duration: 0 }
-                        : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1], delay: index * 0.02 }
+                        : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
                     }
                     onKeyDown={(e) => handleItemKeyDown(e, event)}
                     onClick={() => {
