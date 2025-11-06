@@ -116,6 +116,22 @@ export const filonTokens = {
     "glow-md": figmaTokens.shadows["glow-md"].value,
     inner: figmaTokens.shadows.inner.value,
   },
+  depth: {
+    surface: "0 0 8px hsl(var(--filon-glow)/0.15)",
+    raised: "0 0 16px hsl(var(--filon-glow)/0.25)",
+    overlay: "0 0 24px hsl(var(--filon-accent)/0.35)",
+  },
+  motionPresets: {
+    softPulse: { scale: [1, 1.02, 1], opacity: [0.95, 1, 0.95] },
+    fadeShift: { y: [10, 0], opacity: [0, 1] },
+    parallax: { y: [-4, 4], transition: { repeat: Infinity, repeatType: "reverse" as const, duration: 6 } },
+  },
+  glowLevels: {
+    low: "0 0 8px hsl(var(--filon-glow)/0.2)",
+    mid: "0 0 16px hsl(var(--filon-glow)/0.35)",
+    high: "0 0 24px hsl(var(--filon-accent)/0.55)",
+  },
+  zIndex: { base: 0, raised: 5, overlay: 10, focus: 20 },
 } as const;
 
 /**

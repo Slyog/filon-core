@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useFeature } from "@/config/featureFlags";
 import { useContextStreamStore } from "@/store/ContextStreamStore";
 import { Brain } from "lucide-react";
 import type { AISummary } from "@/ai/summarizerCore";
+import { ContextStreamPanel } from "@/components/panels/ContextStream";
 
 function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
   return array.reduce((acc, item) => {
@@ -57,6 +58,7 @@ export default function ContextStream() {
   const enabled = useFeature("CONTEXT_STREAM");
   const { summaries, loadSummaries, startDecay, stopDecay } =
     useContextStreamStore();
+  const [activePanelId, setActivePanelId] = useState<string>("");
 
   useEffect(() => {
     loadSummaries();
@@ -68,6 +70,11 @@ export default function ContextStream() {
 
   if (!enabled) return null;
 
+  const panels = Object.entries(grouped).map(([id, list]) => ({
+    id,
+    content: <Thread key={id} entries={list} />,
+  }));
+
   return (
     <div className="p-4 border border-cyan-700/30 rounded-2xl bg-black/40 shadow-inner">
       <h3 className="text-cyan-300 mb-2 font-medium flex items-center gap-2">
@@ -76,11 +83,23 @@ export default function ContextStream() {
       {summaries.length === 0 ? (
         <p className="text-gray-500 text-sm">No AI explanations yet.</p>
       ) : (
-        <div className="space-y-2">
-          {Object.entries(grouped).map(([id, list]) => (
-            <Thread key={id} entries={list} />
+        <motion.div
+          className="relative flex flex-col gap-6 perspective-[1200px]"
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {panels.map((p, i) => (
+            <ContextStreamPanel
+              key={p.id}
+              id={p.id}
+              activeId={activePanelId}
+              onMouseEnter={() => setActivePanelId(p.id)}
+              onMouseLeave={() => setActivePanelId("")}
+              style={{ transform: `translateZ(${i * -20}px)` }}
+            >
+              {p.content}
+            </ContextStreamPanel>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );
