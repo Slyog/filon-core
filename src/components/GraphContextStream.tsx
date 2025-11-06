@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Node, Edge } from "reactflow";
-import { useFeedbackStore } from "@/store/FeedbackStore";
+import { Sparkles, Pin, Filter, Info } from "lucide-react";
+import { useFeedbackStore, type FeedbackEvent } from "@/store/FeedbackStore";
 import { useActiveNode } from "@/context/ActiveNodeContext";
+import ExplainOverlay from "@/components/ExplainOverlay";
+
+type FilterMode = "all" | "ai" | "events";
 
 interface GraphContextStreamProps {
   activeNode?: Node | null;
@@ -13,64 +17,114 @@ interface GraphContextStreamProps {
   onNodeSelect?: (nodeId: string) => void;
 }
 
+interface StreamEvent {
+  id: string;
+  type: FeedbackEvent["type"] | "ai_summary";
+  message: string;
+  timestamp: number;
+  nodeId: string | null;
+}
+
+function toStreamEvent(event: FeedbackEvent): StreamEvent {
+  const payload = event.payload as
+    | { message?: string; nodeId?: string; summary?: string }
+    | undefined;
+
+  const message =
+    payload?.message ??
+    payload?.summary ??
+    (typeof event.payload === "string"
+      ? event.payload
+      : JSON.stringify(event.payload ?? {}));
+
+  return {
+    id: event.id,
+    type: event.type,
+    message,
+    timestamp: event.timestamp,
+    nodeId: payload?.nodeId ?? null,
+  };
+}
+
 export default function GraphContextStream({
   activeNode,
   nodes = [],
-  edges = [],
-  onNodeSelect,
 }: GraphContextStreamProps) {
-  const [filter, setFilter] = useState<"all" | "ai" | "feedback" | "pins">(
-    "all"
-  );
-  const events = useFeedbackStore((s) => s.events);
-  const { activeNodeId } = useActiveNode();
+  const [filter, setFilter] = useState<FilterMode>("all");
+  const [showExplain, setShowExplain] = useState<boolean>(false);
+  const events = useFeedbackStore((state) => state.events);
+  const { activeNodeId: contextNodeId } = useActiveNode();
 
-  // TODO: Stream List with AI summaries, feedback, explain mode, pins, filters
-  // TODO: Add real-time updates from feedback store
-  // TODO: Add AI summary generation for selected nodes
-  // TODO: Add pinning functionality
-  // TODO: Add filtering and search
-  // TODO: Add explain mode overlay integration
+  const activeNodeId = activeNode?.id ?? contextNodeId ?? null;
+  const activeNodeLabel =
+    activeNode?.data?.label ??
+    nodes.find((node) => node.id === activeNodeId)?.data?.label ??
+    null;
 
-  const recentEvents = events.slice(-10).reverse();
+  const streamEvents = useMemo<StreamEvent[]>(() => {
+    return events.map(toStreamEvent).reverse();
+  }, [events]);
+
+  const filteredEvents = useMemo<StreamEvent[]>(() => {
+    if (filter === "ai") {
+      return streamEvents.filter(
+        (event) => event.type === "ai_explain" || event.type === "ai_summary"
+      );
+    }
+    if (filter === "events") {
+      return streamEvents.filter(
+        (event) => event.type !== "ai_explain" && event.type !== "ai_summary"
+      );
+    }
+    return streamEvents;
+  }, [streamEvents, filter]);
 
   return (
     <motion.div
-      className="w-[340px] h-full bg-neutral-900/90 border-l border-neutral-800 flex flex-col overflow-hidden"
+      className="relative flex h-full w-[360px] flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900/95"
       initial={{ opacity: 0, x: 30 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4 }}
     >
-      {/* Header */}
-      <div className="p-4 text-neutral-400 text-sm border-b border-neutral-800 flex items-center justify-between">
-        <span className="font-medium">Context Stream</span>
-        <div className="flex gap-1">
+      <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/60 p-3 text-sm text-neutral-300 backdrop-blur-md">
+        <div className="flex min-w-0 items-center gap-2">
+          <Info size={16} className="text-cyan-400" />
+          {activeNodeLabel ? (
+            <span className="truncate">{activeNodeLabel}</span>
+          ) : (
+            <span className="italic text-neutral-500">Kein Node ausgewählt</span>
+          )}
+        </div>
+        <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => setFilter("all")}
-            className={`px-2 py-1 rounded text-xs transition-colors ${
+            className={`px-2 py-1 text-xs ${
               filter === "all"
-                ? "bg-cyan-500/20 text-cyan-400"
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "rounded-md bg-cyan-500/20 text-cyan-300"
+                : "rounded-md bg-neutral-800 text-neutral-400"
             }`}
           >
             All
           </button>
           <button
+            type="button"
             onClick={() => setFilter("ai")}
-            className={`px-2 py-1 rounded text-xs transition-colors ${
+            className={`px-2 py-1 text-xs ${
               filter === "ai"
-                ? "bg-cyan-500/20 text-cyan-400"
-                : "text-neutral-500 hover:text-neutral-300"
+                ? "rounded-md bg-cyan-500/20 text-cyan-300"
+                : "rounded-md bg-neutral-800 text-neutral-400"
             }`}
           >
             AI
           </button>
           <button
-            onClick={() => setFilter("feedback")}
-            className={`px-2 py-1 rounded text-xs transition-colors ${
-              filter === "feedback"
-                ? "bg-cyan-500/20 text-cyan-400"
-                : "text-neutral-500 hover:text-neutral-300"
+            type="button"
+            onClick={() => setFilter("events")}
+            className={`px-2 py-1 text-xs ${
+              filter === "events"
+                ? "rounded-md bg-cyan-500/20 text-cyan-300"
+                : "rounded-md bg-neutral-800 text-neutral-400"
             }`}
           >
             Events
@@ -78,86 +132,79 @@ export default function GraphContextStream({
         </div>
       </div>
 
-      {/* Active Node Info */}
-      {activeNode && (
-        <div className="p-3 border-b border-neutral-800 bg-neutral-800/50">
-          <div className="text-xs text-neutral-400 mb-1">Active Node</div>
-          <div className="text-sm text-neutral-100 font-medium truncate">
-            {activeNode.data?.label || "Unnamed"}
+      <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/50 px-3 py-2 text-xs text-neutral-500">
+        <div className="flex items-center gap-2">
+          <Filter size={14} />
+          <span>
+            {filter === "all"
+              ? "Alle Ereignisse"
+              : filter === "ai"
+              ? "AI Zusammenfassungen"
+              : "Verlauf & Sync"}
+          </span>
+        </div>
+        {activeNodeLabel && (
+          <span className="rounded bg-neutral-800 px-2 py-1 text-neutral-400">
+            {activeNodeLabel}
+          </span>
+        )}
+      </div>
+
+      <div className="flex-1 space-y-3 overflow-y-auto px-3 py-2">
+        {filteredEvents.length === 0 ? (
+          <div className="mt-6 text-center text-xs text-neutral-600">
+            Keine Ereignisse für diesen Filter.
           </div>
-          {/* TODO: Show AI summary, confidence, tags, connections count */}
+        ) : (
+          filteredEvents.map((event, index) => (
+            <motion.div
+              key={event.id}
+              className="border border-neutral-800 bg-neutral-900/70 p-3 transition-colors hover:bg-neutral-900"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wide text-neutral-400">
+                  {event.type}
+                </span>
+                <button
+                  type="button"
+                  className="text-neutral-500 transition-colors hover:text-cyan-400"
+                  aria-label="Anpinnen"
+                >
+                  <Pin size={14} />
+                </button>
+              </div>
+              <div className="text-sm text-neutral-200 whitespace-pre-wrap">
+                {event.message || "(kein Text)"}
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+
+      {activeNodeId && (
+        <div className="border-t border-neutral-800 bg-neutral-900/60 p-3 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setShowExplain(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-cyan-600/20 px-3 py-2 text-sm text-cyan-300 transition-colors hover:bg-cyan-600/30"
+          >
+            <Sparkles size={16} />
+            Erkläre diesen Gedanken
+          </button>
         </div>
       )}
 
-      {/* Stream Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
-        {recentEvents.length === 0 && !activeNode ? (
-          <div className="text-neutral-500 text-xs text-center py-8">
-            Keine Einträge. Beginne mit einem Gedanken im Brainbar oben.
-          </div>
-        ) : (
-          <AnimatePresence>
-            {recentEvents.map((event) => {
-              const message =
-                event.payload?.message || String(event.payload || "");
-              const isError =
-                event.payload?.error || event.type === "sync_failed";
-              const isSuccess =
-                event.type === "sync_success" || event.type === "node_added";
-
-              return (
-                <motion.div
-                  key={event.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className={`p-2 rounded-lg text-xs ${
-                    isSuccess
-                      ? "bg-cyan-500/10 text-cyan-300 border border-cyan-500/20"
-                      : isError
-                      ? "bg-red-500/10 text-red-300 border border-red-500/20"
-                      : "bg-neutral-800/50 text-neutral-300"
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="text-neutral-500 text-[10px] mt-0.5">
-                      {new Date(event.timestamp).toLocaleTimeString()}
-                    </span>
-                    <span className="flex-1">{message}</span>
-                  </div>
-                  {/* TODO: Add action buttons (pin, explain, dismiss) */}
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+      <AnimatePresence>
+        {showExplain && (
+          <ExplainOverlay
+            onClose={() => setShowExplain(false)}
+            activeNodeLabel={activeNodeLabel}
+          />
         )}
-
-        {/* TODO: Add AI Summary Cards */}
-        {/* TODO: Add Explain Mode Overlay */}
-        {/* TODO: Add Pinned Items Section */}
-      </div>
-
-      {/* Footer Actions */}
-      <div className="p-3 border-t border-neutral-800 flex gap-2">
-        <button
-          className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded text-xs text-neutral-300 transition-colors"
-          onClick={() => {
-            // TODO: Implement explain mode toggle
-            console.log("Explain mode toggle");
-          }}
-        >
-          Explain Mode
-        </button>
-        <button
-          className="flex-1 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 rounded text-xs text-neutral-300 transition-colors"
-          onClick={() => {
-            // TODO: Implement AI summary generation
-            console.log("Generate AI summary");
-          }}
-        >
-          AI Summary
-        </button>
-      </div>
+      </AnimatePresence>
     </motion.div>
   );
 }
