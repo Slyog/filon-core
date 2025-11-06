@@ -1,11 +1,21 @@
 "use client";
 
 import localforage from "localforage";
-import Automerge from "@/lib/automergeClient";
-import type { Doc } from "@automerge/automerge/next";
+import Automerge, { loadAutomerge } from "@/lib/automergeClient";
+import type { Doc } from "@automerge/automerge";
 import type { GraphDoc } from "@/types/graph";
 import { createEmptyGraphDoc } from "@/types/graph";
 import { SyncStatus } from "@/sync/syncSchema";
+
+// Ensure Automerge is loaded before use
+let automergeReady = false;
+
+async function ensureAutomerge() {
+  if (!automergeReady) {
+    await loadAutomerge();
+    automergeReady = true;
+  }
+}
 
 const GRAPH_DOC_STORAGE_KEY = "noion-graph-doc";
 
@@ -16,7 +26,10 @@ const randomId = (prefix: string) =>
 
 type AutomergeGraphDoc = Doc<GraphDoc>;
 
-function coerceLegacyDoc(doc: AutomergeGraphDoc): AutomergeGraphDoc {
+async function coerceLegacyDoc(
+  doc: AutomergeGraphDoc
+): Promise<AutomergeGraphDoc> {
+  await ensureAutomerge();
   return Automerge.change(doc, (draft) => {
     if (!draft.metadata) {
       const now = new Date().toISOString();
@@ -39,10 +52,8 @@ function coerceLegacyDoc(doc: AutomergeGraphDoc): AutomergeGraphDoc {
     }
 
     draft.nodes = (draft.nodes ?? []).map((node) => {
-      const createdAt =
-        node.data?.createdAt ?? new Date().toISOString();
-      const updatedAt =
-        node.data?.updatedAt ?? createdAt;
+      const createdAt = node.data?.createdAt ?? new Date().toISOString();
+      const updatedAt = node.data?.updatedAt ?? createdAt;
       return {
         type: node.type ?? "default",
         position: node.position ?? { x: 0, y: 0 },
@@ -65,16 +76,14 @@ function coerceLegacyDoc(doc: AutomergeGraphDoc): AutomergeGraphDoc {
     draft.edges = (draft.edges ?? []).map((edge) => {
       const createdAt =
         (edge.data as any)?.createdAt ?? new Date().toISOString();
-      const updatedAt =
-        (edge.data as any)?.updatedAt ?? createdAt;
+      const updatedAt = (edge.data as any)?.updatedAt ?? createdAt;
       return {
         ...edge,
         data: {
           label: (edge.data as any)?.label,
           description: (edge.data as any)?.description,
           weight: (edge.data as any)?.weight,
-          type:
-            (edge.data as any)?.type ?? ("default" as const),
+          type: (edge.data as any)?.type ?? ("default" as const),
           createdAt,
           updatedAt,
           lastEditedBy: (edge.data as any)?.lastEditedBy,
@@ -88,6 +97,7 @@ function coerceLegacyDoc(doc: AutomergeGraphDoc): AutomergeGraphDoc {
 }
 
 async function saveBinary(doc: AutomergeGraphDoc) {
+  await ensureAutomerge();
   const binary = Automerge.save(doc);
   await localforage.setItem(GRAPH_DOC_STORAGE_KEY, binary);
 }
@@ -97,16 +107,19 @@ export async function initGraphDoc(
   docId?: string
 ): Promise<AutomergeGraphDoc> {
   try {
+    await ensureAutomerge();
+
     const saved = await localforage.getItem<Uint8Array>(GRAPH_DOC_STORAGE_KEY);
     if (saved) {
       const doc = Automerge.load<GraphDoc>(saved);
-      const hydrated = coerceLegacyDoc(doc);
+      const hydrated = await coerceLegacyDoc(doc);
       await saveBinary(hydrated);
       return hydrated;
     }
 
-    const fresh = Automerge.from<GraphDoc>(
-      createEmptyGraphDoc({ sessionId, docId })
+    const fresh = Automerge.from<GraphDoc & Record<string, unknown>>(
+      createEmptyGraphDoc({ sessionId, docId }) as GraphDoc &
+        Record<string, unknown>
     );
     await saveBinary(fresh);
     return fresh;
@@ -118,6 +131,8 @@ export async function initGraphDoc(
 
 export async function persistGraphDoc(doc: AutomergeGraphDoc) {
   try {
+    await ensureAutomerge();
+
     const withMeta = Automerge.change(doc, (draft) => {
       draft.metadata.lastSavedAt = new Date().toISOString();
       draft.metadata.pendingOps = 0;
@@ -135,9 +150,11 @@ export async function mergeRemoteDoc(
   remoteBinary: Uint8Array
 ): Promise<AutomergeGraphDoc | null> {
   try {
+    await ensureAutomerge();
+
     const remote = Automerge.load<GraphDoc>(remoteBinary);
     const merged = Automerge.merge(local, remote);
-    const normalised = coerceLegacyDoc(merged);
+    const normalised = await coerceLegacyDoc(merged);
     await saveBinary(normalised);
     return normalised;
   } catch (err) {

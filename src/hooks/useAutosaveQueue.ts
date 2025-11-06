@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { db } from "@/store/db";
-import { syncLambdaHandler } from "@/sync/syncLambdaHandler";
 import type { SyncEvent } from "@/sync/syncSchema";
 import { registerOnlineSync, isOnline } from "@/utils/network";
 import { logTelemetry } from "@/utils/telemetryLogger";
@@ -72,21 +71,40 @@ export function useAutosaveQueue(
     try {
       // Create sync event with binary data
       // The change object contains the binary for the sync handler
-      // Note: Currently syncLambdaHandler creates a mock doc, but binary is passed
-      // for future use when handler is updated to use actual binary
+      // Call the API route instead of syncLambdaHandler directly
+      // This ensures server-side code (filesystem, etc.) only runs on the server
+      // Convert Uint8Array to regular array for JSON serialization
+      const binaryArray = Array.from(job.binary);
+
       const syncEvent: SyncEvent = {
         userId: job.userId,
         sessionId: job.sessionId,
         diffSummary: job.diffSummary,
         change: {
-          binary: job.binary,
-          // Pass as both typed array and regular array for compatibility
-          data: Array.from(job.binary),
+          binary: binaryArray, // Send as array, API route will convert back to Uint8Array
+          data: binaryArray,
         },
         timestamp: job.createdAt,
       };
 
-      const response = await syncLambdaHandler(syncEvent);
+      const res = await fetch("/api/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(syncEvent),
+      });
+
+      if (!res.ok) {
+        const errorData = await res
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
+        throw new Error(
+          errorData.error || `Sync failed with status ${res.status}`
+        );
+      }
+
+      const response = await res.json();
 
       if (response.status === "ok") {
         // Success: remove from queue
@@ -271,23 +289,23 @@ export function useAutosaveQueue(
       }
     };
 
-    let idleCallbackId: number | null = null;
+    let idleCallbackId: ReturnType<typeof setTimeout> | number | null = null;
 
-    if ("requestIdleCallback" in window) {
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       idleCallbackId = (window as any).requestIdleCallback(scheduleSync, {
         timeout: IDLE_TIMEOUT,
-      });
-    } else {
+      }) as number;
+    } else if (typeof window !== "undefined") {
       // Fallback for browsers without requestIdleCallback
-      idleCallbackId = window.setTimeout(scheduleSync, IDLE_TIMEOUT);
+      idleCallbackId = setTimeout(scheduleSync, IDLE_TIMEOUT);
     }
 
     return () => {
       if (idleCallbackId !== null) {
-        if ("cancelIdleCallback" in window) {
+        if (typeof window !== "undefined" && "cancelIdleCallback" in window) {
           (window as any).cancelIdleCallback(idleCallbackId);
         } else {
-          window.clearTimeout(idleCallbackId);
+          clearTimeout(idleCallbackId);
         }
       }
     };

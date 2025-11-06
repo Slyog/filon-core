@@ -2,7 +2,17 @@
 import { useFeedbackStore } from "@/store/FeedbackStore";
 
 export default function SaveStatusBar() {
-  const { status, lastSync } = useFeedbackStore();
+  const events = useFeedbackStore((s) => s.events);
+  // Get the most recent sync event
+  const lastSyncEvent = events
+    .filter((e) => e.type === "sync_success" || e.type === "sync_failed")
+    .sort((a, b) => b.timestamp - a.timestamp)[0];
+
+  const status = lastSyncEvent
+    ? lastSyncEvent.type === "sync_success"
+      ? "synced"
+      : "offline"
+    : "idle";
 
   const colors = {
     idle: "text-gray-400",
@@ -14,13 +24,17 @@ export default function SaveStatusBar() {
   const text = {
     idle: "Idle",
     saving: "Saving...",
-    synced: `Synced (${new Date(lastSync || 0).toLocaleTimeString()})`,
+    synced: `Synced (${new Date(
+      lastSyncEvent?.timestamp || 0
+    ).toLocaleTimeString()})`,
     offline: "Offline (local only)",
   };
 
   return (
     <div className="fixed bottom-2 left-1/2 -translate-x-1/2 text-sm font-medium z-50">
-      <span className={colors[status]}>{text[status]}</span>
+      <span className={colors[status as keyof typeof colors]}>
+        {text[status as keyof typeof text]}
+      </span>
     </div>
   );
 }

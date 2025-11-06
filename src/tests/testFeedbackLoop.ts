@@ -1,5 +1,5 @@
 import { eventBus } from "../core/eventBus";
-import { useFeedbackStore } from "../store/feedbackStore";
+import { useFeedbackStore } from "../store/FeedbackStore";
 
 async function testFeedbackLoop() {
   console.log("🧪 FILON Feedback Loop Test started...");

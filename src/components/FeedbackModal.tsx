@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThumbsUp, ThumbsDown, X } from "lucide-react";
-import { useFeedbackStore, type FeedbackType } from "@/store/feedbackStore";
+import { useFeedbackStore, type FeedbackType } from "@/store/FeedbackStore";
 import { eventBus } from "@/core/eventBus";
 
 type FeedbackModalProps = {
@@ -81,9 +81,7 @@ export default function FeedbackModal({
               </button>
             </div>
 
-            {context && (
-              <p className="text-sm text-gray-400 mb-4">{context}</p>
-            )}
+            {context && <p className="text-sm text-gray-400 mb-4">{context}</p>}
 
             <div className="mb-4">
               <p className="text-sm text-gray-300 mb-2">How was this?</p>
@@ -149,4 +147,3 @@ export default function FeedbackModal({
 }
 
 // TODO: Attach AI learning weights after Explain evaluation
-

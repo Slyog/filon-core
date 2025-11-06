@@ -1,12 +1,7 @@
 import { createMetadataStore } from "./dynamoAdapter";
 import { createSnapshotStorage } from "./s3Adapter";
-import type {
-  SyncEvent,
-  SyncResponse,
-  SyncMetadata,
-  SyncStatus,
-} from "./syncSchema";
-import { getBinary } from "./automergeAdapter";
+import type { SyncEvent, SyncResponse, SyncMetadata } from "./syncSchema";
+import { SyncStatus } from "./syncSchema";
 import { eventBus } from "@/core/eventBus";
 
 const USE_AWS = process.env.FILON_USE_AWS === "true";
@@ -22,8 +17,17 @@ const snapshotStore = createSnapshotStorage({
 /**
  * Validates user authentication token
  * TODO: Replace with real JWT validation
+ * In development, allows local sync without token for easier testing
  */
 function validateAuth(userId: string, token?: string): boolean {
+  // In development, allow sync without token for local testing
+  if (
+    process.env.NODE_ENV === "development" ||
+    process.env.FILON_ALLOW_LOCAL_SYNC === "true"
+  ) {
+    return true;
+  }
+
   // Mock validation - only Lambda should have valid token
   if (!token) {
     console.warn("[SYNC] No token provided");
@@ -61,11 +65,14 @@ export async function syncLambdaHandler(
     let s3Key: string | undefined;
     let status: SyncStatus = SyncStatus.SYNCED;
 
-    if (event.change) {
-      // TODO: In real implementation, get full document from event or load from previous snapshot
-      // For now, we'll create a mock binary
-      const mockDoc = { nodes: [], edges: [], change: event.change };
-      const binary = getBinary(mockDoc as any);
+    if (event.change?.binary) {
+      // Use the binary directly from the change event
+      // The binary is already a Uint8Array from Automerge.save()
+      const binary =
+        event.change.binary instanceof Uint8Array
+          ? event.change.binary
+          : new Uint8Array(event.change.binary);
+
       s3Key = await snapshotStore.saveSnapshot(
         event.userId,
         event.sessionId,

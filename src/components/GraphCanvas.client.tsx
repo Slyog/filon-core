@@ -153,8 +153,8 @@ const SESSION_STORAGE_KEY = "filon-sessions";
 function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   const { activeNodeId, setActiveNodeId } = useActiveNode();
   const { currentMindState, setCurrentMindState } = useMindProgress();
-  const addFeedback = useFeedbackStore((s) => s.add);
-  const setStatus = useFeedbackStore((s) => s.setStatus);
+  const addFeedback = useFeedbackStore((s) => s.addFeedback);
+  // setStatus removed - status tracking moved to feedback system
   const addMemory = useMemoryStore((s) => s.addSnapshot);
   const getTrend = useMemoryStore((s) => s.getTrend);
   const { getType } = useThoughtType();
@@ -249,8 +249,11 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
   // 🚀 Top-level initialization: Set initial feedback and status
   useEffect(() => {
-    addFeedback({ type: "info", message: "📡 Graph initialized" });
-    setStatus("idle");
+    addFeedback({
+      type: "user_action",
+      payload: { message: "📡 Graph initialized" },
+    });
+    // Status tracking removed
     logInfo({ step: "mount", notes: "GraphCanvas mounted" });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -353,7 +356,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (!sessionId || !isSessionLoaded || isInitialSessionLoadRef.current)
       return;
-    setStatus("saving", "💾 Saving...");
+    // setStatus removed
     const timeout = setTimeout(async () => {
       try {
         await saveGraphToSession(sessionId, { nodes, edges });
@@ -362,34 +365,32 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           edgeCount: edges.length,
           lastSaved: Date.now(),
         });
-        setStatus("synced", "☁️ Synced to Session");
-        addFeedback({ type: "success", message: "💾 Synced to Session" });
-        setTimeout(() => setStatus("idle", ""), 1200);
+        // setStatus removed
+        addFeedback({
+          type: "node_added",
+          payload: { message: "💾 Synced to Session" },
+        });
+        // setStatus timeout removed
         console.log(`[FILON] Graph autosaved for session ${sessionId}`);
       } catch (err) {
-        setStatus("offline", "⚠️ Failed to save");
+        // setStatus removed
         console.error("Session save failed:", err);
       }
     }, 1000);
     return () => clearTimeout(timeout);
-  }, [
-    sessionId,
-    nodes,
-    edges,
-    isSessionLoaded,
-    setStatus,
-    addFeedback,
-    updateMetadata,
-  ]);
+  }, [sessionId, nodes, edges, isSessionLoaded, addFeedback, updateMetadata]);
 
   // ✅ Feedback initialization after first successful load
   useEffect(() => {
     if (!feedbackInit && graphLoadedOnce && !isLoading) {
-      addFeedback({ type: "success", message: "✅ Graph ready" });
-      setStatus("idle", "Ready");
+      addFeedback({
+        type: "node_added",
+        payload: { message: "✅ Graph ready" },
+      });
+      // setStatus removed
       setFeedbackInit(true);
     }
-  }, [feedbackInit, graphLoadedOnce, isLoading, addFeedback, setStatus]);
+  }, [feedbackInit, graphLoadedOnce, isLoading, addFeedback]);
 
   // 🔗 Track active session for DB/snapshot imports
   useEffect(() => {
@@ -458,7 +459,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
       saveDebounceRef.current = setTimeout(async () => {
         // 🔹 Set status in async handler to avoid render-time updates
-        setStatus("saving", "💾 Saving...");
+        // Status: saving
         const saveStartTime = Date.now();
         try {
           const when = Date.now();
@@ -475,8 +476,11 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
             success: true,
             duration: Date.now() - saveStartTime,
           });
-          addFeedback({ type: "success", message: "☁️ Synced to cloud" });
-          setStatus("synced", "☁️ Synced to cloud");
+          addFeedback({
+            type: "node_added",
+            payload: { message: "☁️ Synced to cloud" },
+          });
+          // setStatus removed
           logSuccess({
             step: "autosave",
             notes: "Graph state persisted",
@@ -532,8 +536,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                   if (summary) {
                     await updateSummary(snapshotId, summary);
                     addFeedback({
-                      type: "success",
-                      message: `🧠 Snapshot + Insight: ${summary}`,
+                      type: "snapshot_created",
+                      payload: { message: `🧠 Snapshot + Insight: ${summary}` },
                     });
 
                     // Add to memory store and show trend
@@ -546,15 +550,18 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                     });
                     const trend = getTrend();
                     if (trend !== "Noch keine Trends.") {
-                      addFeedback({ type: "info", message: `📈 ${trend}` });
+                      addFeedback({
+                        type: "user_action",
+                        payload: { message: `📈 ${trend}` },
+                      });
                     }
                   }
                 }
               }
             } else {
               addFeedback({
-                type: "success",
-                message: "📜 Snapshot created",
+                type: "snapshot_created",
+                payload: { message: "📜 Snapshot created" },
               });
             }
           } else {
@@ -584,7 +591,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
             () => setSaveState((s) => (s === "saved" ? "idle" : s)),
             1000
           );
-          setTimeout(() => setStatus("idle", ""), 2000);
+          // setStatus timeout removed
         } catch (err) {
           console.warn("Remote save failed, local only", err);
 
@@ -600,10 +607,10 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
             success: false,
           });
           addFeedback({
-            type: "error",
-            message: "⚠️ Offline – local backup only",
+            type: "sync_failed",
+            payload: { message: "⚠️ Offline – local backup only" },
           });
-          setStatus("offline", "⚠️ Offline – local backup only");
+          // setStatus removed
           logError({
             step: "autosave",
             notes: err instanceof Error ? err.message : "Unknown save error",
@@ -666,16 +673,16 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                   if (summary) {
                     await updateSummary(snapshotId, summary);
                     addFeedback({
-                      type: "success",
-                      message: `🧠 Snapshot + Insight: ${summary}`,
+                      type: "snapshot_created",
+                      payload: { message: `🧠 Snapshot + Insight: ${summary}` },
                     });
                   }
                 }
               }
             } else {
               addFeedback({
-                type: "success",
-                message: "📜 Snapshot created",
+                type: "snapshot_created",
+                payload: { message: "📜 Snapshot created" },
               });
             }
           } else {
@@ -687,7 +694,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         }
       }, 800);
     },
-    [activeBranch, addFeedback, addMemory, getTrend, setStatus]
+    [activeBranch, addFeedback, addMemory, getTrend]
   );
 
   // Selektions-Glow als Helper (keine globalen Styles anfassen)
@@ -750,13 +757,20 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   );
 
   const onConnect: OnConnect = useCallback(
-    (params: Connection) =>
+    (params: Connection) => {
+      if (!params.source || !params.target) return;
+      const source = params.source;
+      const target = params.target;
       setEdges((eds) => {
         const nowIso = new Date().toISOString();
-        const enriched = {
-          ...params,
+        const enriched: Edge = {
+          id: `edge_${source}_${target}_${Date.now()}`,
+          source,
+          target,
+          sourceHandle: params.sourceHandle,
+          targetHandle: params.targetHandle,
+          type: "smoothstep",
           data: {
-            ...(params.data ?? {}),
             type: "default",
             createdAt: nowIso,
             updatedAt: nowIso,
@@ -768,7 +782,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           saveGraph(nodes, updated);
         }, 0);
         return updated;
-      }),
+      });
+    },
     [nodes, saveGraph]
   );
 
@@ -1195,11 +1210,13 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         `✅ Finished draining queued thoughts for ${sessionId} (${source}).`
       );
       addFeedback({
-        type: "success",
-        message:
-          queued.length === 1
-            ? "🪄 Thought materialized into your graph."
-            : `🪄 ${queued.length} thoughts materialized into your graph.`,
+        type: "node_added",
+        payload: {
+          message:
+            queued.length === 1
+              ? "🪄 Thought materialized into your graph."
+              : `🪄 ${queued.length} thoughts materialized into your graph.`,
+        },
       });
 
       return true;
@@ -1262,7 +1279,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
   const startVoiceInput = useCallback(async () => {
     console.log("🎙 Voice input started...");
-    setStatus("saving", "🎙 Listening...");
+    // setStatus removed
     const transcript = await startVoiceCapture();
 
     if (transcript) {
@@ -1285,19 +1302,25 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         thoughtType,
       });
 
-      addFeedback({ type: "success", message: `🎧 Captured: "${display}"` });
       addFeedback({
-        type: "info",
-        message: `🧠 ${thoughtType} thought created`,
+        type: "node_added",
+        payload: { message: `🎧 Captured: "${display}"` },
       });
-      setStatus("synced", "☁️ Voice thought created");
-      setTimeout(() => setStatus("idle", ""), 2000);
+      addFeedback({
+        type: "user_action",
+        payload: { message: `🧠 ${thoughtType} thought created` },
+      });
+      // setStatus removed
+      // setStatus timeout removed
     } else {
-      addFeedback({ type: "error", message: "⚠️ No speech detected" });
-      setStatus("offline", "Voice capture failed or unsupported");
-      setTimeout(() => setStatus("idle", ""), 2000);
+      addFeedback({
+        type: "user_action",
+        payload: { message: "⚠️ No speech detected", error: true },
+      });
+      // setStatus removed
+      // setStatus timeout removed
     }
-  }, [addFeedback, setStatus, getType, ensureActiveSession]);
+  }, [addFeedback, getType, ensureActiveSession]);
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1319,14 +1342,20 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           thoughtType,
         });
 
-        addFeedback({ type: "success", message: "📄 File imported" });
         addFeedback({
-          type: "info",
-          message: `🧠 ${thoughtType} thought created`,
+          type: "node_added",
+          payload: { message: "📄 File imported" },
+        });
+        addFeedback({
+          type: "user_action",
+          payload: { message: `🧠 ${thoughtType} thought created` },
         });
       } catch (err) {
         console.error("File upload error:", err);
-        addFeedback({ type: "error", message: "❌ Failed to read file" });
+        addFeedback({
+          type: "user_action",
+          payload: { message: "❌ Failed to read file", error: true },
+        });
       }
     },
     [addFeedback, getType, ensureActiveSession]
@@ -1392,14 +1421,14 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       });
 
       addFeedback({
-        type: "success",
-        message: "💾 All workspaces saved.",
+        type: "user_action",
+        payload: { message: "💾 All workspaces saved." },
       });
     } catch (error) {
       console.error("Failed to save workspaces:", error);
       addFeedback({
-        type: "error",
-        message: "⚠️ Failed to save workspaces.",
+        type: "user_action",
+        payload: { message: "⚠️ Failed to save workspaces.", error: true },
       });
     }
   }, [addFeedback]);
@@ -1420,8 +1449,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       >(SESSION_STORAGE_KEY);
       if (!stored) {
         addFeedback({
-          type: "error",
-          message: "⚠️ No workspace data found.",
+          type: "user_action",
+          payload: { message: "⚠️ No workspace data found.", error: true },
         });
         return;
       }
@@ -1441,8 +1470,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
       if (!snapshot.sessions) {
         addFeedback({
-          type: "error",
-          message: "⚠️ Workspace data incomplete.",
+          type: "user_action",
+          payload: { message: "⚠️ Workspace data incomplete.", error: true },
         });
         return;
       }
@@ -1477,14 +1506,14 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       }
 
       addFeedback({
-        type: "success",
-        message: "📂 Workspaces loaded from storage.",
+        type: "user_action",
+        payload: { message: "📂 Workspaces loaded from storage." },
       });
     } catch (error) {
       console.error("Failed to load workspaces:", error);
       addFeedback({
-        type: "error",
-        message: "⚠️ Failed to load workspace data.",
+        type: "user_action",
+        payload: { message: "⚠️ Failed to load workspace data.", error: true },
       });
     }
   }, [addFeedback]);

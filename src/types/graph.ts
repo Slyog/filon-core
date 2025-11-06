@@ -1,5 +1,5 @@
 import type { Node, Edge } from "reactflow";
-import type { SyncStatus } from "@/sync/syncSchema";
+import { SyncStatus } from "@/sync/syncSchema";
 
 /**
  * Domain-specific payload stored in a ReactFlow node.

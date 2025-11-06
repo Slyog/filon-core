@@ -25,7 +25,7 @@ export default function ComposerPanel() {
   const generateTitleFromThought = useSessionStore(
     (s) => s.generateTitleFromThought
   );
-  const addFeedback = useFeedbackStore((s) => s.add);
+  const addFeedback = useFeedbackStore((s) => s.addFeedback);
 
   const [selectedType, setSelectedType] = useState<ComposerType>("Idea");
   const [customType, setCustomType] = useState("");
@@ -54,8 +54,8 @@ export default function ComposerPanel() {
     const trimmed = text.trim();
     if (!trimmed) {
       addFeedback({
-        type: "error",
-        message: "Bitte zuerst Text eingeben.",
+        type: "user_action",
+        payload: { message: "Bitte zuerst Text eingeben.", error: true },
       });
       return;
     }
@@ -64,8 +64,11 @@ export default function ComposerPanel() {
     const sessionId = await createOrGetActive(titleSuggestion);
     if (!sessionId) {
       addFeedback({
-        type: "error",
-        message: "⚠️ Workspace konnte nicht erstellt werden.",
+        type: "user_action",
+        payload: {
+          message: "⚠️ Workspace konnte nicht erstellt werden.",
+          error: true,
+        },
       });
       return;
     }
@@ -83,12 +86,15 @@ export default function ComposerPanel() {
     });
 
     addFeedback({
-      type: "info",
-      message: "✨ Thought wird hinzugefügt, sobald der Workspace bereit ist.",
+      type: "user_action",
+      payload: {
+        message:
+          "✨ Thought wird hinzugefügt, sobald der Workspace bereit ist.",
+      },
     });
     addFeedback({
-      type: "success",
-      message: "🧠 Thought in den Workspace übernommen.",
+      type: "node_added",
+      payload: { message: "🧠 Thought in den Workspace übernommen." },
     });
 
     if (!ready) {

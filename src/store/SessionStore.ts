@@ -186,12 +186,8 @@ export const useSessionStore = create<SessionState>()(
           return id;
         },
         createOrGetActive: async (autoTitle?: string) => {
-          const {
-            sessions,
-            activeSessionId,
-            addSession,
-            setActiveSession,
-          } = get();
+          const { sessions, activeSessionId, addSession, setActiveSession } =
+            get();
 
           const hasActive =
             activeSessionId &&
@@ -234,8 +230,7 @@ export const useSessionStore = create<SessionState>()(
           await localforage.setItem(STORAGE_KEY, {
             state: {
               sessions: updatedSessions,
-              activeSessionId:
-                activeSessionId === id ? null : activeSessionId,
+              activeSessionId: activeSessionId === id ? null : activeSessionId,
               pendingThoughts: get().pendingThoughts,
             },
             version: 0,
@@ -260,9 +255,7 @@ export const useSessionStore = create<SessionState>()(
           set((state) => {
             const exists = state.sessions.some((s) => s.id === session.id);
             const sessions = exists
-              ? state.sessions.map((s) =>
-                  s.id === session.id ? session : s
-                )
+              ? state.sessions.map((s) => (s.id === session.id ? session : s))
               : [...state.sessions, session];
             return { ...state, sessions, activeSessionId: session.id };
           });
@@ -310,15 +303,22 @@ export const useSessionStore = create<SessionState>()(
         updateMetadata: (id, meta) => {
           set((state) => ({
             ...state,
-            sessions: state.sessions.map((s) =>
-              s.id === id
-                ? {
-                    ...s,
-                    meta: { ...(s.meta ?? {}), ...meta },
-                    updatedAt: Date.now(),
-                  }
-                : s
-            ),
+            sessions: state.sessions.map((s) => {
+              if (s.id !== id) return s;
+              const existingMeta = s.meta ?? {
+                nodeCount: 0,
+                edgeCount: 0,
+                lastSaved: Date.now(),
+              };
+              return {
+                ...s,
+                meta: {
+                  ...existingMeta,
+                  ...meta,
+                } as Session["meta"],
+                updatedAt: Date.now(),
+              };
+            }),
           }));
 
           void persistSnapshot();
@@ -360,6 +360,12 @@ export const useSessionStore = create<SessionState>()(
           await persistSnapshot();
           return mine;
         },
+        setGraphLoadedOnce: (loaded) => {
+          set((state) => ({
+            ...state,
+            graphLoadedOnce: loaded,
+          }));
+        },
       };
     },
     {
@@ -373,9 +379,3 @@ export const useSessionStore = create<SessionState>()(
     }
   )
 );
-        setGraphLoadedOnce: (loaded) => {
-          set((state) => ({
-            ...state,
-            graphLoadedOnce: loaded,
-          }));
-        },

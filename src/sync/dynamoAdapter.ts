@@ -1,8 +1,15 @@
-import fs from "fs";
-import path from "path";
 import type { SyncMetadata } from "./syncSchema";
 
 const DYNAMO_MOCK_PATH = "/tmp/dynamoMock.json";
+
+// Only import Node.js modules server-side
+let fs: typeof import("fs") | null = null;
+let path: typeof import("path") | null = null;
+
+if (typeof window === "undefined") {
+  fs = require("fs");
+  path = require("path");
+}
 
 export interface MetadataStore {
   write(metadata: SyncMetadata): Promise<void>;
@@ -19,6 +26,9 @@ class FileMetadataStore implements MetadataStore {
   constructor(private readonly filePath: string) {}
 
   private ensureFile() {
+    if (!fs || !path) {
+      throw new Error("FileMetadataStore can only be used server-side");
+    }
     const dir = path.dirname(this.filePath);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -29,6 +39,9 @@ class FileMetadataStore implements MetadataStore {
   }
 
   async write(metadata: SyncMetadata): Promise<void> {
+    if (!fs || !path) {
+      throw new Error("FileMetadataStore can only be used server-side");
+    }
     this.ensureFile();
 
     try {
@@ -45,6 +58,9 @@ class FileMetadataStore implements MetadataStore {
   }
 
   async readAll(): Promise<SyncMetadata[]> {
+    if (!fs || !path) {
+      throw new Error("FileMetadataStore can only be used server-side");
+    }
     this.ensureFile();
 
     try {

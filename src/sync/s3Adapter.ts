@@ -1,6 +1,3 @@
-import fs from "fs";
-import path from "path";
-
 export interface SnapshotStorage {
   saveSnapshot(userId: string, sessionId: string, binary: Uint8Array): Promise<string>;
   loadSnapshot(key: string): Promise<Uint8Array>;
@@ -12,10 +9,22 @@ export interface SnapshotStorageConfig {
   useAws?: boolean;
 }
 
+// Only import Node.js modules server-side
+let fs: typeof import("fs") | null = null;
+let path: typeof import("path") | null = null;
+
+if (typeof window === "undefined") {
+  fs = require("fs");
+  path = require("path");
+}
+
 class FilesystemSnapshotStore implements SnapshotStorage {
   constructor(private readonly rootDir: string) {}
 
   private ensureDir(dir: string) {
+    if (!fs || !path) {
+      throw new Error("FilesystemSnapshotStore can only be used server-side");
+    }
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
@@ -26,6 +35,9 @@ class FilesystemSnapshotStore implements SnapshotStorage {
     sessionId: string,
     binary: Uint8Array
   ): Promise<string> {
+    if (!fs || !path) {
+      throw new Error("FilesystemSnapshotStore can only be used server-side");
+    }
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const key = `${userId}/${sessionId}/${timestamp}.bin`;
     const fullPath = path.join(this.rootDir, key);
@@ -38,6 +50,9 @@ class FilesystemSnapshotStore implements SnapshotStorage {
   }
 
   async loadSnapshot(key: string): Promise<Uint8Array> {
+    if (!fs || !path) {
+      throw new Error("FilesystemSnapshotStore can only be used server-side");
+    }
     const fullPath = path.join(this.rootDir, key);
     try {
       const buffer = fs.readFileSync(fullPath);
@@ -49,6 +64,9 @@ class FilesystemSnapshotStore implements SnapshotStorage {
   }
 
   async listSnapshots(userId: string, sessionId?: string): Promise<string[]> {
+    if (!fs || !path) {
+      throw new Error("FilesystemSnapshotStore can only be used server-side");
+    }
     const base = path.join(this.rootDir, userId);
     if (!fs.existsSync(base)) return [];
 

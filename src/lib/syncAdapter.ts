@@ -7,7 +7,7 @@ import {
 } from "./automergeAdapter";
 import { mergeWithStrategy } from "./conflictResolver";
 import { SilverbulletCore } from "./silverbullet/core";
-import Automerge from "@/lib/automergeClient";
+import { loadAutomerge } from "@/lib/automergeClient";
 import type { Node, Edge } from "reactflow";
 import type { GraphNode, GraphEdge, GraphDoc } from "@/types/graph";
 import { SyncStatus } from "@/sync/syncSchema";
@@ -73,6 +73,9 @@ export async function syncAndResolve(
   strategy: "preferLocal" | "preferRemote" | "mergeProps" = "mergeProps"
 ) {
   try {
+    // Load Automerge before using it
+    const Automerge = await loadAutomerge();
+
     if (!Automerge) {
       console.warn("[FILON] Automerge not loaded — skipping syncAndResolve");
       return null;

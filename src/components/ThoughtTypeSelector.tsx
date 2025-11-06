@@ -17,7 +17,7 @@ const TYPES = [
 export default function ThoughtTypeSelector() {
   const router = useRouter();
   const pathname = usePathname();
-  const addFeedback = useFeedbackStore((s) => s.add);
+  const addFeedback = useFeedbackStore((s) => s.addFeedback);
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
   const createOrGetActive = useSessionStore((s) => s.createOrGetActive);
   const generateTitleFromThought = useSessionStore(
@@ -50,8 +50,8 @@ export default function ThoughtTypeSelector() {
   async function handleConfirm() {
     if (!canConfirm) {
       addFeedback({
-        type: "error",
-        message: "Bitte zuerst Text eingeben.",
+        type: "user_action",
+        payload: { message: "Bitte zuerst Text eingeben.", error: true },
       });
       return;
     }
@@ -64,8 +64,11 @@ export default function ThoughtTypeSelector() {
 
     if (!sessionId) {
       addFeedback({
-        type: "error",
-        message: "⚠️ Could not create workspace automatically.",
+        type: "user_action",
+        payload: {
+          message: "⚠️ Could not create workspace automatically.",
+          error: true,
+        },
       });
       return;
     }
@@ -88,8 +91,10 @@ export default function ThoughtTypeSelector() {
       thoughtType: currentType,
     });
     addFeedback({
-      type: "info",
-      message: "✨ Thought queued — will appear once workspace is ready.",
+      type: "user_action",
+      payload: {
+        message: "✨ Thought queued — will appear once workspace is ready.",
+      },
     });
 
     setText("");
@@ -101,10 +106,12 @@ export default function ThoughtTypeSelector() {
       !previousSessionId || previousSessionId !== sessionId;
 
     addFeedback({
-      type: "success",
-      message: createdNewWorkspace
-        ? "✨ Workspace erstellt und Thought wird hinzugefügt…"
-        : "🧠 Thought wird hinzugefügt…",
+      type: "node_added",
+      payload: {
+        message: createdNewWorkspace
+          ? "✨ Workspace erstellt und Thought wird hinzugefügt…"
+          : "🧠 Thought wird hinzugefügt…",
+      },
     });
   }
 

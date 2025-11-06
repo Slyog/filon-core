@@ -6,7 +6,7 @@ import { usePanelFocus } from "@/store/PanelFocusStore";
 import PanelOverlay from "@/components/PanelOverlay";
 import ExplainModal from "@/components/ExplainModal";
 import { eventBus } from "@/core/eventBus";
-import { useFeedbackStore } from "@/store/feedbackStore";
+import { useFeedbackStore } from "@/store/FeedbackStore";
 
 type DynamicPanelProps = {
   flag: keyof typeof import("@/config/featureFlags").FEATURE_FLAGS;
