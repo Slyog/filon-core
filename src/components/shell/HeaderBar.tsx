@@ -29,7 +29,7 @@ export default function HeaderBar() {
   }, [title]);
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-sm flex items-center justify-between px-4 py-2 border-b border-cyan-900/30 shadow-glow-md">
+    <header className="sticky top-0 z-50 bg-surface-hover/90 backdrop-blur-sm flex items-center justify-between px-4 py-2 border-b border-brand-dark/30 shadow-inner">
       <div className="flex flex-1 items-center gap-2">
         <button
           type="button"
@@ -39,13 +39,13 @@ export default function HeaderBar() {
         >
           <PanelLeft size={18} />
         </button>
-        <h1 className="text-filament font-semibold tracking-wide">FILON</h1>
+        <h1 className="text-brand font-semibold tracking-wide">FILON</h1>
       </div>
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setExportOpen(true)}
-          className="bg-cyan-700/40 hover:bg-cyan-500/40 text-cyan-100 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+          className="bg-brand/20 hover:bg-brand/30 text-brand rounded-xl px-3 py-1.5 text-sm font-medium transition-colors hover:glow"
           aria-label="Exportieren"
         >
           Exportieren

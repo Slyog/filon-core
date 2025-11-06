@@ -40,7 +40,7 @@ export default function AppShell({ children }: PropsWithChildren) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-[#0A0F12] text-gray-100"
+      className="min-h-screen grid grid-rows-[auto,1fr,auto] bg-surface-base text-text-primary"
     >
       {/* Header */}
       <div className="row-start-1">
@@ -75,7 +75,7 @@ export default function AppShell({ children }: PropsWithChildren) {
       </main>
 
       {/* Footer */}
-      <footer className="row-start-3 py-4 text-center text-xs text-gray-500/70 border-t border-cyan-900/40">
+      <footer className="row-start-3 py-4 text-center text-xs text-text-muted border-t border-brand-dark/40">
         FILON Core v0.4 • Hotkey Focus Active
       </footer>
 

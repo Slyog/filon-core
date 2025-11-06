@@ -30,12 +30,35 @@ const config: Config = {
           accent: "var(--filon-accent)",
           text: "var(--filon-text)",
         },
+        // FILON Step 16.9 - Unified Design Tokens
+        brand: {
+          DEFAULT: "#2FF3FF",
+          soft: "#A8FFF9",
+          dark: "#0B3A45",
+        },
+        surface: {
+          base: "#0B0C10",
+          hover: "#111218",
+          active: "#181A22",
+        },
+        accent: {
+          glow: "#39E5FF",
+          warning: "#FFC857",
+          error: "#FF5964",
+        },
+        text: {
+          primary: "#E6E6E6",
+          secondary: "#9CA3AF",
+          muted: "#6B7280",
+        },
       },
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       boxShadow: {
-        glow: "var(--filon-glow-shadow)",
+        glow: "0 0 12px 2px rgba(47,243,255,0.4)",
+        inner: "inset 0 0 8px rgba(47,243,255,0.15)",
         "glow-md": "0 0 20px rgba(47,243,255,0.5)",
       },
       transitionDuration: {
@@ -75,9 +98,10 @@ const config: Config = {
     },
   },
   plugins: [
-    // Note: Install @tailwindcss/forms and @tailwindcss/typography if needed
+    // Note: Install @tailwindcss/forms, @tailwindcss/typography, and @tailwindcss/container-queries if needed
     // require("@tailwindcss/forms"),
     // require("@tailwindcss/typography"),
+    // require("@tailwindcss/container-queries"),
   ],
 };
 

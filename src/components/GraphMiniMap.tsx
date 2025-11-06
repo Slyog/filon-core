@@ -479,7 +479,7 @@ export default function GraphMiniMap({
       transition={reduced ? { duration: 0 } : { duration: 0.5 }}
       aria-description="Interactive overview of the graph canvas"
     >
-      <div className="bg-neutral-900/70 rounded-xl shadow-lg p-2 border border-neutral-800 overflow-hidden">
+      <div className="bg-surface-base/80 backdrop-blur-sm rounded-xl shadow-lg p-2 border border-surface-hover overflow-hidden">
         {nodes.length > 0 ? (
           <>
             <div className="relative">
@@ -523,7 +523,7 @@ export default function GraphMiniMap({
                 onClick={() => handleZoom(0.1)}
                 aria-label="Zoom In"
                 title="Zoom In (+)"
-                className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-neutral-300 hover:bg-neutral-700 transition-colors"
+                className="px-2 py-1 rounded-xl bg-neutral-800 text-xs text-text-secondary hover:text-text-primary hover:bg-neutral-700 hover:glow transition-colors"
               >
                 <ZoomIn size={14} />
               </button>
@@ -532,14 +532,14 @@ export default function GraphMiniMap({
                 onClick={() => handleZoom(-0.1)}
                 aria-label="Zoom Out"
                 title="Zoom Out (-)"
-                className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-neutral-300 hover:bg-neutral-700 transition-colors"
+                className="px-2 py-1 rounded-xl bg-neutral-800 text-xs text-text-secondary hover:text-text-primary hover:bg-neutral-700 hover:glow transition-colors"
               >
                 <ZoomOut size={14} />
               </button>
             </div>
           </>
         ) : (
-          <div className="w-[200px] h-[150px] flex items-center justify-center text-neutral-500 text-xs">
+          <div className="w-[200px] h-[150px] flex items-center justify-center text-text-muted text-xs">
             Mini-Map Placeholder
           </div>
         )}

@@ -85,11 +85,11 @@ function AISummaryInline({
           onOpenExplain();
         }}
       >
-        <div className="text-xs text-neutral-400 line-clamp-2 cursor-pointer hover:text-cyan-400 transition-colors">
+        <div className="text-xs text-text-secondary line-clamp-2 cursor-pointer hover:text-brand transition-colors">
           {truncatedText}
         </div>
         {/* Tooltip with full text on hover */}
-        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 w-64 p-2 bg-neutral-800 rounded text-xs text-neutral-200 shadow-lg border border-neutral-700">
+        <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-10 w-64 p-2 bg-surface-active rounded-xl text-xs text-text-primary shadow-lg border border-neutral-700">
           {summary.text}
         </div>
       </div>
@@ -371,23 +371,23 @@ export default function GraphContextStream({
       animate={{ opacity: 1, x: 0 }}
       transition={reduced ? { duration: 0 } : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
     >
-      <div className="flex items-center justify-between border-b border-neutral-800 bg-neutral-900/60 p-3 text-sm text-neutral-300 backdrop-blur-md">
+      <div className="flex items-center justify-between border-b border-neutral-800 bg-surface-hover/90 p-3 text-sm text-text-primary backdrop-blur-md shadow-inner">
         <div className="flex min-w-0 items-center gap-2">
-          <Info size={16} className="text-cyan-400" />
+          <Info size={16} className="text-brand" />
           {activeNodeLabel ? (
             <span className="truncate">{activeNodeLabel}</span>
           ) : (
-            <span className="italic text-neutral-500">Kein Node ausgewählt</span>
+            <span className="italic text-text-muted">Kein Node ausgewählt</span>
           )}
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setFilter("all")}
-            className={`px-2 py-1 text-xs ${
+            className={`px-2 py-1 text-xs rounded-xl ${
               filter === "all"
-                ? "rounded-md bg-cyan-500/20 text-cyan-300"
-                : "rounded-md bg-neutral-800 text-neutral-400"
+                ? "bg-brand/20 text-brand"
+                : "bg-neutral-800 text-text-secondary"
             }`}
           >
             All
@@ -470,13 +470,13 @@ export default function GraphContextStream({
                     data-test="ctx-item"
                     data-test-pinned={event.isPinned ? "true" : "false"}
                     key={event.id}
-                    className={`border p-3 transition-colors cursor-pointer ${
+                    className={`border p-3 transition-colors cursor-pointer rounded-xl bg-surface-active shadow-inner ${
                       activeNodeId && event.nodeId === activeNodeId
-                        ? "border-cyan-500/40 bg-cyan-900/30 hover:bg-cyan-900/40"
-                        : "border-neutral-800 bg-neutral-900/70 hover:bg-neutral-900"
-                    } ${event.isPinned ? "border-yellow-500/40 bg-yellow-900/20" : ""} ${
+                        ? "border-brand/40 bg-brand-dark/30 hover:bg-brand-dark/40"
+                        : "border-neutral-800 hover:bg-surface-hover"
+                    } ${event.isPinned ? "border-brand-soft shadow-glow" : ""} ${
                       eventFocused
-                        ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-neutral-900"
+                        ? "ring-2 ring-brand ring-offset-2 ring-offset-surface-base"
                         : ""
                     }`}
                     initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
@@ -506,10 +506,10 @@ export default function GraphContextStream({
                   >
                     <div className="mb-1 flex items-center justify-between">
                       <span className="sr-only">{event.type}</span>
-                      <span className="text-xs uppercase tracking-wide text-neutral-400">
+                      <span className="text-xs uppercase tracking-wide text-text-secondary">
                         {event.type}
                         {event.isPinned && (
-                          <span className="ml-2 text-yellow-400" aria-label="Pinned">
+                          <span className="ml-2 text-accent-warning" aria-label="Pinned">
                             📌
                           </span>
                         )}
@@ -524,8 +524,8 @@ export default function GraphContextStream({
                         aria-pressed={event.isPinned ? "true" : "false"}
                         className={`transition-colors ${
                           event.isPinned
-                            ? "text-yellow-400 hover:text-yellow-300"
-                            : "text-neutral-500 hover:text-cyan-400"
+                            ? "text-accent-warning hover:text-accent-warning/80"
+                            : "text-text-muted hover:text-brand"
                         }`}
                       >
                         <Pin size={14} fill={event.isPinned ? "currentColor" : "none"} />
@@ -533,7 +533,7 @@ export default function GraphContextStream({
                     </div>
                     <div
                       id={`event-text-${event.id}`}
-                      className="text-sm text-neutral-200 whitespace-pre-wrap"
+                      className="text-sm text-text-primary whitespace-pre-wrap"
                     >
                       {event.message || "(kein Text)"}
                     </div>
@@ -566,11 +566,11 @@ export default function GraphContextStream({
       </section>
 
       {activeNodeId && (
-        <div className="border-t border-neutral-800 bg-neutral-900/60 p-3 backdrop-blur-md">
+        <div className="border-t border-neutral-800 bg-surface-hover/90 p-3 backdrop-blur-md shadow-inner">
           <button
             type="button"
             onClick={() => setShowExplain(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-cyan-600/20 px-3 py-2 text-sm text-cyan-300 transition-colors hover:bg-cyan-600/30"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand/20 px-3 py-2 text-sm text-brand transition-colors hover:bg-brand/30 hover:glow"
           >
             <Sparkles size={16} />
             Erkläre diesen Gedanken

@@ -154,7 +154,7 @@ export default function ExplainOverlay({
 
   return (
     <motion.div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md motion-soft"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-surface-base/95 backdrop-blur-md motion-soft"
       initial={reduced ? { opacity: 1 } : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={reduced ? { opacity: 1 } : { opacity: 0 }}
@@ -171,7 +171,7 @@ export default function ExplainOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="explain-title"
-        className="relative w-[420px] rounded-xl border border-neutral-800 bg-neutral-900 p-6 shadow-2xl motion-soft"
+        className="relative w-[420px] rounded-xl border border-neutral-800 bg-surface-active p-6 shadow-2xl motion-soft"
         initial={reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
@@ -184,15 +184,15 @@ export default function ExplainOverlay({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 text-neutral-500 transition-colors hover:text-neutral-300"
+          className="absolute right-3 top-3 text-text-muted transition-all hover:text-text-primary hover:scale-110 hover:glow rounded-lg p-1"
           aria-label="Overlay schließen"
         >
           <X size={18} />
         </button>
 
         <div className="mb-3 flex items-center gap-2">
-          <Sparkles className="text-cyan-400" size={18} />
-          <h3 id="explain-title" className="text-sm font-medium text-neutral-100">
+          <Sparkles className="text-brand" size={18} />
+          <h3 id="explain-title" className="text-sm font-medium text-text-primary">
             AI Erklärung
             {nodeLabel ? ` – ${nodeLabel}` : ""}
           </h3>
@@ -225,13 +225,13 @@ export default function ExplainOverlay({
             animate={{ opacity: 1 }}
             exit={reduced ? { opacity: 1 } : { opacity: 0 }}
             transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
-            className="space-y-4 text-sm text-neutral-200"
+            className="space-y-4 text-sm text-text-primary"
           >
             <p>{summary}</p>
             
             {/* Confidence Bar */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs text-neutral-500">
+              <div className="flex items-center justify-between text-xs text-text-secondary">
                 <span>Confidence</span>
                 <span className={`font-medium ${
                   confidenceColor === "emerald-400" ? "text-emerald-400" :
@@ -243,11 +243,7 @@ export default function ExplainOverlay({
               </div>
               <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
                 <motion.div
-                  className={`h-full ${
-                    confidenceColor === "emerald-400" ? "bg-emerald-400" :
-                    confidenceColor === "yellow-400" ? "bg-yellow-400" :
-                    "bg-orange-400"
-                  }`}
+                  className="h-full bg-gradient-to-r from-brand to-brand-soft"
                   initial={{ width: 0 }}
                   animate={{ width: `${confidencePercent}%` }}
                   transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
@@ -258,7 +254,7 @@ export default function ExplainOverlay({
             {/* Offline badge */}
             {fromCache && (
               <div className="flex items-center gap-2">
-                <span className="text-xs px-2 py-1 rounded bg-neutral-800 text-neutral-400">
+                <span className="text-xs px-2 py-1 rounded-xl bg-neutral-800 text-text-secondary">
                   Offline (cached)
                 </span>
               </div>
@@ -269,7 +265,7 @@ export default function ExplainOverlay({
               type="button"
               onClick={() => generateSummary(true)}
               disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 rounded-md bg-neutral-800 text-xs text-neutral-300 hover:bg-neutral-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-800 text-xs text-text-secondary hover:bg-neutral-700 hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
               Regenerate

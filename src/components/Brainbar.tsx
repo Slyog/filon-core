@@ -145,7 +145,7 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
       className="w-full"
     >
       <motion.div
-        className="w-full flex items-center gap-3 px-4 py-3 bg-neutral-900/80 backdrop-blur-md border-b border-neutral-800 motion-soft"
+        className="w-full flex items-center gap-3 px-4 py-3 bg-surface-hover backdrop-blur-md border-b border-neutral-800 motion-soft"
         initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={
@@ -154,7 +154,7 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
             : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
         }
       >
-        <Sparkles className="text-cyan-400 shrink-0" size={20} />
+        <Sparkles className="text-brand shrink-0" size={20} />
 
         <label htmlFor="brainbar-input" className="sr-only">
           Gedanken eingeben
@@ -167,7 +167,7 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
           onKeyDown={handleKeyDown}
           placeholder="Denke hier... (Tippe oder sprich)"
           aria-label="Gedanken eingeben"
-          className="flex-1 bg-transparent outline-none text-neutral-100 placeholder-neutral-500 text-sm"
+          className="flex-1 bg-transparent outline-none text-text-primary placeholder-text-muted text-sm rounded-xl focus:ring-2 focus:ring-brand focus-visible:ring-brand"
         />
 
         {/* Saving indicator with Framer Motion fade < 150ms */}
@@ -189,10 +189,10 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
         <button
           onClick={handleVoiceInput}
           disabled={isVoiceActive}
-          className={`px-3 py-1.5 rounded-md text-xs transition-colors ${
+          className={`px-3 py-1.5 rounded-xl text-xs transition-colors ${
             isVoiceActive
-              ? "bg-cyan-500 text-white animate-pulse"
-              : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+              ? "bg-brand text-white animate-pulse"
+              : "bg-neutral-800 text-text-secondary hover:bg-neutral-700"
           }`}
           title="Spracheingabe"
         >
@@ -213,7 +213,7 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
             }}
             aria-label="/add Befehl"
             title="/add Befehl"
-            className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-neutral-300 hover:bg-neutral-700 transition-colors"
+            className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-text-secondary hover:text-text-primary hover:glow transition-colors"
           >
             /add
           </button>
@@ -229,7 +229,7 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
             }}
             aria-label="/link Befehl"
             title="/link Befehl"
-            className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-neutral-300 hover:bg-neutral-700 transition-colors"
+            className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-text-secondary hover:text-text-primary hover:glow transition-colors"
           >
             /link
           </button>
