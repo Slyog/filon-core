@@ -86,7 +86,6 @@ import {
   type PendingThought,
   type Session,
 } from "@/store/SessionStore";
-import { useGraphStore } from "@/store/GraphStore";
 import { logSuccess, logError, logInfo } from "@/utils/qaLogger";
 import { useAutosaveQueue } from "@/hooks/useAutosaveQueue";
 import { updateAutomergeBinary } from "@/lib/automergeHelper";
@@ -171,7 +170,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   const [motionTest, setMotionTest] = useState(false);
   const [hasAnimated, setHasAnimated] = useState(false);
   const [graphLoadedOnce, setGraphLoadedOnce] = useState(false);
-  const setGraphLoadedOnceStore = useGraphStore((s) => s.setGraphLoadedOnce);
+  const setGraphLoadedOnceStore = useSessionStore((s) => s.setGraphLoadedOnce);
   const [feedbackInit, setFeedbackInit] = useState(false);
   const [contextNode, setContextNode] = useState<Node | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
@@ -753,7 +752,17 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   const onConnect: OnConnect = useCallback(
     (params: Connection) =>
       setEdges((eds) => {
-        const updated = addEdge(params, eds);
+        const nowIso = new Date().toISOString();
+        const enriched = {
+          ...params,
+          data: {
+            ...(params.data ?? {}),
+            type: "default",
+            createdAt: nowIso,
+            updatedAt: nowIso,
+          },
+        };
+        const updated = addEdge(enriched, eds);
         // 🔹 Call saveGraph in next tick to avoid render-time state updates
         setTimeout(() => {
           saveGraph(nodes, updated);
@@ -1038,7 +1047,16 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     (nodeId: string, note: string) => {
       setNodes((nds) => {
         const updated = nds.map((n) =>
-          n.id === nodeId ? { ...n, data: { ...n.data, note } } : n
+          n.id === nodeId
+            ? {
+                ...n,
+                data: {
+                  ...n.data,
+                  note,
+                  updatedAt: new Date().toISOString(),
+                },
+              }
+            : n
         );
         saveGraph(updated, edges);
         return updated;
@@ -1057,12 +1075,15 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         y: window.innerHeight / 2 - 60 + (Math.random() * 100 - 50),
       });
 
+      const nowIso = new Date().toISOString();
       const newNode: Node = {
         id: `node_${Date.now()}`,
         position: center,
         data: {
           label: label || `Neuer Gedanke ${nodes.length + 1}`,
           thoughtType: thoughtType || "Idea",
+          createdAt: nowIso,
+          updatedAt: nowIso,
         },
         type: "default",
       };
@@ -1095,10 +1116,16 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           })
         : { x: 100, y: 100 };
 
+      const nowIso = new Date().toISOString();
       const newNode: Node = {
         id: `node_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         position: center,
-        data: { label, thoughtType },
+        data: {
+          label,
+          thoughtType,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        },
         type: "default",
       };
 
@@ -1211,7 +1238,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         `⏳ Waiting for graph readiness to drain queued thoughts for ${activeSessionId}…`
       );
       for (let i = 0; i < 10 && !cancelled; i += 1) {
-        const { graphLoadedOnce: ready } = useGraphStore.getState();
+        const { graphLoadedOnce: ready } = useSessionStore.getState();
         if (ready) {
           await flushThoughtQueue(activeSessionId, "retry");
           return;
@@ -2406,10 +2433,17 @@ function GraphFlowWithHotkeys({
               x: window.innerWidth / 2 - 120 + jitterX,
               y: window.innerHeight / 2 - 60 + jitterY,
             });
+        const nowIso = new Date().toISOString();
         const baseNode: Node = {
           id,
           position: center,
-          data: { label: "🧠 Neuer Gedanke", note: "" },
+          data: {
+            label: "🧠 Neuer Gedanke",
+            note: "",
+            thoughtType: "Idea",
+            createdAt: nowIso,
+            updatedAt: nowIso,
+          },
           type: "default",
           selected: true,
           style: {

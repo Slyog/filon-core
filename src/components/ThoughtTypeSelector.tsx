@@ -4,7 +4,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useMemo, useState, useCallback } from "react";
 import { useFeedbackStore } from "@/store/FeedbackStore";
 import { useSessionStore } from "@/store/SessionStore";
-import { useGraphStore } from "@/store/GraphStore";
 
 const TYPES = [
   "Idea",
@@ -27,7 +26,7 @@ export default function ThoughtTypeSelector() {
   const enqueueThought = useSessionStore((s) => s.enqueueThought);
   const waitForGraphReady = useCallback(async () => {
     for (let i = 0; i < 20; i += 1) {
-      if (useGraphStore.getState().graphLoadedOnce) {
+      if (useSessionStore.getState().graphLoadedOnce) {
         return true;
       }
       await new Promise((resolve) => setTimeout(resolve, 150));

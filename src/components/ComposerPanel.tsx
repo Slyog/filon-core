@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { SendHorizonal, Mic, Upload } from "lucide-react";
 import { useSessionStore } from "@/store/SessionStore";
 import { useFeedbackStore } from "@/store/FeedbackStore";
-import { useGraphStore } from "@/store/GraphStore";
 
 const TYPES = [
   "Idea",
@@ -43,7 +42,7 @@ export default function ComposerPanel() {
 
   const waitForGraph = useCallback(async () => {
     for (let i = 0; i < 20; i += 1) {
-      if (useGraphStore.getState().graphLoadedOnce) {
+      if (useSessionStore.getState().graphLoadedOnce) {
         return true;
       }
       await new Promise((resolve) => setTimeout(resolve, 150));

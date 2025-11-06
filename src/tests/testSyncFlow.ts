@@ -1,4 +1,9 @@
-import { applyChange, getBinary, loadBinary } from "../sync/automergeAdapter";
+import {
+  applyChange,
+  getBinary,
+  loadBinary,
+  createAutomergeGraphDoc,
+} from "../sync/automergeAdapter";
 import { syncLambdaHandler } from "../sync/syncLambdaHandler";
 import fs from "fs";
 import path from "path";
@@ -45,11 +50,24 @@ async function testSyncFlow() {
 
   // Step 4 – Offline → Online merge simulation
   console.log("[TEST] Simulate offline merge");
-  const mockDoc = { nodes: [{ id: "A", text: "test" }], edges: [] };
-  const binary = getBinary(mockDoc as any);
-  const doc = loadBinary(binary);
-  console.log("[VERIFY] Merge OK:", !!doc);
-  if (!doc) {
+  const doc = createAutomergeGraphDoc("s123");
+  const updated = applyChange(doc, (draft) => {
+    draft.nodes.push({
+      id: "A",
+      position: { x: 0, y: 0 },
+      type: "default",
+      data: {
+        label: "test",
+        thoughtType: "Idea",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    });
+  });
+  const binary = getBinary(updated);
+  const reloaded = loadBinary(binary);
+  console.log("[VERIFY] Merge OK:", !!reloaded);
+  if (!reloaded) {
     throw new Error("Failed to load binary document");
   }
 

@@ -1,5 +1,5 @@
-import { writeMetadata } from "./dynamoAdapter";
-import { saveSnapshot } from "./s3Adapter";
+import { createMetadataStore } from "./dynamoAdapter";
+import { createSnapshotStorage } from "./s3Adapter";
 import type {
   SyncEvent,
   SyncResponse,
@@ -8,6 +8,16 @@ import type {
 } from "./syncSchema";
 import { getBinary } from "./automergeAdapter";
 import { eventBus } from "@/core/eventBus";
+
+const USE_AWS = process.env.FILON_USE_AWS === "true";
+const metadataStore = createMetadataStore({
+  useAws: USE_AWS,
+  tableName: process.env.FILON_DYNAMO_TABLE,
+});
+const snapshotStore = createSnapshotStorage({
+  useAws: USE_AWS,
+  bucketName: process.env.FILON_S3_BUCKET,
+});
 
 /**
  * Validates user authentication token
@@ -56,7 +66,11 @@ export async function syncLambdaHandler(
       // For now, we'll create a mock binary
       const mockDoc = { nodes: [], edges: [], change: event.change };
       const binary = getBinary(mockDoc as any);
-      s3Key = await saveSnapshot(event.userId, event.sessionId, binary);
+      s3Key = await snapshotStore.saveSnapshot(
+        event.userId,
+        event.sessionId,
+        binary
+      );
     }
 
     // Write metadata to DynamoDB
@@ -69,7 +83,7 @@ export async function syncLambdaHandler(
       status,
     };
 
-    await writeMetadata(metadata);
+    await metadataStore.write(metadata);
 
     console.log("[SYNC] Sync completed successfully", { s3Key });
 

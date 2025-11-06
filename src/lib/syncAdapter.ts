@@ -1,6 +1,5 @@
 "use client";
 import localforage from "localforage";
-import type { Node, Edge } from "reactflow";
 import {
   initGraphDoc,
   persistGraphDoc,
@@ -9,11 +8,18 @@ import {
 import { mergeWithStrategy } from "./conflictResolver";
 import { SilverbulletCore } from "./silverbullet/core";
 import Automerge from "@/lib/automergeClient";
+import type { Node, Edge } from "reactflow";
+import type { GraphNode, GraphEdge, GraphDoc } from "@/types/graph";
+import { SyncStatus } from "@/sync/syncSchema";
 
 export interface GraphData {
-  nodes: Node[];
-  edges: Edge[];
-  meta?: { lastSavedAt?: string };
+  nodes: Array<GraphNode | Node>;
+  edges: Array<GraphEdge | Edge>;
+  meta?: {
+    lastSavedAt?: string;
+    lastSyncedAt?: string;
+    syncStatus?: SyncStatus;
+  };
 }
 
 export async function saveGraphRemote(graph: GraphData) {

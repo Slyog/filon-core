@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, type PersistStorage } from "zustand/middleware";
 import localforage from "localforage";
+import { SyncStatus } from "@/sync/syncSchema";
 
 export type Session = {
   id: string;
@@ -18,6 +19,9 @@ export type Session = {
     nodeCount: number;
     edgeCount: number;
     lastSaved: number;
+    lastSyncedAt?: number;
+    pendingOps?: number;
+    syncStatus?: SyncStatus;
   };
 };
 
@@ -75,6 +79,7 @@ type SessionState = {
   sessions: Session[];
   activeSessionId: string | null;
   pendingThoughts: PendingThought[];
+  graphLoadedOnce: boolean;
   hydrateSessions: () => Promise<void>;
   addSession: (
     title?: string,
@@ -95,6 +100,7 @@ type SessionState = {
     t: Omit<PendingThought, "id" | "createdAt">
   ) => PendingThought["id"];
   drainThoughtsForSession: (sessionId: string) => Promise<PendingThought[]>;
+  setGraphLoadedOnce: (loaded: boolean) => void;
 };
 
 export const useSessionStore = create<SessionState>()(
@@ -122,6 +128,7 @@ export const useSessionStore = create<SessionState>()(
         sessions: [],
         activeSessionId: null,
         pendingThoughts: [],
+        graphLoadedOnce: false,
         hydrateSessions: async () => {
           try {
             const stored = await localforage.getItem<{
@@ -304,7 +311,13 @@ export const useSessionStore = create<SessionState>()(
           set((state) => ({
             ...state,
             sessions: state.sessions.map((s) =>
-              s.id === id ? { ...s, meta, updatedAt: Date.now() } : s
+              s.id === id
+                ? {
+                    ...s,
+                    meta: { ...(s.meta ?? {}), ...meta },
+                    updatedAt: Date.now(),
+                  }
+                : s
             ),
           }));
 
@@ -360,3 +373,9 @@ export const useSessionStore = create<SessionState>()(
     }
   )
 );
+        setGraphLoadedOnce: (loaded) => {
+          set((state) => ({
+            ...state,
+            graphLoadedOnce: loaded,
+          }));
+        },
