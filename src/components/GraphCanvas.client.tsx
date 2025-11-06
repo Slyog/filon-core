@@ -92,6 +92,10 @@ import { updateAutomergeBinary } from "@/lib/automergeHelper";
 import SyncIndicator from "@/components/ui/SyncIndicator";
 import SyncDashboard from "@/components/dev/SyncDashboard";
 import { registerDashboardToggle } from "@/utils/hotkeys";
+// Step 16.1: Modular components
+import Brainbar from "@/components/Brainbar";
+import GraphMiniMap from "@/components/GraphMiniMap";
+import GraphContextStream from "@/components/GraphContextStream";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -1637,15 +1641,26 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     };
   }, [saveState, lastSavedAt]);
 
+  // TODO (Step 16.2): Integrate Brainbar thought submission with createTextNode
+  const handleThoughtSubmit = useCallback(
+    (text: string, thoughtType: string) => {
+      createTextNode(text, thoughtType);
+    },
+    [createTextNode]
+  );
+
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
       <div className="relative flex min-h-screen w-full flex-1 flex-col bg-filon-bg">
-        {/* 🔧 Toolbar */}
+        {/* Step 16.1: Brainbar (replaces toolbar) */}
+        <Brainbar onThoughtSubmit={handleThoughtSubmit} />
+
+        {/* Legacy Toolbar - TODO (Step 16.2): Migrate remaining toolbar actions to Brainbar or remove */}
         <motion.header
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="fixed top-0 left-0 z-50 flex h-14 w-full items-center border-b border-[var(--border-glow)] bg-[rgba(10,15,18,0.7)] px-6 shadow-[var(--shadow-soft)] backdrop-blur-md"
+          className="fixed top-[52px] left-0 z-50 flex h-14 w-full items-center border-b border-[var(--border-glow)] bg-[rgba(10,15,18,0.7)] px-6 shadow-[var(--shadow-soft)] backdrop-blur-md"
         >
           <div className="flex w-full items-center gap-sm overflow-x-auto">
             <input
@@ -2066,35 +2081,48 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         )}
 
         {/* 🧠 React Flow Graph */}
-        <ReactFlowProvider>
-          <GraphFlowWithHotkeys
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={onNodeClick}
-            onPaneClick={onPaneClick}
-            onNodeDragStop={onNodeDragStop}
-            onNodeContextMenu={onNodeContextMenu}
-            onNodeMouseEnter={onNodeMouseEnter}
-            onNodeMouseLeave={onNodeMouseLeave}
-            registerInstance={setFlowInstance}
-            contextNode={contextNode}
-            menuPos={menuPos}
-            closeContextMenu={closeContextMenu}
-            filteredNodes={filteredNodes}
-            rawNodes={nodes}
+        <div className="flex flex-row flex-1 overflow-hidden relative">
+          <div className="flex-1 relative">
+            <ReactFlowProvider>
+              <GraphFlowWithHotkeys
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onNodeClick={onNodeClick}
+                onPaneClick={onPaneClick}
+                onNodeDragStop={onNodeDragStop}
+                onNodeContextMenu={onNodeContextMenu}
+                onNodeMouseEnter={onNodeMouseEnter}
+                onNodeMouseLeave={onNodeMouseLeave}
+                registerInstance={setFlowInstance}
+                contextNode={contextNode}
+                menuPos={menuPos}
+                closeContextMenu={closeContextMenu}
+                filteredNodes={filteredNodes}
+                rawNodes={nodes}
+                edges={edges}
+                setNodes={setNodes}
+                withGlow={withGlow}
+                setActiveNodeId={setActiveNodeId}
+                searchRef={searchRef}
+                isEditableTarget={isEditableTarget}
+                isLoading={isLoading}
+                hasNodes={nodes?.length > 0}
+                hasAnimated={hasAnimated}
+                graphLoadedOnce={graphLoadedOnce}
+              />
+            </ReactFlowProvider>
+          </div>
+
+          {/* Step 16.1: GraphContextStream side panel */}
+          {/* TODO (Step 16.2): Add toggle for show/hide, sync with node selection */}
+          <GraphContextStream
+            activeNode={activeNode}
+            nodes={nodes}
             edges={edges}
-            setNodes={setNodes}
-            withGlow={withGlow}
-            setActiveNodeId={setActiveNodeId}
-            searchRef={searchRef}
-            isEditableTarget={isEditableTarget}
-            isLoading={isLoading}
-            hasNodes={nodes?.length > 0}
-            hasAnimated={hasAnimated}
-            graphLoadedOnce={graphLoadedOnce}
+            onNodeSelect={setActiveNodeId}
           />
-        </ReactFlowProvider>
+        </div>
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel
@@ -2611,11 +2639,8 @@ function GraphFlowWithHotkeys({
           onInit={handleInit}
         >
           <Background color="rgba(47,243,255,0.08)" gap={20} size={1} />
-          <MiniMap
-            nodeColor={() => "#2ff3ff"}
-            maskColor="rgba(10,15,18,0.85)"
-            style={{ borderRadius: "8px", zIndex: 2 }}
-          />
+          {/* Step 16.1: Using GraphMiniMap component instead of inline MiniMap */}
+          {/* GraphMiniMap is now rendered outside ReactFlow but inside ReactFlowProvider */}
           <Controls
             showZoom
             showFitView
@@ -2641,6 +2666,8 @@ function GraphFlowWithHotkeys({
           </div>
         )}
         {DEBUG_MODE && <RFDebugPanel rf={rf} nodesProvider={() => rawNodes} />}
+        {/* Step 16.1: GraphMiniMap - must be inside ReactFlowProvider */}
+        <GraphMiniMap nodes={rawNodes} edges={edges} />
       </div>
       {menuPos && contextNode && (
         <div

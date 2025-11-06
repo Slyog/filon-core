@@ -50,8 +50,8 @@ async function testSyncFlow() {
 
   // Step 4 – Offline → Online merge simulation
   console.log("[TEST] Simulate offline merge");
-  const doc = createAutomergeGraphDoc("s123");
-  const updated = applyChange(doc, (draft) => {
+  const doc = await createAutomergeGraphDoc("s123");
+  const updated = await applyChange(doc, (draft) => {
     draft.nodes.push({
       id: "A",
       position: { x: 0, y: 0 },
@@ -64,8 +64,8 @@ async function testSyncFlow() {
       },
     });
   });
-  const binary = getBinary(updated);
-  const reloaded = loadBinary(binary);
+  const binary = await getBinary(updated);
+  const reloaded = await loadBinary(binary);
   console.log("[VERIFY] Merge OK:", !!reloaded);
   if (!reloaded) {
     throw new Error("Failed to load binary document");

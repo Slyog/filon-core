@@ -1,5 +1,6 @@
 "use client";
 import Automerge from "@/lib/automergeClient";
+import type { Doc } from "@automerge/automerge";
 
 /**
  * Vergleicht zwei Node-Listen und erzeugt eine Konfliktliste.
@@ -41,8 +42,8 @@ export function resolveConflicts(
  * Führt Konflikterkennung + Merge in einem Automerge-Dokument aus.
  */
 export function mergeWithStrategy(
-  localDoc: Automerge.Doc<any>,
-  remoteDoc: Automerge.Doc<any>,
+  localDoc: Doc<any>,
+  remoteDoc: Doc<any>,
   strategy: "preferLocal" | "preferRemote" | "mergeProps" = "mergeProps"
 ) {
   const localNodes = localDoc.nodes ?? [];
