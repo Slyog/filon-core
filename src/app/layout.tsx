@@ -1,6 +1,7 @@
 import { ThemeProvider } from "next-themes";
 import "@/app/globals.css";
 import { InteractiveLight } from "@/components/ui/InteractiveLight";
+import { MindVisualizer } from "@/components/ui/MindVisualizer";
 
 export default function RootLayout({
   children,
@@ -13,6 +14,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <InteractiveLight />
+          <MindVisualizer />
         </ThemeProvider>
       </body>
     </html>
