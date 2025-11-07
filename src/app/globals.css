@@ -488,3 +488,13 @@ body.motion-test * {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- Panel Stack Spacing --- */
+.panel-stack {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+.panel-stack > * + * {
+  margin-top: 1rem;
+}

@@ -97,6 +97,12 @@ import Brainbar from "@/components/Brainbar";
 import GraphMiniMap from "@/components/GraphMiniMap";
 import GraphContextStream from "@/components/GraphContextStream";
 import { useUIStore } from "@/store/UIStore";
+import {
+  saveSpatialState,
+  loadSpatialState,
+  type SpatialState,
+} from "@/core/spatialMemory";
+import { useSettings } from "@/store/settings";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -221,6 +227,12 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     null
   );
   const [showSyncDashboard, setShowSyncDashboard] = useState(false);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | undefined>(
+    undefined
+  );
+  const [lastVisitedNodes, setLastVisitedNodes] = useState<string[]>([]);
+  const { rememberSpatial } = useSettings();
+  const spatialSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 🔄 Update Automerge binary when nodes/edges change
   useEffect(() => {
@@ -404,6 +416,96 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       localStorage.setItem("lastSessionAt", Date.now().toString());
     }
   }, [sessionId, setActiveSession]);
+
+  // 🧩 Spatial Memory: Load saved viewport state on mount
+  useEffect(() => {
+    if (!flowInstance || !sessionId || !rememberSpatial) return;
+
+    loadSpatialState(sessionId).then((state) => {
+      if (state && flowInstance) {
+        flowInstance.setViewport({ x: state.x, y: state.y, zoom: state.zoom });
+        if (state.focusedNodeId) {
+          setFocusedNodeId(state.focusedNodeId);
+          setActiveNodeId(state.focusedNodeId);
+        }
+        if (state.lastVisitedNodes.length > 0) {
+          setLastVisitedNodes(state.lastVisitedNodes);
+        }
+        // Show feedback toast when state is restored
+        addFeedback({
+          type: "user_action",
+          payload: { message: "🧩 Spatial Memory loaded — returning to your last focus." },
+        });
+      }
+    });
+  }, [sessionId, flowInstance, rememberSpatial, addFeedback, setActiveNodeId]);
+
+  // 🧩 Spatial Memory: Debounced save when viewport or focus changes
+  useEffect(() => {
+    if (!rememberSpatial || !flowInstance || !sessionId) return;
+
+    if (spatialSaveDebounceRef.current) {
+      clearTimeout(spatialSaveDebounceRef.current);
+    }
+
+    spatialSaveDebounceRef.current = setTimeout(() => {
+      const viewport = flowInstance.getViewport();
+      if (viewport) {
+        saveSpatialState(sessionId, {
+          x: viewport.x,
+          y: viewport.y,
+          zoom: viewport.zoom,
+          focusedNodeId,
+          lastVisitedNodes,
+          timestamp: Date.now(),
+        });
+      }
+    }, 1000); // Debounce 1 second
+
+    return () => {
+      if (spatialSaveDebounceRef.current) {
+        clearTimeout(spatialSaveDebounceRef.current);
+      }
+    };
+  }, [sessionId, flowInstance, focusedNodeId, lastVisitedNodes, rememberSpatial]);
+
+  // 🧩 Spatial Memory: Save state on unmount/beforeunload (immediate save)
+  useEffect(() => {
+    if (!rememberSpatial) return;
+
+    const handleUnload = () => {
+      const viewport = flowInstance?.getViewport();
+      if (!viewport || !sessionId) return;
+
+      saveSpatialState(sessionId, {
+        x: viewport.x,
+        y: viewport.y,
+        zoom: viewport.zoom,
+        focusedNodeId,
+        lastVisitedNodes,
+        timestamp: Date.now(),
+      });
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      // Also save on component unmount
+      handleUnload();
+    };
+  }, [sessionId, flowInstance, focusedNodeId, lastVisitedNodes, rememberSpatial]);
+
+  // 🧩 Track node focus changes
+  useEffect(() => {
+    if (activeNodeId) {
+      setFocusedNodeId(activeNodeId);
+      // Update last visited nodes (keep last 10)
+      setLastVisitedNodes((prev) => {
+        const updated = [activeNodeId, ...prev.filter((id) => id !== activeNodeId)].slice(0, 10);
+        return updated;
+      });
+    }
+  }, [activeNodeId]);
 
   // 🚨 Browser-Warnung bei ungespeicherten Änderungen
   useEffect(() => {

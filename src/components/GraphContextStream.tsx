@@ -10,6 +10,7 @@ import { useActiveNode } from "@/context/ActiveNodeContext";
 import ExplainOverlay from "@/components/ExplainOverlay";
 import { useExplainConfidenceColor } from "@/hooks/useExplainConfidenceColor";
 import localforage from "localforage";
+import { Panel } from "@/components/Panel";
 
 type FilterMode = "all" | "ai" | "events";
 
@@ -456,100 +457,102 @@ export default function GraphContextStream({
               const eventFocused = isFocused(event);
               return (
                 <div className="px-3 pb-3">
-                  <motion.div
-                    ref={(el) => {
-                      if (el) {
-                        itemRefs.current.set(event.id, el);
-                      } else {
-                        itemRefs.current.delete(event.id);
-                      }
-                    }}
-                    role="article"
-                    aria-describedby={`event-text-${event.id}`}
-                    tabIndex={0}
-                    data-test="ctx-item"
-                    data-test-pinned={event.isPinned ? "true" : "false"}
-                    key={event.id}
-                    className={`border p-3 transition-colors cursor-pointer rounded-xl bg-surface-active shadow-inner ${
-                      activeNodeId && event.nodeId === activeNodeId
-                        ? "border-brand/40 bg-brand-dark/30 hover:bg-brand-dark/40"
-                        : "border-neutral-800 hover:bg-surface-hover"
-                    } ${event.isPinned ? "border-brand-soft shadow-glow" : ""} ${
-                      eventFocused
-                        ? "ring-2 ring-brand ring-offset-2 ring-offset-surface-base"
-                        : ""
-                    }`}
-                    initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={
-                      reduced
-                        ? { duration: 0 }
-                        : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
-                    }
-                    onKeyDown={(e) => handleItemKeyDown(e, event)}
-                    onClick={() => {
-                      if (event.nodeId && onNodeSelect) {
-                        onNodeSelect(event.nodeId);
-                      }
-                    }}
-                    onFocus={() => setFocusedId(event.id)}
-                    onBlur={() => {
-                      // Only clear focus if not switching to another item
-                      setTimeout(() => {
-                        const activeEl = document.activeElement;
-                        if (!itemRefs.current.has(event.id) || 
-                            (activeEl && !itemRefs.current.get(event.id)?.contains(activeEl))) {
-                          setFocusedId(null);
+                  <Panel id={event.id}>
+                    <motion.div
+                      ref={(el) => {
+                        if (el) {
+                          itemRefs.current.set(event.id, el);
+                        } else {
+                          itemRefs.current.delete(event.id);
                         }
-                      }, 0);
-                    }}
-                  >
-                    <div className="mb-1 flex items-center justify-between">
-                      <span className="sr-only">{event.type}</span>
-                      <span className="text-xs uppercase tracking-wide text-text-secondary">
-                        {event.type}
-                        {event.isPinned && (
-                          <span className="ml-2 text-accent-warning" aria-label="Pinned">
-                            📌
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePinToggle(event.id);
-                        }}
-                        aria-label={event.isPinned ? "Unpin entry" : "Pin entry"}
-                        aria-pressed={event.isPinned ? "true" : "false"}
-                        className={`transition-colors ${
-                          event.isPinned
-                            ? "text-accent-warning hover:text-accent-warning/80"
-                            : "text-text-muted hover:text-brand"
-                        }`}
-                      >
-                        <Pin size={14} fill={event.isPinned ? "currentColor" : "none"} />
-                      </button>
-                    </div>
-                    <div
-                      id={`event-text-${event.id}`}
-                      className="text-sm text-text-primary whitespace-pre-wrap"
+                      }}
+                      role="article"
+                      aria-describedby={`event-text-${event.id}`}
+                      tabIndex={0}
+                      data-test="ctx-item"
+                      data-test-pinned={event.isPinned ? "true" : "false"}
+                      key={event.id}
+                      className={`border p-3 transition-colors cursor-pointer ${
+                        activeNodeId && event.nodeId === activeNodeId
+                          ? "border-brand/40 bg-brand-dark/30 hover:bg-brand-dark/40"
+                          : "border-neutral-800 hover:bg-surface-hover"
+                      } ${event.isPinned ? "border-brand-soft shadow-glow" : ""} ${
+                        eventFocused
+                          ? "ring-2 ring-brand ring-offset-2 ring-offset-surface-base"
+                          : ""
+                      }`}
+                      initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={
+                        reduced
+                          ? { duration: 0 }
+                          : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
+                      }
+                      onKeyDown={(e) => handleItemKeyDown(e, event)}
+                      onClick={() => {
+                        if (event.nodeId && onNodeSelect) {
+                          onNodeSelect(event.nodeId);
+                        }
+                      }}
+                      onFocus={() => setFocusedId(event.id)}
+                      onBlur={() => {
+                        // Only clear focus if not switching to another item
+                        setTimeout(() => {
+                          const activeEl = document.activeElement;
+                          if (!itemRefs.current.has(event.id) || 
+                              (activeEl && !itemRefs.current.get(event.id)?.contains(activeEl))) {
+                            setFocusedId(null);
+                          }
+                        }, 0);
+                      }}
                     >
-                      {event.message || "(kein Text)"}
-                    </div>
-                    
-                    {/* Display last AI summary inline under related feedback entry */}
-                    {event.nodeId && nodeSummaries.has(event.nodeId) && (
-                      <AISummaryInline
-                        summary={nodeSummaries.get(event.nodeId)!}
-                        nodeId={event.nodeId!}
-                        onOpenExplain={() => {
-                          setExplainNodeId(event.nodeId);
-                          setShowExplainOverlay(true);
-                        }}
-                      />
-                    )}
-                  </motion.div>
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="sr-only">{event.type}</span>
+                        <span className="text-xs uppercase tracking-wide text-text-secondary">
+                          {event.type}
+                          {event.isPinned && (
+                            <span className="ml-2 text-accent-warning" aria-label="Pinned">
+                              📌
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePinToggle(event.id);
+                          }}
+                          aria-label={event.isPinned ? "Unpin entry" : "Pin entry"}
+                          aria-pressed={event.isPinned ? "true" : "false"}
+                          className={`transition-colors ${
+                            event.isPinned
+                              ? "text-accent-warning hover:text-accent-warning/80"
+                              : "text-text-muted hover:text-brand"
+                          }`}
+                        >
+                          <Pin size={14} fill={event.isPinned ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                      <div
+                        id={`event-text-${event.id}`}
+                        className="text-sm text-text-primary whitespace-pre-wrap"
+                      >
+                        {event.message || "(kein Text)"}
+                      </div>
+                      
+                      {/* Display last AI summary inline under related feedback entry */}
+                      {event.nodeId && nodeSummaries.has(event.nodeId) && (
+                        <AISummaryInline
+                          summary={nodeSummaries.get(event.nodeId)!}
+                          nodeId={event.nodeId!}
+                          onOpenExplain={() => {
+                            setExplainNodeId(event.nodeId);
+                            setShowExplainOverlay(true);
+                          }}
+                        />
+                      )}
+                    </motion.div>
+                  </Panel>
                 </div>
               );
             }}

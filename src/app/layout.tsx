@@ -4,6 +4,7 @@ import { InteractiveLight } from "@/components/ui/InteractiveLight";
 import { MindVisualizer } from "@/components/ui/MindVisualizer";
 import { AudioResonance } from "@/components/ui/AudioResonance";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
+import { SettingsDrawer } from "@/components/ui/SettingsDrawer";
 
 export default function RootLayout({
   children,
@@ -19,6 +20,7 @@ export default function RootLayout({
           <MindVisualizer />
           <AudioResonance />
           <LoadingOverlay />
+          <SettingsDrawer />
         </ThemeProvider>
       </body>
     </html>

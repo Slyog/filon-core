@@ -2,6 +2,117 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import type { Node, Edge } from "reactflow";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { Prisma } from "@prisma/client";
+
+type NormalizedNode = {
+  id: string;
+  label: string;
+  note: string;
+  x: number;
+  y: number;
+};
+
+type NormalizedEdge = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+};
+
+function normalizeNodes(rawNodes: Node[] = []) {
+  const records: NormalizedNode[] = [];
+  const nodeIds = new Set<string>();
+  const dropped: string[] = [];
+
+  for (const node of rawNodes) {
+    if (!node?.id) {
+      continue;
+    }
+
+    const id = String(node.id);
+    if (nodeIds.has(id)) {
+      dropped.push(id);
+      continue;
+    }
+
+    const x =
+      typeof node.position?.x === "number" && Number.isFinite(node.position.x)
+        ? node.position.x
+        : 0;
+    const y =
+      typeof node.position?.y === "number" && Number.isFinite(node.position.y)
+        ? node.position.y
+        : 0;
+
+    const rawLabel =
+      (typeof node.data?.label === "string" && node.data.label.trim()) ||
+      node.id?.toString() ||
+      "Unnamed Node";
+    const rawNote =
+      typeof node.data?.note === "string" ? node.data.note : undefined;
+
+    records.push({
+      id,
+      label: rawLabel.slice(0, 512),
+      note: rawNote ? rawNote.slice(0, 2048) : "",
+      x,
+      y,
+    });
+    nodeIds.add(id);
+  }
+
+  return { records, nodeIds, dropped };
+}
+
+function normalizeEdges(rawEdges: Edge[] = [], nodeIds: Set<string>) {
+  const records: NormalizedEdge[] = [];
+  const seenEdgeIds = new Set<string>();
+  const dropped: string[] = [];
+
+  for (const edge of rawEdges) {
+    if (!edge?.id || !edge.source || !edge.target) {
+      if (edge?.id) dropped.push(String(edge.id));
+      continue;
+    }
+
+    const id = String(edge.id);
+    if (seenEdgeIds.has(id)) {
+      dropped.push(id);
+      continue;
+    }
+
+    if (!nodeIds.has(edge.source) || !nodeIds.has(edge.target)) {
+      dropped.push(id);
+      continue;
+    }
+
+    records.push({
+      id,
+      sourceId: edge.source,
+      targetId: edge.target,
+    });
+    seenEdgeIds.add(id);
+  }
+
+  return { records, dropped };
+}
+
+function toAutomergeBuffer(payload: unknown) {
+  if (!payload) return null;
+  if (payload instanceof Uint8Array) {
+    return Buffer.from(payload);
+  }
+  if (Array.isArray(payload)) {
+    return Buffer.from(Uint8Array.from(payload));
+  }
+  if (typeof payload === "string") {
+    try {
+      return Buffer.from(payload, "base64");
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 export async function GET() {
   try {
@@ -50,98 +161,75 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const nodes: Node[] = body.nodes || [];
-    const edges: Edge[] = body.edges || [];
+    const nodes: Node[] = Array.isArray(body.nodes) ? body.nodes : [];
+    const edges: Edge[] = Array.isArray(body.edges) ? body.edges : [];
     const automerge = body.automerge;
 
-    console.log("Saving Graph:", nodes.length, "nodes");
+    const { records: normalizedNodes, nodeIds, dropped: droppedNodeIds } =
+      normalizeNodes(nodes);
+    const { records: normalizedEdges, dropped: droppedEdgeIds } =
+      normalizeEdges(edges, nodeIds);
 
-    console.log(
-      "🧠 Saving graph with nodes:",
-      nodes.length,
-      "edges:",
-      edges.length
-    );
-    console.log(
-      "Node IDs:",
-      nodes.map((n) => n.id)
-    );
+    const automergeBuffer = toAutomergeBuffer(automerge);
+    const operations: Prisma.PrismaPromise<unknown>[] = [
+      prisma.edge.deleteMany(),
+      prisma.node.deleteMany(),
+    ];
 
-    // Transaction: Alles oder nichts (Array-Syntax für bessere Performance)
-    await prisma.$transaction(async (tx) => {
-      // Alte Daten löschen (Edges first due to foreign key constraints)
-      await tx.edge.deleteMany();
-      await tx.node.deleteMany();
-      // Small delay to ensure deletes are committed
-      await new Promise((r) => setTimeout(r, 10));
+    if (normalizedNodes.length > 0) {
+      operations.push(
+        prisma.node.createMany({
+          data: normalizedNodes,
+        })
+      );
+    }
 
-      // Nodes speichern (gemappt von ReactFlow-Format zu DB-Format)
-      for (const node of nodes) {
-        try {
-          await tx.node.create({
-            data: {
-              id: node.id,
-              label: node.data?.label || "Unnamed Node",
-              note: node.data?.note || "",
-              x: node.position?.x || 0,
-              y: node.position?.y || 0,
-            },
-          });
-        } catch (e) {
-          if (
-            e instanceof PrismaClientKnownRequestError &&
-            e.code === "P2002"
-          ) {
-            console.warn("⚠️ Duplicate node ID skipped:", node.id);
-          } else {
-            throw e;
-          }
-        }
-      }
+    if (normalizedEdges.length > 0) {
+      operations.push(
+        prisma.edge.createMany({
+          data: normalizedEdges,
+        })
+      );
+    }
 
-      // Edges speichern (gemappt von ReactFlow-Format zu DB-Format)
-      for (const edge of edges) {
-        try {
-          await tx.edge.create({
-            data: {
-              id: edge.id,
-              sourceId: edge.source,
-              targetId: edge.target,
-            },
-          });
-        } catch (e) {
-          if (
-            e instanceof PrismaClientKnownRequestError &&
-            e.code === "P2002"
-          ) {
-            console.warn("⚠️ Duplicate edge ID skipped:", edge.id);
-          } else {
-            throw e;
-          }
-        }
-      }
-
-      // Meta-Infos speichern
-      const automergeBuffer = automerge ? Buffer.from(automerge) : null;
-      await tx.meta.upsert({
+    operations.push(
+      prisma.meta.upsert({
         where: { id: 1 },
         create: {
           id: 1,
           lastSavedAt: new Date(),
-          nodeCount: nodes.length,
-          edgeCount: edges.length,
+          nodeCount: normalizedNodes.length,
+          edgeCount: normalizedEdges.length,
           automerge: automergeBuffer,
         },
         update: {
           lastSavedAt: new Date(),
-          nodeCount: nodes.length,
-          edgeCount: edges.length,
+          nodeCount: normalizedNodes.length,
+          edgeCount: normalizedEdges.length,
           automerge: automergeBuffer,
         },
-      });
-    });
+      })
+    );
 
-    return NextResponse.json({ ok: true }, { status: 200 });
+    await prisma.$transaction(operations);
+
+    if (droppedNodeIds.length || droppedEdgeIds.length) {
+      console.warn("Graph save normalized payload", {
+        droppedNodeIds,
+        droppedEdgeIds,
+      });
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        nodeCount: normalizedNodes.length,
+        edgeCount: normalizedEdges.length,
+        droppedNodeIds,
+        droppedEdgeIds,
+      },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error("Graph save failed:", error);
 
