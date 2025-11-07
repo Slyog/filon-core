@@ -41,8 +41,8 @@ export const MindVisualizer = () => {
       ctx.fillRect(0, 0, width, height);
 
       particles.forEach((p) => {
-        p.x += p.vx * (1 + energy * 2);
-        p.y += p.vy * (1 + energy * 2);
+        p.x += p.vx * (0.2 + energy * 0.5);
+        p.y += p.vy * (0.2 + energy * 0.5);
         if (p.x < 0) p.x = width;
         if (p.x > width) p.x = 0;
         if (p.y < 0) p.y = height;

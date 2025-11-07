@@ -2,6 +2,8 @@ import { ThemeProvider } from "next-themes";
 import "@/app/globals.css";
 import { InteractiveLight } from "@/components/ui/InteractiveLight";
 import { MindVisualizer } from "@/components/ui/MindVisualizer";
+import { AudioResonance } from "@/components/ui/AudioResonance";
+import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 
 export default function RootLayout({
   children,
@@ -15,6 +17,8 @@ export default function RootLayout({
           {children}
           <InteractiveLight />
           <MindVisualizer />
+          <AudioResonance />
+          <LoadingOverlay />
         </ThemeProvider>
       </body>
     </html>
