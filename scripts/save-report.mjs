@@ -17,6 +17,12 @@ const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const reportPath = path.join(REPORTS_DIR, `report-${timestamp}.json`);
 
 const data = JSON.parse(fs.readFileSync(RESULT_FILE, "utf-8"));
+
+if (!data.suites || data.suites.length === 0) {
+  console.warn("⚠️ No test suites found — skipping QA report save.");
+  process.exit(0);
+}
+
 const meta = {
   commit: process.env.GITHUB_SHA || "local-dev",
   date: timestamp,

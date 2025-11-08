@@ -1,0 +1,31 @@
+name: 📡 Discord Commit Notify
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Commit Notification to Discord
+        uses: tsickert/discord-webhook@v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          raw-data: |
+            {
+              "embeds": [
+                {
+                  "title": "📦 New Commit on ${{ github.repository }}",
+                  "description": "**Message:** ${{ github.event.head_commit.message }}\n**Author:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}",
+                  "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}",
+                  "color": 3145775,
+                  "footer": {
+                    "text": "FILON Commit Tracker"
+                  },
+                  "timestamp": "${{ github.event.head_commit.timestamp }}"
+                }
+              ]
+            }
+

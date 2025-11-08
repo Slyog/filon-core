@@ -14,7 +14,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:performance": "playwright test e2e/performance.spec.ts",
-    "qa:test": "npx playwright test --reporter=json > playwright-report/results.json",
+    "qa:test": "node scripts/run-qa-tests.mjs",
     "qa:save": "node scripts/save-report.mjs",
     "qa:view": "node scripts/qa-viewer.mjs",
     "qa:metrics": "node scripts/generate-badge.mjs",
@@ -45,8 +45,8 @@
     "react-dom": "19.2.0",
     "react-markdown": "^10.1.0",
     "react-virtuoso": "^4.14.1",
-    "recharts": "^2.12.7",
     "reactflow": "^11.11.4",
+    "recharts": "^2.15.4",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.3.1",
     "zustand": "^5.0.8"

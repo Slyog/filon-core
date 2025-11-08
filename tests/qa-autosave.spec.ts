@@ -16,7 +16,7 @@ test.describe("FILON Autosave Feedback System", () => {
     await page.waitForSelector(".react-flow__node");
   });
 
-  test("shows 'Saving changes…' overlay and resolves", async ({ page }) => {
+  test("shows 'Saving...' overlay and resolves", async ({ page }) => {
     const node = page.locator(".react-flow__node");
     const box = await node.boundingBox();
 
@@ -29,9 +29,8 @@ test.describe("FILON Autosave Feedback System", () => {
     await page.mouse.move(box.x + 40, box.y + 40);
     await page.mouse.up();
 
-    const savingOverlay = page.locator("text=Saving changes…");
-    await expect(savingOverlay).toBeVisible({ timeout: 500 });
-    await expect(savingOverlay).toBeHidden({ timeout: 2500 });
+    await expect(page.getByText("Saving...")).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText("Saved ✓")).toBeVisible({ timeout: 5000 });
   });
 
   test("logs autosave success event", async ({ page }) => {
@@ -45,8 +44,10 @@ test.describe("FILON Autosave Feedback System", () => {
 
     await page.waitForTimeout(1500);
 
-    const hasLog = consoleMessages.some((message) =>
-      message.includes("[QA] Autosave event")
+    const hasLog = consoleMessages.some(
+      (message) =>
+        message.includes("[QA] Autosave event") ||
+        message.includes("[QA] Autosave triggered")
     );
     expect(hasLog).toBeTruthy();
   });

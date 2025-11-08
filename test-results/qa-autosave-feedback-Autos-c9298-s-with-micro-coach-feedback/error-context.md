@@ -1,0 +1,72 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - complementary [ref=e2]:
+    - generic [ref=e4]:
+      - button "Collapse sidebar" [ref=e5]:
+        - img [ref=e6]
+      - navigation [ref=e8]:
+        - generic [ref=e9]:
+          - paragraph [ref=e10]: Workspaces
+          - button "Autosave Feedback" [ref=e12]:
+            - img [ref=e13]
+            - generic [ref=e15]: Autosave Feedback
+        - generic [ref=e16]:
+          - paragraph [ref=e17]: Panels
+          - generic [ref=e18]:
+            - button "AI Summarizer" [ref=e19]:
+              - img [ref=e20]
+              - generic [ref=e30]: AI Summarizer
+            - button "Context Stream" [ref=e31]:
+              - img [ref=e32]
+              - generic [ref=e36]: Context Stream
+        - generic [ref=e37]:
+          - paragraph [ref=e38]: Account
+          - generic [ref=e39]:
+            - button "Settings" [ref=e40]:
+              - img [ref=e41]
+              - generic [ref=e44]: Settings
+            - button "Login" [ref=e45]:
+              - img [ref=e46]
+              - generic [ref=e49]: Login
+            - button "Archive" [ref=e50]:
+              - img [ref=e51]
+              - generic [ref=e54]: Archive
+  - main [ref=e55]:
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e61]:
+          - generic:
+            - img [ref=e62]
+            - button "🌐 FILON Visible Node" [active] [ref=e64]:
+              - generic [ref=e65]: 🌐 FILON Visible Node
+        - img
+        - img "React Flow mini map" [ref=e67]
+        - generic [ref=e69]:
+          - button "zoom in" [disabled]:
+            - img
+          - button "zoom out" [ref=e70] [cursor=pointer]:
+            - img [ref=e71]
+          - button "fit view" [ref=e73] [cursor=pointer]:
+            - img [ref=e74]
+          - button "toggle interactivity" [ref=e76] [cursor=pointer]:
+            - img [ref=e77]
+        - link "React Flow attribution" [ref=e80] [cursor=pointer]:
+          - /url: https://reactflow.dev
+          - text: React Flow
+      - generic: Autosave verified.
+      - generic [ref=e82]: Saved ✓
+  - generic [ref=e87] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e88]:
+      - img [ref=e89]
+    - generic [ref=e92]:
+      - button "Open issues overlay" [ref=e93]:
+        - generic [ref=e94]:
+          - generic [ref=e95]: "0"
+          - generic [ref=e96]: "1"
+        - generic [ref=e97]: Issue
+      - button "Collapse issues badge" [ref=e98]:
+        - img [ref=e99]
+  - alert [ref=e101]
+```

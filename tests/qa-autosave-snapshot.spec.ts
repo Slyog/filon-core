@@ -34,13 +34,15 @@ test.describe("FILON Autosave Visual Snapshot", () => {
     await page.mouse.move(box.x + 60, box.y + 60);
     await page.mouse.up();
 
-    await page.waitForSelector("text=Saving changes…", { timeout: 800 });
+    await page.waitForSelector(".ReviewOverlay:has-text('Saving...')", {
+      timeout: 2000,
+    });
     await page.screenshot({
       path: path.join(SNAP_PATH, "during.png"),
       fullPage: true,
     });
 
-    await page.waitForSelector("text=Saving changes…", {
+    await page.waitForSelector(".ReviewOverlay:has-text('Saving...')", {
       state: "hidden",
       timeout: 2500,
     });

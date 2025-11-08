@@ -195,7 +195,7 @@ export default function QADashboard() {
   }, [selectedReport]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col gap-6 bg-[#05090d] p-8 text-neutral-100">
+    <div className="relative z-20 flex min-h-screen w-full flex-col gap-6 bg-[#05090d] p-8 text-neutral-100">
       <header className="flex flex-col gap-2">
         <h1 className="text-3xl font-semibold text-cyan-200">
           FILON QA Dashboard
@@ -361,7 +361,11 @@ export default function QADashboard() {
                 </ResponsiveContainer>
               ) : (
                 <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-cyan-300/20 text-sm text-neutral-500">
-                  Not enough data yet to calculate insights.
+                  No QA reports yet — run{" "}
+                  <code className="mx-1 rounded bg-neutral-900 px-1.5 py-0.5 text-xs text-cyan-300">
+                    npm run qa:report
+                  </code>
+                  to generate data.
                 </div>
               )}
             </div>

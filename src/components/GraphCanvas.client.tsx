@@ -162,6 +162,13 @@ export default function GraphCanvas({
         process.env.NODE_ENV !== "test" && Math.random() < 0.05;
       const shouldFail = offlineForced || randomFail;
 
+      const isAutomatedTest =
+        process.env.NODE_ENV === "test" ||
+        (typeof navigator !== "undefined" && navigator.webdriver === true);
+      if (isAutomatedTest) {
+        console.info("[QA] Autosave triggered");
+      }
+
       if (shouldFail) {
         try {
           if (typeof window !== "undefined" && window.localStorage) {

@@ -247,14 +247,11 @@ export default function HomePeekSidebar() {
   );
 
   return (
-    <motion.aside
+    <motion.div
       layout
       initial={false}
-      animate={{ width: open ? 248 : 72 }}
-      transition={{ duration: 0.22, ease: "easeOut" }}
-      className="fixed left-0 top-0 z-40 flex h-screen flex-col overflow-hidden border-r border-cyan-400/15 bg-[#05090B]/75 text-cyan-200 shadow-[0_0_26px_#2FF3FF22] backdrop-blur-xl"
+      className="relative flex flex-col h-full w-full overflow-y-auto px-3 py-4"
     >
-      <div className="relative flex flex-col flex-1">
         <AnimatePresence>
           {showPulse && (
             <motion.div
@@ -342,7 +339,6 @@ export default function HomePeekSidebar() {
             </div>
           ))}
         </nav>
-      </div>
-    </motion.aside>
+    </motion.div>
   );
 }
