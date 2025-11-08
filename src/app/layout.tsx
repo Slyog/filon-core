@@ -1,13 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { ThemeProvider } from "next-themes";
 import "@/app/globals.css";
-import { InteractiveLight } from "@/components/ui/InteractiveLight";
-import { MindVisualizer } from "@/components/ui/MindVisualizer";
-import { AudioResonance } from "@/components/ui/AudioResonance";
-import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
-import { SettingsDrawer } from "@/components/ui/SettingsDrawer";
+import AppShell from "@/components/shell/AppShell";
+import { applyVisualSettings, useSettings } from "@/store/settings";
 
 function ReducedMotionHandler() {
   useEffect(() => {
@@ -26,6 +22,17 @@ function ReducedMotionHandler() {
   return null;
 }
 
+function VisualSettingsHandler() {
+  const animationSpeed = useSettings((state) => state.animationSpeed);
+  const glowIntensity = useSettings((state) => state.glowIntensity);
+
+  useEffect(() => {
+    applyVisualSettings(animationSpeed, glowIntensity);
+  }, [animationSpeed, glowIntensity]);
+
+  return null;
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -33,16 +40,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full">
-      <body className="h-full w-full overflow-hidden bg-[#0e0f12] text-white">
+      <body className="h-full w-full overflow-hidden bg-[#050b10] text-white">
         <ReducedMotionHandler />
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-          <InteractiveLight />
-          <MindVisualizer />
-          <AudioResonance />
-          <LoadingOverlay />
-          <SettingsDrawer />
-        </ThemeProvider>
+        <VisualSettingsHandler />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

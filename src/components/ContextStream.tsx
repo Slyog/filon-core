@@ -21,6 +21,7 @@ interface ContextStreamProps {
   onSelect: (id: string) => void;
   hoveredId?: string;
   onHover?: (id: string | null) => void;
+  position?: "card" | "bottom";
 }
 
 const List = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
@@ -97,7 +98,7 @@ const StreamRow = React.memo(
         onClick={() => onPress(item.id)}
       >
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-medium text-text-primary line-clamp-1">
+          <p className="text-sm font-normal text-text-primary line-clamp-1">
             {item.title}
           </p>
           <span
@@ -110,7 +111,7 @@ const StreamRow = React.memo(
           </span>
         </div>
         <p
-          className="text-xs text-text-secondary/90"
+          className="text-xs font-light text-text-secondary/90"
           style={{
             display: "-webkit-box",
             WebkitLineClamp: 3,
@@ -136,6 +137,7 @@ const ContextStream = ({
   onSelect,
   hoveredId,
   onHover,
+  position = "card",
 }: ContextStreamProps) => {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -156,28 +158,36 @@ const ContextStream = ({
     onHover?.(id ?? null);
   });
 
+  const containerClass = clsx(
+    "transition-colors",
+    position === "bottom"
+      ? "w-full rounded-2xl border border-cyan-400/18 bg-surface-active/70 px-4 py-4 backdrop-blur-sm md:px-6 md:py-5"
+      : "rounded-3xl border border-cyan-400/15 bg-surface-hover/30 p-4 backdrop-blur-xl"
+  );
+
   return (
     <motion.section
+      data-tour-id="tour-context"
       role="region"
       aria-label="Context Stream"
-      className="rounded-3xl border border-cyan-400/15 bg-surface-hover/30 p-4 backdrop-blur-xl"
+      className={containerClass}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+      transition={{ duration: 0.14, ease: [0.25, 0.8, 0.4, 1] }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-cyan-200">
+        <h2 className="text-sm font-normal uppercase tracking-[0.3em] text-cyan-200">
           {t.contextStream}
         </h2>
-        <span className="text-xs text-text-secondary/80">
+        <span className="text-xs font-light text-text-secondary/80">
           {items.length} {t.entries}
         </span>
       </div>
       <Virtuoso
         ref={virtuosoRef}
         data={data}
-        className="max-h-[360px]"
-        style={{ height: 360 }}
+        className={clsx(position === "bottom" ? "max-h-[260px]" : "max-h-[360px]")}
+        style={{ height: position === "bottom" ? 260 : 360 }}
         components={{ List }}
         defaultItemHeight={96}
         overscan={6}

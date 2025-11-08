@@ -18,6 +18,11 @@ import { motion, useReducedMotion } from "framer-motion";
 import "reactflow/dist/style.css";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import { t } from "@/config/strings";
+import {
+  GraphDefaults,
+  radialPlacement,
+  truncateLabel,
+} from "@/components/graph/GraphDefaults";
 
 type MiniGraphNode = { id: string; label: string };
 type MiniGraphEdge = { id: string; source: string; target: string };
@@ -54,15 +59,18 @@ const useIsVisible = (ref: React.RefObject<HTMLDivElement>) => {
 };
 
 const formatNodes = (nodes: MiniGraphNode[]): MiniGraphNode[] =>
-  nodes.slice(-5);
+  nodes.slice(-5).map((node) => ({
+    ...node,
+    label: truncateLabel(node.label, "mini"),
+  }));
 
 const layoutNodes = (nodes: MiniGraphNode[]): FlowNode[] => {
   if (nodes.length === 0) return [];
-  const radius = 80;
   return nodes.map((node, index) => {
-    const angle = (index / nodes.length) * Math.PI * 2;
-    const x = radius + radius * Math.cos(angle);
-    const y = radius + radius * Math.sin(angle);
+    const base = radialPlacement({ x: 0, y: 0 }, index, nodes.length);
+    const scale = 0.35;
+    const x = base.x * scale;
+    const y = base.y * scale;
     return {
       id: node.id,
       data: { label: node.label },
@@ -84,7 +92,12 @@ const filterEdges = (
       source: edge.source,
       target: edge.target,
       animated: true,
-      style: { stroke: "rgba(47,243,255,0.3)", strokeWidth: 1 },
+      animated: false,
+      style: {
+        stroke: GraphDefaults.colorTokens.edge,
+        strokeWidth: GraphDefaults.edgeStyle.width,
+        opacity: GraphDefaults.edgeStyle.opacity,
+      },
     }));
 };
 
@@ -129,6 +142,7 @@ export default function MiniGraph({
   if (compact) {
     return (
       <motion.div
+        data-tour-id="tour-minigraph"
         role="img"
         aria-label="Mini-Graph"
         aria-description={describeMiniGraph}
@@ -164,6 +178,7 @@ export default function MiniGraph({
 
   return (
     <div
+      data-tour-id="tour-minigraph"
       ref={hostRef}
       className="focus-glow relative h-48 w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-surface-active/30 focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
       data-focused={hovered !== null || focusWithin}
@@ -185,17 +200,18 @@ export default function MiniGraph({
                 borderRadius: 999,
                 border:
                   hovered === node.id
-                    ? "2px solid rgba(47,243,255,0.9)"
-                    : "1px solid rgba(47,243,255,0.4)",
+                    ? `2px solid ${GraphDefaults.colorTokens.focus}`
+                    : `1px solid ${GraphDefaults.colorTokens.edge}`,
                 color: "#E6FDFE",
-                background: "rgba(13,23,28,0.9)",
+                background: "rgba(5, 20, 29, 0.92)",
                 fontSize: 12,
-                textTransform: "capitalize",
+                fontWeight: 400,
+                letterSpacing: "0.04em",
                 boxShadow:
                   hovered === node.id
-                    ? "0 0 12px rgba(47,243,255,0.4)"
+                    ? `0 0 12px ${GraphDefaults.colorTokens.edge}`
                     : "none",
-                transition: "all 0.2s ease",
+                transition: "all 0.12s ease",
               },
             }))}
             edges={flowEdges}
@@ -205,12 +221,15 @@ export default function MiniGraph({
             panOnDrag={false}
             zoomOnPinch={false}
             zoomOnScroll={false}
+            defaultViewport={{ zoom: GraphDefaults.zoomStart }}
+            minZoom={0.6}
+            maxZoom={1.4}
             fitView
             onNodeMouseEnter={handleMouseEnter}
             onNodeMouseLeave={handleMouseLeave}
             onNodeClick={(_event, node) => onNodeClick?.(node.id)}
           >
-            <Background gap={12} color="rgba(47,243,255,0.08)" />
+            <Background gap={18} color="rgba(56,189,248,0.08)" />
           </ReactFlow>
         </ReactFlowProvider>
       ) : (

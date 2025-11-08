@@ -110,6 +110,12 @@ import {
 } from "@/core/spatialMemory";
 import { t } from "@/config/strings";
 import { useSettings } from "@/store/settings";
+import {
+  GraphDefaults,
+  radialPlacement,
+  truncateLabel,
+} from "@/components/graph/GraphDefaults";
+import { registerCommandPaletteListener } from "@/hooks/useHotkeys";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
 const RFDebugPanel = DEBUG_MODE
@@ -839,17 +845,17 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         selected: active,
         style: {
           ...baseStyle,
-          transition: "box-shadow 0.4s ease, border 0.25s ease",
           boxShadow: active
-            ? "0 0 20px rgba(47,243,255,0.8)"
-            : isHovered
-            ? "0 0 10px rgba(47,243,255,0.4)"
-            : "0 0 0 rgba(0,0,0,0)",
+            ? `0 0 18px ${GraphDefaults.colorTokens.focus}44`
+            : "none",
           border: active
-            ? "1px solid rgba(47,243,255,0.5)"
-            : "1px solid transparent",
-          outline: active ? "2px solid #2FF3FF" : undefined,
+            ? `1px solid ${GraphDefaults.colorTokens.focus}`
+            : isHovered
+            ? `1px solid ${GraphDefaults.colorTokens.edge}`
+            : baseStyle.border ?? "1px solid transparent",
+          outline: active ? `2px solid ${GraphDefaults.colorTokens.focus}66` : undefined,
           outlineOffset: active ? "2px" : undefined,
+          transition: "box-shadow 0.12s ease, border 0.12s ease, outline 0.12s ease",
         },
       };
     },
@@ -902,6 +908,12 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           sourceHandle: params.sourceHandle,
           targetHandle: params.targetHandle,
           type: "smoothstep",
+          animated: false,
+          style: {
+            stroke: GraphDefaults.colorTokens.edge,
+            strokeWidth: GraphDefaults.edgeStyle.width,
+            opacity: GraphDefaults.edgeStyle.opacity,
+          },
           data: {
             type: "default",
             createdAt: nowIso,
@@ -918,6 +930,20 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     },
     [nodes, saveGraph]
   );
+
+  const resolvePlacementCenter = useCallback((): XYPosition => {
+    if (activeNode?.position) {
+      return activeNode.position;
+    }
+    if (flowInstance) {
+      const viewportCenter = {
+        x: typeof window !== "undefined" ? window.innerWidth / 2 : 0,
+        y: typeof window !== "undefined" ? window.innerHeight / 2 : 0,
+      };
+      return flowInstance.screenToFlowPosition(viewportCenter);
+    }
+    return { x: 0, y: 0 };
+  }, [activeNode, flowInstance]);
 
   // Visualizer Dim Helper
   const withVisualizerDim = useCallback(
@@ -1215,28 +1241,31 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   // ➕ Node hinzufügen
   const addNode = useCallback(
     (label?: string, thoughtType?: string) => {
-      if (!flowInstance) return;
-
-      const center = flowInstance.screenToFlowPosition({
-        x: window.innerWidth / 2 - 120 + (Math.random() * 100 - 50),
-        y: window.innerHeight / 2 - 60 + (Math.random() * 100 - 50),
-      });
-
       const nowIso = new Date().toISOString();
+      setNodes((nds) => {
+        const origin = resolvePlacementCenter();
+        const placement = radialPlacement(origin, nds.length, nds.length + 1);
       const newNode: Node = {
         id: `node_${Date.now()}`,
-        position: center,
+          position: placement,
         data: {
           label:
-            label || t.newThought.replace("{num}", String(nodes.length + 1)),
+              label || t.newThought.replace("{num}", String(nds.length + 1)),
           thoughtType: thoughtType || "Idea",
           createdAt: nowIso,
           updatedAt: nowIso,
         },
         type: "default",
-      };
-
-      setNodes((nds) => {
+          style: {
+            background: "rgba(5, 20, 29, 0.92)",
+            color: "#E6FDFE",
+            borderRadius: 16,
+            padding: 16,
+            border: `1px solid ${GraphDefaults.colorTokens.edge}`,
+            fontWeight: 400,
+            letterSpacing: "0.02em",
+          },
+        };
         const updated = [...nds, withGlow(newNode, false)];
         setTimeout(() => saveGraph(updated, edges), 100);
         return updated;
@@ -1245,29 +1274,25 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
       setTimeout(() => {
         try {
-          flowInstance.fitView({ padding: 0.3, duration: 600 });
+          flowInstance?.fitView({ padding: 0.3, duration: 140 });
         } catch (err) {
           console.warn("fitView failed", err);
         }
-      }, 150);
+      }, 120);
     },
-    [flowInstance, nodes.length, withGlow, saveGraph, edges]
+    [resolvePlacementCenter, withGlow, saveGraph, edges, flowInstance]
   );
 
   const createTextNode = useCallback(
     async (label: string, thoughtType: string) => {
-      const hasWindow = typeof window !== "undefined";
-      const center = flowInstance
-        ? flowInstance.screenToFlowPosition({
-            x: hasWindow ? window.innerWidth / 2 : 0,
-            y: hasWindow ? window.innerHeight / 2 - 80 : -80,
-          })
-        : { x: 100, y: 100 };
-
       const nowIso = new Date().toISOString();
+      let nextLength = 0;
+      setNodes((nds) => {
+        const origin = resolvePlacementCenter();
+        const position = radialPlacement(origin, nds.length, nds.length + 1);
       const newNode: Node = {
         id: `node_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        position: center,
+          position,
         data: {
           label,
           thoughtType,
@@ -1275,10 +1300,16 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           updatedAt: nowIso,
         },
         type: "default",
-      };
-
-      let nextLength = 0;
-      setNodes((nds) => {
+          style: {
+            background: "rgba(5, 20, 29, 0.92)",
+            color: "#E6FDFE",
+            borderRadius: 16,
+            padding: 16,
+            border: `1px solid ${GraphDefaults.colorTokens.edge}`,
+            fontWeight: 400,
+            letterSpacing: "0.02em",
+          },
+        };
         const updated = [...nds, withGlow(newNode, false)];
         nextLength = updated.length;
         setTimeout(() => saveGraph(updated, edges), 100);
@@ -1296,12 +1327,12 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
       await new Promise((resolve) => setTimeout(resolve, 150));
       try {
-        flowInstance?.fitView({ padding: 0.3, duration: 600 });
+        flowInstance?.fitView({ padding: 0.3, duration: 140 });
       } catch (error) {
         console.warn("fitView failed for queued thought node", error);
       }
     },
-    [edges, flowInstance, saveGraph, setLayoutTrigger, withGlow]
+    [edges, flowInstance, saveGraph, setLayoutTrigger, withGlow, resolvePlacementCenter]
   );
 
   const ensureActiveSession = useCallback(
@@ -1794,6 +1825,13 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
   const brainbarRef = useRef<BrainbarHandle>(null);
 
+  useEffect(() => {
+    const unsubscribe = registerCommandPaletteListener(() => {
+      brainbarRef.current?.focus();
+    });
+    return unsubscribe;
+  }, []);
+
   // Global keyboard shortcuts
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -1850,7 +1888,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     <GraphContext.Provider value={{ updateNodeNote }}>
       <div className="relative flex min-h-screen w-full flex-1 flex-col bg-filon-bg">
         {/* Step 16: Mini-Graph Preview at top */}
-        <div className="w-full px-4 pt-4 pb-2">
+        <div className="sticky top-6 z-20 w-full bg-[#050b10]/70 px-6 pt-6 pb-4 backdrop-blur-sm">
           <MiniGraph
             nodes={nodes.map((node) => ({
               id: node.id,
@@ -1861,10 +1899,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
               source: edge.source,
               target: edge.target,
             }))}
-            onNodeHover={(nodeId) => {
-              // Highlight corresponding Context Stream item
-              // This is handled by GraphContextStream's activeNodeId prop
-            }}
+            onHoverNode={(nodeId: string | null) => setHoveredNodeId(nodeId)}
             onNodeClick={(nodeId) => {
               setActiveNodeId(nodeId);
             }}
@@ -1872,7 +1907,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         </div>
 
         {/* Step 16: Brainbar with QuickChips */}
-        <div className="w-full">
+        <div className="w-full space-y-6 px-6">
           <Brainbar ref={brainbarRef} onSubmit={handleThoughtSubmit} />
           <QuickChips
             onPick={(command) => brainbarRef.current?.prefill(command)}
@@ -2060,7 +2095,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
             </button>
             <button
               onClick={() => {
-                flowInstance?.fitView({ padding: 0.35, duration: 600 });
+                flowInstance?.fitView({ padding: 0.35, duration: 140 });
               }}
               className="focus-glow px-sm py-xs rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Reset viewport to fit all nodes"
@@ -2077,7 +2112,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                 setLayoutTrigger((n) => n + 1);
                 setTimeout(() => {
                   try {
-                    flowInstance.fitView({ padding: 0.35, duration: 600 });
+                    flowInstance.fitView({ padding: 0.35, duration: 140 });
                   } catch (err) {
                     console.warn("fitView recenter failed", err);
                   }
@@ -2328,6 +2363,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                   edges={edges}
                   setNodes={setNodes}
                   withGlow={withGlow}
+                  hoveredNodeId={hoveredNodeId}
                   setActiveNodeId={setActiveNodeId}
                   searchRef={searchRef}
                   isEditableTarget={isEditableTarget}
@@ -2370,6 +2406,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                   edges={edges}
                   setNodes={setNodes}
                   withGlow={withGlow}
+                  hoveredNodeId={hoveredNodeId}
                   setActiveNodeId={setActiveNodeId}
                   searchRef={searchRef}
                   isEditableTarget={isEditableTarget}
@@ -2686,6 +2723,7 @@ function GraphFlowWithHotkeys({
   edges,
   setNodes,
   withGlow,
+  hoveredNodeId,
   setActiveNodeId,
   searchRef,
   isEditableTarget,
@@ -2712,6 +2750,7 @@ function GraphFlowWithHotkeys({
   edges: Edge[];
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   withGlow: (n: Node, active: boolean, hovered?: boolean) => Node;
+  hoveredNodeId: string | null;
   setActiveNodeId: (id: string | null) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
   isEditableTarget: (e: EventTarget | null) => boolean;
@@ -2721,6 +2760,7 @@ function GraphFlowWithHotkeys({
   graphLoadedOnce: boolean;
 }) {
   const rf = useReactFlow();
+  const { activeNodeId } = useActiveNode();
   const { currentMindState } = useMindProgress();
   const mood = getMoodPreset(currentMindState);
   const setViewportState = useUIStore((s) => s.setViewportState);
@@ -2736,7 +2776,7 @@ function GraphFlowWithHotkeys({
       requestAnimationFrame(() => {
         setTimeout(() => {
           try {
-            instance.fitView({ padding: 0.35, duration: 600 });
+            instance.fitView({ padding: 0.35, duration: 140 });
           } catch (e) {
             if (DEBUG_MODE) console.warn("fitView init failed", e);
           }
@@ -2786,23 +2826,34 @@ function GraphFlowWithHotkeys({
     }
   }, [rf, setViewportState]);
 
+  // Resolve the center position for radial node placement
+  const resolvePlacementCenter = useCallback((): XYPosition => {
+    try {
+      const viewport = rf.getViewport();
+      // Convert screen center to flow coordinates
+      const screenCenter = {
+        x: typeof window !== "undefined" ? window.innerWidth / 2 : 0,
+        y: typeof window !== "undefined" ? window.innerHeight / 2 : 0,
+      };
+      return rf.screenToFlowPosition(screenCenter);
+    } catch {
+      // Fallback to origin if viewport not available
+      return { x: 0, y: 0 };
+    }
+  }, [rf]);
+
   const addNodeAt = useCallback(
     (pos?: XYPosition) => {
       setNodes((nds) => {
         const id = `n_${Date.now()}`;
         const cleared = nds.map((node) => withGlow(node, false));
-        const jitterX = Math.random() * 100 - 50;
-        const jitterY = Math.random() * 100 - 50;
-        const center = pos
-          ? pos
-          : rf.screenToFlowPosition({
-              x: window.innerWidth / 2 - 120 + jitterX,
-              y: window.innerHeight / 2 - 60 + jitterY,
-            });
+        const origin = resolvePlacementCenter();
+        const placement =
+          pos ?? radialPlacement(origin, nds.length, nds.length + 1);
         const nowIso = new Date().toISOString();
         const baseNode: Node = {
           id,
-          position: center,
+          position: placement,
           data: {
             label: `🧠 ${t.newThought.replace("{num}", "")}`,
             note: "",
@@ -2813,11 +2864,14 @@ function GraphFlowWithHotkeys({
           type: "default",
           selected: true,
           style: {
-            background: "#475569",
-            color: "white",
-            padding: 10,
-            borderRadius: 8,
+            background: "rgba(5, 20, 29, 0.92)",
+            color: "#E6FDFE",
+            padding: 16,
+            borderRadius: 16,
             cursor: "pointer",
+            border: `1px solid ${GraphDefaults.colorTokens.edge}`,
+            fontWeight: 400,
+            letterSpacing: "0.02em",
           },
         };
         const styledNewNode = withGlow(baseNode, true);
@@ -2826,13 +2880,13 @@ function GraphFlowWithHotkeys({
 
       window.setTimeout(() => {
         try {
-          rf.fitView({ padding: 0.25, duration: 600 });
+          rf.fitView({ padding: 0.25, duration: 140 });
         } catch (err) {
           console.warn("fitView failed", err);
         }
       }, 200);
     },
-    [setNodes, rf, withGlow]
+    [setNodes, rf, withGlow, resolvePlacementCenter]
   );
 
   useEffect(() => {
@@ -2887,6 +2941,93 @@ function GraphFlowWithHotkeys({
     withGlow,
   ]);
 
+  const neighborSet = useMemo(() => {
+    if (!activeNodeId || GraphDefaults.neighborReveal <= 0) {
+      return new Set<string>();
+    }
+    const adjacency = new Map<string, Set<string>>();
+    edges.forEach((edge) => {
+      if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
+      if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set());
+      adjacency.get(edge.source)!.add(edge.target);
+      adjacency.get(edge.target)!.add(edge.source);
+    });
+    const visited = new Set<string>([activeNodeId]);
+    const queue: Array<{ id: string; depth: number }> = [
+      { id: activeNodeId, depth: 0 },
+    ];
+    const result = new Set<string>();
+    while (queue.length) {
+      const { id, depth } = queue.shift()!;
+      if (depth >= GraphDefaults.neighborReveal) continue;
+      const neighbors = adjacency.get(id);
+      if (!neighbors) continue;
+      neighbors.forEach((nextId) => {
+        if (visited.has(nextId)) return;
+        visited.add(nextId);
+        result.add(nextId);
+        queue.push({ id: nextId, depth: depth + 1 });
+      });
+    }
+    return result;
+  }, [activeNodeId, edges]);
+
+  const decoratedNodes = useMemo(() => {
+    if (!rawNodes.length) return rawNodes;
+    return rawNodes.map((node) => {
+      const baseLabel =
+        typeof node.data?.label === "string" ? node.data.label : "";
+      const isActive = activeNodeId === node.id;
+      const isNeighbor = neighborSet.has(node.id);
+      const isHovered = hoveredNodeId === node.id;
+      const highlight =
+        !activeNodeId || isActive || isNeighbor || isHovered;
+      const displayLabel = highlight
+        ? truncateLabel(baseLabel, "main", isActive)
+        : "";
+      const baseStyle = node.style ?? {};
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          label: displayLabel,
+        },
+        style: {
+          ...baseStyle,
+          boxShadow: baseStyle.boxShadow,
+          opacity: highlight ? 1 : 0.28,
+          color: isActive
+            ? GraphDefaults.colorTokens.focus
+            : highlight
+            ? "#E6FDFE"
+            : GraphDefaults.colorTokens.muted,
+          background: highlight
+            ? "rgba(5, 26, 34, 0.94)"
+            : "rgba(5, 14, 20, 0.55)",
+          border:
+            baseStyle.border ?? `1px solid ${GraphDefaults.colorTokens.edge}`,
+          transition:
+            "opacity 0.12s ease, background 0.12s ease, color 0.12s ease",
+        },
+      };
+    });
+  }, [rawNodes, activeNodeId, neighborSet, hoveredNodeId]);
+
+  const decoratedEdges = useMemo(
+    () =>
+      edges.map((edge) => ({
+        ...edge,
+        animated: false,
+        style: {
+          ...(edge.style ?? {}),
+          stroke: GraphDefaults.colorTokens.edge,
+          strokeWidth: GraphDefaults.edgeStyle.width,
+          opacity: GraphDefaults.edgeStyle.opacity,
+        },
+      })),
+    [edges]
+  );
+
   return (
     <div
       id="canvas-shell"
@@ -2923,8 +3064,8 @@ function GraphFlowWithHotkeys({
           className={`react-flow-subtle-cyan ${
             !hasAnimated ? "graph-fadein" : ""
           }`}
-          nodes={rawNodes}
-          edges={edges}
+          nodes={decoratedNodes}
+          edges={decoratedEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -2937,7 +3078,7 @@ function GraphFlowWithHotkeys({
           onMove={handleViewportMove}
           onMoveEnd={handleViewportMoveEnd}
           fitView
-          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          defaultViewport={{ x: 0, y: 0, zoom: GraphDefaults.zoomStart }}
           nodeOrigin={[0.5, 0.5]}
           panOnDrag
           zoomOnScroll

@@ -15,14 +15,17 @@ interface SettingsState {
 }
 
 // Apply visual effects based on settings
-const applyVisualSettings = (animationSpeed: number, glowIntensity: number) => {
+export const applyVisualSettings = (
+  animationSpeed: number,
+  glowIntensity: number
+) => {
   if (typeof document === "undefined") return;
 
   // Set data-motion attribute when animation speed is very low
   if (animationSpeed <= 0.05) {
     document.body.dataset.motion = "off";
   } else {
-    document.body.dataset.motion = "";
+    delete document.body.dataset.motion;
   }
 
   // Set CSS variable for glow intensity
@@ -72,18 +75,6 @@ export const useSettings = create<SettingsState>()(
         theme: state.theme,
         rememberSpatial: state.rememberSpatial,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Apply settings when store is rehydrated from localStorage
-        if (state) {
-          applyVisualSettings(state.animationSpeed, state.glowIntensity);
-        }
-      },
     }
   )
 );
-
-// Apply initial settings on mount
-if (typeof window !== "undefined") {
-  const store = useSettings.getState();
-  applyVisualSettings(store.animationSpeed, store.glowIntensity);
-}

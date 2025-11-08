@@ -148,12 +148,13 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
         }}
       >
         <motion.div
+          data-tour-id="tour-brainbar"
           layout
           data-focused={focused || pulse}
           className="focus-glow relative flex w-full items-center gap-3 rounded-2xl border border-cyan-400/10 bg-surface-hover/70 px-4 py-3 backdrop-blur-xl focus-within:ring-2 focus-within:ring-brand/60 focus-within:ring-offset-2 focus-within:ring-offset-surface-base"
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
+          transition={{ duration: 0.14, ease: [0.25, 0.8, 0.4, 1] }}
         >
           <Sparkles aria-hidden="true" className="text-brand" size={18} />
           <div className="flex flex-1 flex-col">
@@ -187,10 +188,10 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
             {value.trim() && (
               <motion.span
                 key="badge"
-                initial={{ opacity: 0, scale: 0.8 }}
+                initial={{ opacity: 0, scale: 0.86 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                exit={{ opacity: 0, scale: 0.86 }}
+                transition={{ duration: 0.12, ease: [0.25, 0.8, 0.4, 1] }}
                 className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand"
               >
                 /{parsed.type}
