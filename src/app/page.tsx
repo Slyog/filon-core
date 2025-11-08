@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import BackgroundStars from "@/components/BackgroundStars";
 import { useUISettingsStore } from "@/store/uiSettingsStore";
 
@@ -30,19 +31,24 @@ export default function Home() {
 
     if (typeof window !== "undefined") {
       try {
-        window.localStorage.setItem("lastWorkspaceId", workspaceId);
+        // Try to reuse existing workspaceId from localStorage, otherwise use new one
+        const lastWorkspaceId = window.localStorage.getItem("lastWorkspaceId");
+        const finalWorkspaceId = lastWorkspaceId || workspaceId;
+        window.localStorage.setItem("lastWorkspaceId", finalWorkspaceId);
+        router.push(`/f/${finalWorkspaceId}?q=${encodeURIComponent(trimmed)}`, {
+          scroll: false,
+        });
       } catch (_error) {
         // localStorage can be unavailable (private mode, storage restrictions)
+        router.push(`/f/${workspaceId}?q=${encodeURIComponent(trimmed)}`, {
+          scroll: false,
+        });
       }
-
-      try {
-        window.sessionStorage.setItem("initialThought", trimmed);
-      } catch (_error) {
-        // sessionStorage can be unavailable; ignore silently
-      }
+    } else {
+      router.push(`/f/${workspaceId}?q=${encodeURIComponent(trimmed)}`, {
+        scroll: false,
+      });
     }
-
-    router.push(`/f/${workspaceId}?q=${encodeURIComponent(trimmed)}`);
   };
 
   const confirmDisabled = loading || input.trim().length === 0;
@@ -51,59 +57,61 @@ export default function Home() {
     <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0A0F12] text-cyan-100">
       <BackgroundStars />
 
-      <main className="relative z-10 flex w-full max-w-3xl flex-col items-center px-6 text-center">
-        <p className="text-xs uppercase tracking-[0.4em] text-cyan-400/60">
-          Filon
-        </p>
-        <h1 className="mt-8 text-4xl font-light tracking-widest text-cyan-100 sm:text-5xl">
-          The mind that visualizes itself.
-        </h1>
-        <p className="mt-4 max-w-xl text-sm font-light text-cyan-100/70 sm:text-base">
-          Start with a single thought. We will grow the workspace around it.
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
-          className="mt-12 w-full"
-          autoComplete="off"
-          noValidate
+      <main className="flex flex-col items-center justify-center h-screen text-center">
+        <motion.div
+          animate={{ opacity: [0, 1], scale: [0.95, 1] }}
+          transition={{ duration: 2, ease: "easeOut" }}
+          className="flex flex-col items-center gap-4"
         >
-          <div className="group flex w-full flex-col gap-4 rounded-2xl border border-cyan-400/25 bg-white/5 p-4 text-left shadow-[0_0_28px_rgba(47,243,255,0.08)] backdrop-blur-md transition focus-within:border-cyan-300/40 focus-within:shadow-[0_0_32px_rgba(47,243,255,0.12)] sm:flex-row sm:items-center sm:gap-6">
-            <input
-              type="text"
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Write a thought..."
-              aria-label="Write a thought"
-              className="flex-1 bg-transparent text-base font-light text-cyan-100 placeholder:text-cyan-400/45 outline-none sm:text-lg"
-              disabled={loading}
-              autoFocus
-            />
+          <h1 className="text-cyan-300 tracking-widest text-sm uppercase font-light">
+            FILON
+          </h1>
+          <h2 className="mt-2 text-xl font-medium text-cyan-100">
+            The mind that visualizes itself.
+          </h2>
+          <p className="mt-2 text-sm text-slate-400 tracking-wide">
+            Start with a single thought. We will grow the workspace around it.
+          </p>
 
-            <div className="flex items-center justify-end gap-3 sm:justify-center">
-              <button
-                type="button"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/10 text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-500/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F12] sm:h-12 sm:w-12"
-                aria-label="Voice capture (coming soon)"
-                title="Voice capture (coming soon)"
-              >
-                <MicIcon />
-              </button>
+          <form
+            onSubmit={handleSubmit}
+            className="mt-8 w-full max-w-md"
+            autoComplete="off"
+            noValidate
+          >
+            <div className="group flex w-full flex-col gap-4 rounded-2xl border border-cyan-400/25 bg-white/5 p-4 text-left shadow-[0_0_28px_rgba(47,243,255,0.08)] backdrop-blur-md transition focus-within:border-cyan-300/40 focus-within:shadow-[0_0_32px_rgba(47,243,255,0.12)] sm:flex-row sm:items-center sm:gap-6">
+              <input
+                type="text"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Write a thought..."
+                aria-label="Write a thought"
+                className="flex-1 bg-transparent text-base font-light text-cyan-100 placeholder:text-cyan-400/45 outline-none sm:text-lg"
+                disabled={loading}
+                autoFocus
+              />
 
-              <button
-                type="submit"
-                disabled={confirmDisabled}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-cyan-400/85 px-9 text-sm font-semibold uppercase tracking-[0.24em] text-[#0A0F12] transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F12] disabled:cursor-not-allowed disabled:bg-cyan-400/40 sm:h-12 sm:px-11"
-              >
-                {loading ? "Redirecting..." : "Confirm"}
-              </button>
+              <div className="flex items-center justify-end gap-3 sm:justify-center">
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/10 text-cyan-200 transition hover:border-cyan-300/40 hover:bg-cyan-500/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F12] sm:h-12 sm:w-12"
+                  aria-label="Voice capture (coming soon)"
+                  title="Voice capture (coming soon)"
+                >
+                  <MicIcon />
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={confirmDisabled}
+                  className="px-5 py-2.5 rounded-2xl bg-cyan-400/10 hover:bg-cyan-400/20 border border-cyan-300/30 text-cyan-200 shadow-[0_0_12px_#2FF3FF33] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F12] disabled:cursor-not-allowed disabled:bg-cyan-400/40 disabled:opacity-50"
+                >
+                  {loading ? "Redirecting..." : "Confirm"}
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
-
-        <p className="mt-8 text-xs uppercase tracking-[0.3em] text-cyan-400/55">
-          Press Enter or Confirm to create a new workspace
-        </p>
+          </form>
+        </motion.div>
       </main>
 
       <button

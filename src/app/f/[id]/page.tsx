@@ -1,9 +1,11 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/shell/AppShell";
 import ComposerPanel from "@/components/ComposerPanel";
 import GraphCanvas from "@/components/GraphCanvas.client";
+import { useSessionStore } from "@/store/SessionStore";
 
 export default function WorkspacePage({
   params,
@@ -11,6 +13,22 @@ export default function WorkspacePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
+  const enqueueThought = useSessionStore((state) => state.enqueueThought);
+  const [graphInitialized, setGraphInitialized] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q && !graphInitialized) {
+      // Enqueue the initial thought
+      enqueueThought({
+        sessionId: id,
+        content: q,
+        thoughtType: "Idea",
+      });
+      setGraphInitialized(true);
+    }
+  }, [searchParams, id, enqueueThought, graphInitialized]);
 
   return (
     <AppShell>

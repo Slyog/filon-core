@@ -30,8 +30,11 @@ export default function BackgroundStars() {
     <div
       className="pointer-events-none absolute inset-0 overflow-hidden"
       aria-hidden="true"
+      style={{
+        background: `radial-gradient(circle at top, rgba(47,243,255,0.1), transparent 65%), url('/noise.png')`,
+        opacity: 0.1,
+      }}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(47,243,255,0.12),_transparent_65%)]" />
       {stars.map((star, index) => (
         <motion.span
           key={`star-${index}`}

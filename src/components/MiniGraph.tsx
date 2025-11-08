@@ -71,10 +71,13 @@ const layoutNodes = (nodes: MiniGraphNode[]): FlowNode[] => {
     const scale = 0.35;
     const x = base.x * scale;
     const y = base.y * scale;
+    // Ensure position values are valid numbers
+    const safeX = Number.isFinite(x) ? x : 0;
+    const safeY = Number.isFinite(y) ? y : 0;
     return {
       id: node.id,
       data: { label: node.label },
-      position: { x, y },
+      position: { x: safeX, y: safeY },
       type: "default",
     } satisfies FlowNode;
   });
@@ -221,10 +224,15 @@ export default function MiniGraph({
             panOnDrag={false}
             zoomOnPinch={false}
             zoomOnScroll={false}
-            defaultViewport={{ zoom: GraphDefaults.zoomStart }}
+            defaultViewport={{ 
+              x: 0, 
+              y: 0, 
+              zoom: Number.isFinite(GraphDefaults.zoomStart) ? GraphDefaults.zoomStart : 0.9 
+            }}
             minZoom={0.6}
             maxZoom={1.4}
             fitView
+            fitViewOptions={{ padding: 0.1, maxZoom: 1.4 }}
             onNodeMouseEnter={handleMouseEnter}
             onNodeMouseLeave={handleMouseLeave}
             onNodeClick={(_event, node) => onNodeClick?.(node.id)}

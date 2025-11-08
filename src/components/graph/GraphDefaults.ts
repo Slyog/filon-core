@@ -53,18 +53,30 @@ export const radialPlacement = (
   index: number,
   total = 12
 ): XYPosition => {
-  const spread = Math.max(total, 6);
+  // Validate inputs to prevent NaN
+  const safeCenter = {
+    x: Number.isFinite(center.x) ? center.x : 0,
+    y: Number.isFinite(center.y) ? center.y : 0,
+  };
+  const safeIndex = Number.isFinite(index) && index >= 0 ? index : 0;
+  const safeTotal = Number.isFinite(total) && total > 0 ? total : 1;
+
+  const spread = Math.max(safeTotal, 6);
   const goldenAngle = 0.61803398875;
-  const rotation = (index * goldenAngle) % 1;
+  const rotation = (safeIndex * goldenAngle) % 1;
   const angle = rotation * TWO_PI;
-  const radiusStep = (index % spread) / spread;
+  const radiusStep = (safeIndex % spread) / spread;
   const baseRadius = lerp(RADIUS_MIN, RADIUS_MAX, radiusStep);
-  const jitter = Math.sin(index * 1.47) * 12;
+  const jitter = Math.sin(safeIndex * 1.47) * 12;
   const radius = clamp(baseRadius + jitter, RADIUS_MIN, RADIUS_MAX);
 
+  const x = safeCenter.x + Math.cos(angle) * radius;
+  const y = safeCenter.y + Math.sin(angle) * radius;
+
+  // Ensure we never return NaN
   return {
-    x: center.x + Math.cos(angle) * radius,
-    y: center.y + Math.sin(angle) * radius,
+    x: Number.isFinite(x) ? x : safeCenter.x,
+    y: Number.isFinite(y) ? y : safeCenter.y,
   };
 };
 

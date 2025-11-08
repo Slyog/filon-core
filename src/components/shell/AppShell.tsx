@@ -114,7 +114,7 @@ export default function AppShell({ children }: PropsWithChildren) {
             </div>
           </div>
         </div>
-      {!reduced && (
+      {!reduced && process.env.NODE_ENV === "development" && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

@@ -22,6 +22,7 @@ import { t } from "@/config/strings";
 export default function SidebarNav() {
   const router = useRouter();
   const sidebarOpen = useUIShellStore((state) => state.sidebarOpen);
+  const toggleSidebar = useUIShellStore((state) => state.toggleSidebar);
   const [quickOpen, setQuickOpen] = useState(true);
   const { panels } = usePanelRegistry();
 
@@ -39,7 +40,7 @@ export default function SidebarNav() {
           <div className="flex h-full flex-col items-center gap-3 py-4">
             <button
               type="button"
-              onClick={() => router.push("/")}
+              onClick={() => toggleSidebar()}
               className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900 text-cyan-300 hover:bg-zinc-800"
               title={t.goToLanding}
             >
