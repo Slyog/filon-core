@@ -81,12 +81,20 @@ function parseDateLabel(dateString: string | undefined) {
   };
 }
 
+type InsightsState = {
+  avg: number;
+  volatility: number;
+  trend: { date: string; passRate: number }[];
+} | null;
+
 export default function QADashboard() {
   const [reports, setReports] = useState<QAReport[]>([]);
   const [filter, setFilter] = useState<FilterState>("all");
   const [selectedReport, setSelectedReport] = useState<QAReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [insights, setInsights] = useState<InsightsState>(null);
+  const [insightsError, setInsightsError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadReports = async () => {
@@ -108,6 +116,20 @@ export default function QADashboard() {
     };
 
     void loadReports();
+    const loadInsights = async () => {
+      try {
+        const response = await fetch("/api/qa/insights", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Failed to load insights (${response.status})`);
+        }
+        const payload = await response.json();
+        setInsights(payload);
+      } catch (err) {
+        console.error("[qa:dashboard] insights error", err);
+        setInsightsError(err instanceof Error ? err.message : "Unknown error");
+      }
+    };
+    void loadInsights();
   }, []);
 
   const filteredReports = useMemo(() => {
@@ -271,6 +293,80 @@ export default function QADashboard() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="grid gap-4 rounded-2xl border border-cyan-300/20 bg-neutral-900/40 p-6 shadow-lg">
+        <h2 className="text-lg font-semibold text-cyan-100">
+          QA Insights (last 30 runs)
+        </h2>
+        {insightsError && (
+          <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+            {insightsError}
+          </div>
+        )}
+        {!insights && !insightsError && (
+          <div className="text-sm text-neutral-500">Loading insights…</div>
+        )}
+        {insights && (
+          <>
+            <p className="text-sm text-neutral-400">
+              Average Pass Rate:{" "}
+              <span className="text-cyan-300">{insights.avg}%</span> •
+              Volatility: {insights.volatility}%
+            </p>
+            <div className="h-48 w-full">
+              {insights.trend.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={insights.trend}>
+                    <CartesianGrid
+                      stroke="rgba(79, 213, 218, 0.15)"
+                      strokeDasharray="5 8"
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#63727e"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      stroke="#63727e"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#05090d",
+                        border: "1px solid rgba(47,243,255,0.25)",
+                        borderRadius: 12,
+                        color: "#E8FFFF",
+                      }}
+                      formatter={(value: number) => [`${value}%`, "Pass rate"]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="passRate"
+                      stroke="#2FF3FF"
+                      strokeWidth={3}
+                      dot={{
+                        stroke: "#2FF3FF",
+                        strokeWidth: 2,
+                        r: 3,
+                        fill: "#0A121C",
+                      }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-cyan-300/20 text-sm text-neutral-500">
+                  Not enough data yet to calculate insights.
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
