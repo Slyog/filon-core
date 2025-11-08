@@ -3,6 +3,45 @@ import { persist, type PersistStorage } from "zustand/middleware";
 import localforage from "localforage";
 import { SyncStatus } from "@/sync/syncSchema";
 
+const WORKSPACE_TITLE_PREFIX = "workspaceTitle:";
+const LAST_WORKSPACE_ID_KEY = "lastWorkspaceId";
+
+const isBrowser = () => typeof window !== "undefined";
+
+const persistWorkspaceTitle = (id: string, title: string) => {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.setItem(
+      `${WORKSPACE_TITLE_PREFIX}${id}`,
+      title
+    );
+  } catch (_error) {
+    // Ignore localStorage quota or availability issues
+  }
+};
+
+const removeWorkspaceTitle = (id: string) => {
+  if (!isBrowser()) return;
+  try {
+    window.localStorage.removeItem(`${WORKSPACE_TITLE_PREFIX}${id}`);
+  } catch (_error) {
+    // Ignore removal issues
+  }
+};
+
+const persistLastWorkspaceId = (id: string | null) => {
+  if (!isBrowser()) return;
+  try {
+    if (id) {
+      window.localStorage.setItem(LAST_WORKSPACE_ID_KEY, id);
+    } else {
+      window.localStorage.removeItem(LAST_WORKSPACE_ID_KEY);
+    }
+  } catch (_error) {
+    // Ignore persistence issues
+  }
+};
+
 export type Session = {
   id: string;
   title: string;
@@ -181,6 +220,8 @@ export const useSessionStore = create<SessionState>()(
             sessions: [...state.sessions, newSession],
             activeSessionId: id,
           }));
+          persistWorkspaceTitle(id, newSession.title);
+          persistLastWorkspaceId(id);
 
           await persistSnapshot();
           return id;
@@ -226,6 +267,10 @@ export const useSessionStore = create<SessionState>()(
             activeSessionId:
               state.activeSessionId === id ? null : state.activeSessionId,
           }));
+          if (activeSessionId === id) {
+            persistLastWorkspaceId(null);
+          }
+          removeWorkspaceTitle(id);
 
           await localforage.setItem(STORAGE_KEY, {
             state: {
@@ -242,12 +287,16 @@ export const useSessionStore = create<SessionState>()(
           }
         },
         closeSession: (id) => {
+          const wasActive = get().activeSessionId === id;
           set((state) => ({
             ...state,
             sessions: state.sessions.filter((s) => s.id !== id),
             activeSessionId:
               state.activeSessionId === id ? null : state.activeSessionId,
           }));
+          if (wasActive) {
+            persistLastWorkspaceId(null);
+          }
 
           void persistSnapshot();
         },
@@ -259,6 +308,8 @@ export const useSessionStore = create<SessionState>()(
               : [...state.sessions, session];
             return { ...state, sessions, activeSessionId: session.id };
           });
+          persistWorkspaceTitle(session.id, session.title);
+          persistLastWorkspaceId(session.id);
 
           void persistSnapshot();
         },
@@ -274,6 +325,7 @@ export const useSessionStore = create<SessionState>()(
                 : s
             ),
           }));
+          persistWorkspaceTitle(id, normalized);
 
           void persistSnapshot();
         },
@@ -297,6 +349,7 @@ export const useSessionStore = create<SessionState>()(
         },
         setActiveSession: (id) => {
           set((state) => ({ ...state, activeSessionId: id }));
+          persistLastWorkspaceId(id);
           void persistSnapshot();
         },
         getLastActive: () => get().activeSessionId,
