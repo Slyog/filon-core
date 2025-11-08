@@ -15,6 +15,9 @@ import {
   useNodesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import { useAutosaveFeedback } from "../hooks/useAutosaveFeedback";
+import { useSessionToast } from "../hooks/useSessionToast";
+import { autosaveSnapshot } from "../utils/autosaveMock";
 
 type GraphCanvasProps = {
   sessionId?: string;
@@ -58,6 +61,9 @@ export default function GraphCanvas({
   const initialized = useRef(false);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const nodeTypesMemo = useMemo(() => nodeTypes, []);
+  const { markPending, markSaved } = useAutosaveFeedback();
+  const { info: toastInfo, success: toastSuccess, error: toastError } =
+    useSessionToast();
   const graphApi = useMemo<GraphContextValue>(
     () => ({
       updateNodeNote: (_nodeId: string, _note: string) => {
@@ -66,6 +72,65 @@ export default function GraphCanvas({
     }),
     []
   );
+
+  useEffect(() => {
+    if (!sessionId || nodes.length === 0) return;
+
+    let isCancelled = false;
+
+    markPending();
+    toastInfo("Saving…");
+
+    const persist = async () => {
+      try {
+        await autosaveSnapshot(sessionId, { nodes, edges });
+        if (isCancelled) return;
+
+        markSaved();
+        toastSuccess("Saved ✓");
+
+        if (process.env.NEXT_PUBLIC_QA_MODE === "true") {
+          try {
+            await fetch("/api/qa-log", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                event: "autosave",
+                sessionId,
+                nodes: nodes.length,
+                edges: edges.length,
+                time: new Date().toISOString(),
+              }),
+            });
+          } catch (qaError) {
+            console.warn("[autosave:qa-log]", qaError);
+          }
+        }
+      } catch (error) {
+        if (isCancelled) return;
+
+        console.error("[autosave:error]", error);
+        toastError("Autosave failed");
+      }
+    };
+
+    void persist();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    sessionId,
+    nodes,
+    edges,
+    markPending,
+    markSaved,
+    toastInfo,
+    toastSuccess,
+    toastError,
+  ]);
 
   useEffect(() => {
     if (initialized.current) return;

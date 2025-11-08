@@ -1,11 +1,18 @@
+import { useCallback } from "react";
+
 export function useSessionToast() {
-  return {
-    success: (message: string) =>
-      console.info("[toast:success]", message),
-    error: (message: string) =>
-      console.error("[toast:error]", message),
-    info: (message: string) =>
-      console.log("[toast:info]", message),
-  };
+  const success = useCallback((message: string) => {
+    console.info("[toast:success]", message);
+  }, []);
+
+  const error = useCallback((message: string) => {
+    console.error("[toast:error]", message);
+  }, []);
+
+  const info = useCallback((message: string) => {
+    console.log("[toast:info]", message);
+  }, []);
+
+  return { success, error, info };
 }
 
