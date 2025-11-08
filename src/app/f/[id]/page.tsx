@@ -9,8 +9,8 @@ import { useSessionStore } from "@/store/SessionStore";
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
-  const enqueueThought = useSessionStore((state) => state.enqueueThought);
   const [initialized, setInitialized] = useState(false);
+  const [initialThought, setInitialThought] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || typeof window === "undefined") return;
@@ -51,12 +51,12 @@ export default function WorkspacePage() {
     const trimmed = q?.trim();
     if (!trimmed) return;
 
-    enqueueThought({
-      sessionId: id,
-      content: trimmed,
-      thoughtType: "Idea",
-    });
-    setInitialized(true);
+    // Decode and set initial thought for GraphCanvas
+    try {
+      setInitialThought(decodeURIComponent(trimmed));
+    } catch {
+      setInitialThought(trimmed);
+    }
 
     if (typeof window !== "undefined") {
       const titleKey = `workspaceTitle:${id}`;
@@ -84,7 +84,9 @@ export default function WorkspacePage() {
     } else if (existing.title !== trimmed) {
       store.updateSessionTitle(id, trimmed);
     }
-  }, [id, searchParams, enqueueThought, initialized]);
+
+    setInitialized(true);
+  }, [id, searchParams, initialized]);
 
   if (!id) {
     return null;
@@ -92,7 +94,7 @@ export default function WorkspacePage() {
 
   return (
     <WorkspaceLayout>
-      <GraphCanvas sessionId={id} />
+      <GraphCanvas sessionId={id} initialThought={initialThought} />
     </WorkspaceLayout>
   );
 }
