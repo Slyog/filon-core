@@ -116,3 +116,14 @@
     0 0 calc(var(--glow-radius-base) * var(--glow-intensity) * 1.5) var(--glow-color-primary);
 }
 
+/* Full silent mode - disable all motion and animations */
+[data-motion="off"] * {
+  transition: none !important;
+  animation: none !important;
+}
+
+[data-motion="off"] {
+  --animation-speed: 0;
+  --glow-intensity: 0;
+}
+

@@ -3,8 +3,11 @@
 import { useEffect, useRef } from "react";
 import { useEnergySync } from "@/hooks/useEnergySync";
 import { useInactivity } from "@/hooks/useInactivity";
+import { useSettings } from "@/store/settings";
 
 export const AudioResonance = () => {
+  const audioEnabled = useSettings((s) => s.audioEnabled);
+
   const ctxRef = useRef<AudioContext | null>(null);
   const oscRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
@@ -12,8 +15,15 @@ export const AudioResonance = () => {
   const inactive = useInactivity(15000);
 
   useEffect(() => {
+    // Skip effect when audio is disabled
+    if (!audioEnabled) {
+      return;
+    }
+
     if (!ctxRef.current) {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext)();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
@@ -41,8 +51,7 @@ export const AudioResonance = () => {
     gain.gain.setTargetAtTime(vol, ctx.currentTime, 1.2);
 
     return () => {};
-  }, [energy, inactive]);
+  }, [energy, inactive, audioEnabled]);
 
   return null;
 };
-

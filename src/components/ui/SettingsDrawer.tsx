@@ -3,6 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSettings } from "@/store/settings";
+import { useAnimationSpeed } from "@/hooks/useAnimationSpeed";
 import { useState } from "react";
 
 export const SettingsDrawer = () => {
@@ -19,6 +20,7 @@ export const SettingsDrawer = () => {
     setTheme,
     setRememberSpatial,
   } = useSettings();
+  const motionSpeed = useAnimationSpeed();
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -37,7 +39,9 @@ export const SettingsDrawer = () => {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{
+                    duration: motionSpeed > 0 ? 0.2 * motionSpeed : 0,
+                  }}
                   className="fixed inset-0 z-[100] bg-[hsl(var(--filon-bg)/0.8)] backdrop-blur-md"
                 />
               </Dialog.Overlay>
@@ -46,92 +50,114 @@ export const SettingsDrawer = () => {
                   initial={{ x: "100%" }}
                   animate={{ x: 0 }}
                   exit={{ x: "100%" }}
-                  transition={{ type: "spring", stiffness: 80, damping: 22 }}
+                  transition={
+                    motionSpeed > 0
+                      ? { type: "spring", stiffness: 80, damping: 22 }
+                      : { duration: 0 }
+                  }
                   className="fixed top-0 right-0 h-full w-80 z-[200] bg-[hsl(var(--filon-bg)/0.98)] border-l border-[hsl(var(--filon-accent)/0.2)] text-[hsl(var(--filon-primary))] shadow-2xl p-6 flex flex-col gap-6"
                 >
-                <Dialog.Title className="text-lg font-medium text-[hsl(var(--filon-accent))] mb-2">
-                  FILON Settings
-                </Dialog.Title>
+                  <Dialog.Title className="text-lg font-medium text-[hsl(var(--filon-accent))] mb-2">
+                    FILON Settings
+                  </Dialog.Title>
 
-                <div className="flex flex-col gap-6 flex-1 overflow-y-auto">
-                  {/* Audio */}
-                  <label className="flex justify-between items-center cursor-pointer">
-                    <span className="text-sm">Audio Feedback</span>
-                    <input
-                      type="checkbox"
-                      checked={audioEnabled}
-                      onChange={(e) => setAudio(e.target.checked)}
-                      className="w-4 h-4 rounded border-[hsl(var(--filon-accent)/0.4)] bg-transparent accent-[hsl(var(--filon-accent))] cursor-pointer"
-                    />
-                  </label>
+                  <div className="flex flex-col gap-6 flex-1 overflow-y-auto">
+                    {/* Audio */}
+                    <label className="flex justify-between items-center cursor-pointer">
+                      <span className="text-sm">Audio Feedback</span>
+                      <input
+                        type="checkbox"
+                        checked={audioEnabled}
+                        onChange={(e) => setAudio(e.target.checked)}
+                        className="w-4 h-4 rounded border-[hsl(var(--filon-accent)/0.4)] bg-transparent accent-[hsl(var(--filon-accent))] cursor-pointer"
+                      />
+                    </label>
 
-                  {/* Animation Speed */}
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm">
-                      Animation Speed: {animationSpeed.toFixed(1)}x
-                    </span>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.1"
-                      value={animationSpeed}
-                      onChange={(e) =>
-                        setAnimationSpeed(Number(e.target.value))
-                      }
-                      className="w-full h-2 bg-[hsl(var(--filon-bg))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent))]"
-                    />
-                  </label>
+                    {/* Animation Speed */}
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm">
+                        Animation Speed: {animationSpeed.toFixed(2)}x{" "}
+                        {animationSpeed <= 0.05 && "(Off)"}
+                      </span>
+                      <input
+                        type="range"
+                        min="0.0"
+                        max="1.5"
+                        step="0.05"
+                        value={animationSpeed}
+                        onChange={(e) =>
+                          setAnimationSpeed(Number(e.target.value))
+                        }
+                        className="w-full h-2 bg-[hsl(var(--filon-bg))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent))]"
+                      />
+                      <span className="text-xs text-[hsl(var(--filon-primary)/0.6)]">
+                        0 = Off
+                      </span>
+                    </label>
 
-                  {/* Glow Intensity */}
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm">
-                      Glow Intensity: {glowIntensity.toFixed(1)}x
-                    </span>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="2"
-                      step="0.1"
-                      value={glowIntensity}
-                      onChange={(e) =>
-                        setGlowIntensity(Number(e.target.value))
-                      }
-                      className="w-full h-2 bg-[hsl(var(--filon-bg))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent))]"
-                    />
-                  </label>
+                    {/* Glow Intensity */}
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm">
+                        Glow Intensity: {glowIntensity.toFixed(2)}x{" "}
+                        {glowIntensity <= 0.05 && "(Off)"}
+                      </span>
+                      <input
+                        type="range"
+                        min="0.0"
+                        max="1.0"
+                        step="0.05"
+                        value={glowIntensity}
+                        onChange={(e) =>
+                          setGlowIntensity(Number(e.target.value))
+                        }
+                        className="w-full h-2 bg-[hsl(var(--filon-bg))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent))]"
+                      />
+                      <span className="text-xs text-[hsl(var(--filon-primary)/0.6)]">
+                        0 = Off
+                      </span>
+                    </label>
 
-                  {/* Theme */}
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm">Theme Mode</span>
-                    <select
-                      value={theme}
-                      onChange={(e) => setTheme(e.target.value)}
-                      className="bg-[hsl(var(--filon-bg))] border border-[hsl(var(--filon-accent)/0.4)] rounded-md p-2 text-sm text-[hsl(var(--filon-primary))] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[hsl(var(--filon-accent)/0.5)]"
-                    >
-                      <option value="dark">Dark</option>
-                      <option value="focus">Focus</option>
-                      <option value="reflection">Reflection</option>
-                    </select>
-                  </label>
+                    {/* Full Silent Mode Tooltip */}
+                    {animationSpeed <= 0.05 && glowIntensity <= 0.05 && (
+                      <div className="mt-2 p-3 rounded-lg bg-[hsl(var(--filon-accent)/0.1)] border border-[hsl(var(--filon-accent)/0.3)]">
+                        <p className="text-xs text-[hsl(var(--filon-accent))]">
+                          ✨ Full Silent Mode active — all animations and glow
+                          effects disabled.
+                        </p>
+                      </div>
+                    )}
 
-                  {/* Remember Graph Position */}
-                  <label className="flex justify-between items-center cursor-pointer">
-                    <span className="text-sm">Remember Graph Position</span>
-                    <input
-                      type="checkbox"
-                      checked={rememberSpatial}
-                      onChange={(e) => setRememberSpatial(e.target.checked)}
-                      className="w-4 h-4 rounded border-[hsl(var(--filon-accent)/0.4)] bg-transparent accent-[hsl(var(--filon-accent))] cursor-pointer"
-                    />
-                  </label>
-                </div>
+                    {/* Theme */}
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm">Theme Mode</span>
+                      <select
+                        value={theme}
+                        onChange={(e) => setTheme(e.target.value)}
+                        className="bg-[hsl(var(--filon-bg))] border border-[hsl(var(--filon-accent)/0.4)] rounded-md p-2 text-sm text-[hsl(var(--filon-primary))] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[hsl(var(--filon-accent)/0.5)]"
+                      >
+                        <option value="dark">Dark</option>
+                        <option value="focus">Focus</option>
+                        <option value="reflection">Reflection</option>
+                      </select>
+                    </label>
 
-                <Dialog.Close asChild>
-                  <button className="mt-auto py-2 px-3 bg-[hsl(var(--filon-accent)/0.2)] hover:bg-[hsl(var(--filon-accent)/0.4)] rounded-md text-sm transition-colors">
-                    Close
-                  </button>
-                </Dialog.Close>
+                    {/* Remember Graph Position */}
+                    <label className="flex justify-between items-center cursor-pointer">
+                      <span className="text-sm">Remember Graph Position</span>
+                      <input
+                        type="checkbox"
+                        checked={rememberSpatial}
+                        onChange={(e) => setRememberSpatial(e.target.checked)}
+                        className="w-4 h-4 rounded border-[hsl(var(--filon-accent)/0.4)] bg-transparent accent-[hsl(var(--filon-accent))] cursor-pointer"
+                      />
+                    </label>
+                  </div>
+
+                  <Dialog.Close asChild>
+                    <button className="mt-auto py-2 px-3 bg-[hsl(var(--filon-accent)/0.2)] hover:bg-[hsl(var(--filon-accent)/0.4)] rounded-md text-sm transition-colors">
+                      Close
+                    </button>
+                  </Dialog.Close>
                 </motion.div>
               </Dialog.Content>
             </>
@@ -141,4 +167,3 @@ export const SettingsDrawer = () => {
     </Dialog.Root>
   );
 };
-

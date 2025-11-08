@@ -3,14 +3,30 @@
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useEnergySync } from "@/hooks/useEnergySync";
 import { useInactivity } from "@/hooks/useInactivity";
+import { useSettings } from "@/store/settings";
+import { useAnimationSpeed } from "@/hooks/useAnimationSpeed";
 
 export const InteractiveLight = () => {
+  const glowIntensity = useSettings((s) => s.glowIntensity);
+  const motionSpeed = useAnimationSpeed();
+
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const energy = useEnergySync(); // 0 – 1
   const inactive = useInactivity(15000);
-  const sx = useSpring(x, { stiffness: 80, damping: 20 });
-  const sy = useSpring(y, { stiffness: 80, damping: 20 });
+  const sx = useSpring(x, {
+    stiffness: motionSpeed > 0 ? 80 : 1000,
+    damping: motionSpeed > 0 ? 20 : 100,
+  });
+  const sy = useSpring(y, {
+    stiffness: motionSpeed > 0 ? 80 : 1000,
+    damping: motionSpeed > 0 ? 20 : 100,
+  });
+
+  // Skip rendering when glow is disabled
+  if (glowIntensity <= 0.05) {
+    return null;
+  }
 
   return (
     <motion.div
@@ -34,4 +50,3 @@ export const InteractiveLight = () => {
     />
   );
 };
-

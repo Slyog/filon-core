@@ -3,13 +3,21 @@
 import { useRef, useEffect } from "react";
 import { useEnergySync } from "@/hooks/useEnergySync";
 import { useInactivity } from "@/hooks/useInactivity";
+import { useSettings } from "@/store/settings";
 
 export const MindVisualizer = () => {
+  const glowIntensity = useSettings((s) => s.glowIntensity);
+  const animationSpeed = useSettings((s) => s.animationSpeed);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const energy = useEnergySync();
   const inactive = useInactivity(15000);
 
   useEffect(() => {
+    // Skip effect when glow is disabled
+    if (glowIntensity <= 0.05) {
+      return;
+    }
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -36,13 +44,15 @@ export const MindVisualizer = () => {
     let animationFrameId: number;
 
     function draw() {
-      const brightness = inactive ? 0.15 : 0.25 + energy * 0.35;
+      if (!ctx) return;
+
       ctx.fillStyle = `rgba(10,20,25,0.15)`;
       ctx.fillRect(0, 0, width, height);
 
+      const speedMultiplier = animationSpeed > 0.05 ? animationSpeed : 0;
       particles.forEach((p) => {
-        p.x += p.vx * (0.2 + energy * 0.5);
-        p.y += p.vy * (0.2 + energy * 0.5);
+        p.x += p.vx * (0.2 + energy * 0.5) * speedMultiplier;
+        p.y += p.vy * (0.2 + energy * 0.5) * speedMultiplier;
         if (p.x < 0) p.x = width;
         if (p.x > width) p.x = 0;
         if (p.y < 0) p.y = height;
@@ -66,7 +76,12 @@ export const MindVisualizer = () => {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [energy, inactive]);
+  }, [energy, inactive, animationSpeed, glowIntensity]);
+
+  // Skip rendering when glow is disabled
+  if (glowIntensity <= 0.05) {
+    return null;
+  }
 
   return (
     <canvas
@@ -75,4 +90,3 @@ export const MindVisualizer = () => {
     />
   );
 };
-
