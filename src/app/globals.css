@@ -24,6 +24,9 @@
 /* FILON Theme System */
 @import "../styles/filon-theme.css";
 
+/* FILON Step 16 - Glow System */
+@import "../styles/glow.css";
+
 /* --- Sichtbarkeit fixen ohne Layout zu zerstören --- */
 html,
 body {

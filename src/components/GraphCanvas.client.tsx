@@ -96,6 +96,8 @@ import { registerDashboardToggle } from "@/utils/hotkeys";
 import Brainbar from "@/components/Brainbar";
 import GraphMiniMap from "@/components/GraphMiniMap";
 import GraphContextStream from "@/components/GraphContextStream";
+import MiniGraph from "@/components/MiniGraph";
+import QuickChips from "@/components/QuickChips";
 import { useUIStore } from "@/store/UIStore";
 import {
   saveSpatialState,
@@ -1744,19 +1746,120 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     };
   }, [saveState, lastSavedAt]);
 
-  // TODO (Step 16.2): Integrate Brainbar thought submission with createTextNode
+  // Step 16: Brainbar thought submission with intent support
   const handleThoughtSubmit = useCallback(
-    (text: string, thoughtType: string) => {
+    (text: string, thoughtType: string, intent?: "add" | "link" | "goal" | "due" | null) => {
       createTextNode(text, thoughtType);
+      
+      // Add feedback for intent-based actions
+      if (intent) {
+        addFeedback({
+          type: "user_action",
+          payload: { message: `Intent erkannt: /${intent}` },
+        });
+      }
     },
-    [createTextNode]
+    [createTextNode, addFeedback]
   );
+
+  // QuickChips prefilled value state
+  const [brainbarPrefilled, setBrainbarPrefilled] = useState<string>("");
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement | null;
+      
+      // Don't trigger shortcuts when typing in inputs/textareas
+      if (
+        activeElement &&
+        (activeElement.tagName === "INPUT" ||
+          activeElement.tagName === "TEXTAREA" ||
+          (activeElement.isContentEditable ?? false))
+      ) {
+        return;
+      }
+
+      // Ctrl+N / Cmd+N: New thought (focus Brainbar)
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        const brainbarInput = document.getElementById("brainbar-input") as HTMLInputElement;
+        if (brainbarInput) {
+          brainbarInput.focus();
+        }
+      }
+
+      // Tab: Next node (if nodes exist)
+      if (e.key === "Tab" && !e.shiftKey && nodes.length > 0) {
+        e.preventDefault();
+        const currentIndex = activeNodeId
+          ? nodes.findIndex((n) => n.id === activeNodeId)
+          : -1;
+        const nextIndex = currentIndex + 1 < nodes.length ? currentIndex + 1 : 0;
+        if (nodes[nextIndex]) {
+          setActiveNodeId(nodes[nextIndex].id);
+        }
+      }
+
+      // Shift+Tab: Previous node
+      if (e.key === "Tab" && e.shiftKey && nodes.length > 0) {
+        e.preventDefault();
+        const currentIndex = activeNodeId
+          ? nodes.findIndex((n) => n.id === activeNodeId)
+          : -1;
+        const prevIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : nodes.length - 1;
+        if (nodes[prevIndex]) {
+          setActiveNodeId(nodes[prevIndex].id);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [nodes, activeNodeId, setActiveNodeId]);
 
   return (
     <GraphContext.Provider value={{ updateNodeNote }}>
       <div className="relative flex min-h-screen w-full flex-1 flex-col bg-filon-bg">
-        {/* Step 16.1: Brainbar (replaces toolbar) */}
-        <Brainbar onThoughtSubmit={handleThoughtSubmit} />
+        {/* Step 16: Mini-Graph Preview at top */}
+        <div className="w-full px-4 pt-4 pb-2">
+          <MiniGraph
+            nodes={nodes}
+            edges={edges}
+            onNodeHover={(nodeId) => {
+              // Highlight corresponding Context Stream item
+              // This is handled by GraphContextStream's activeNodeId prop
+            }}
+            onNodeClick={(nodeId) => {
+              setActiveNodeId(nodeId);
+            }}
+          />
+        </div>
+
+        {/* Step 16: Brainbar with QuickChips */}
+        <div className="w-full">
+          <Brainbar
+            onThoughtSubmit={handleThoughtSubmit}
+            prefilledValue={brainbarPrefilled}
+            onPrefilledValueChange={setBrainbarPrefilled}
+          />
+          <QuickChips
+            onChipClick={(command) => {
+              setBrainbarPrefilled(command + " ");
+              const brainbarInput = document.getElementById("brainbar-input") as HTMLInputElement;
+              if (brainbarInput) {
+                brainbarInput.focus();
+                // Move cursor to end
+                setTimeout(() => {
+                  brainbarInput.setSelectionRange(
+                    brainbarInput.value.length,
+                    brainbarInput.value.length
+                  );
+                }, 0);
+              }
+            }}
+          />
+        </div>
 
         {/* Legacy Toolbar - TODO (Step 16.2): Migrate remaining toolbar actions to Brainbar or remove */}
         <motion.header

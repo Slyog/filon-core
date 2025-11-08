@@ -11,6 +11,7 @@ import ExplainOverlay from "@/components/ExplainOverlay";
 import { useExplainConfidenceColor } from "@/hooks/useExplainConfidenceColor";
 import localforage from "localforage";
 import { Panel } from "@/components/Panel";
+import { useAutoFocusScroll } from "@/hooks/useAutoFocusScroll";
 
 type FilterMode = "all" | "ai" | "events";
 
@@ -113,6 +114,19 @@ export default function GraphContextStream({
   const scrollPositionRef = useRef<number>(0);
   const prevActiveNodeIdRef = useRef<string | null>(null);
   const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const focusedItemRef = useRef<HTMLDivElement | null>(null);
+  
+  // Update focusedItemRef when focusedId changes
+  useEffect(() => {
+    if (focusedId && itemRefs.current.has(focusedId)) {
+      focusedItemRef.current = itemRefs.current.get(focusedId) || null;
+    } else {
+      focusedItemRef.current = null;
+    }
+  }, [focusedId]);
+  
+  // Use auto-focus scroll hook for focused items
+  useAutoFocusScroll(focusedItemRef as React.RefObject<HTMLElement>, focusedId !== null, 800);
   
   const events = useFeedbackStore((state) => state.events);
   const { activeNodeId: contextNodeId } = useActiveNode();
@@ -285,8 +299,40 @@ export default function GraphContextStream({
       if (activeNodeId) {
         setShowExplain(true);
       }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      const currentIndex = filteredAndPinnedEvents.findIndex((ev) => ev.id === event.id);
+      if (currentIndex < filteredAndPinnedEvents.length - 1) {
+        const nextEvent = filteredAndPinnedEvents[currentIndex + 1];
+        setFocusedId(nextEvent.id);
+        const nextElement = itemRefs.current.get(nextEvent.id);
+        if (nextElement) {
+          nextElement.focus();
+          virtuosoRef.current?.scrollToIndex({
+            index: currentIndex + 1,
+            align: "center",
+            behavior: reduced ? "auto" : "smooth",
+          });
+        }
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      const currentIndex = filteredAndPinnedEvents.findIndex((ev) => ev.id === event.id);
+      if (currentIndex > 0) {
+        const prevEvent = filteredAndPinnedEvents[currentIndex - 1];
+        setFocusedId(prevEvent.id);
+        const prevElement = itemRefs.current.get(prevEvent.id);
+        if (prevElement) {
+          prevElement.focus();
+          virtuosoRef.current?.scrollToIndex({
+            index: currentIndex - 1,
+            align: "center",
+            behavior: reduced ? "auto" : "smooth",
+          });
+        }
+      }
     }
-  }, [onNodeSelect, activeNodeId]);
+  }, [onNodeSelect, activeNodeId, filteredAndPinnedEvents, reduced]);
 
   // Focus sync: When activeNodeId changes, scroll to matching event and apply focus
   useEffect(() => {
@@ -437,10 +483,23 @@ export default function GraphContextStream({
       </div>
 
       <section
-        role="feed"
+        role="list"
         aria-label="Context Stream"
         className="flex-1 overflow-hidden"
         data-perf-id="context-stream"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          // Global keyboard shortcuts for Context Stream
+          if (e.key === "ArrowDown" && filteredAndPinnedEvents.length > 0) {
+            e.preventDefault();
+            const firstEvent = filteredAndPinnedEvents[0];
+            setFocusedId(firstEvent.id);
+            const firstElement = itemRefs.current.get(firstEvent.id);
+            if (firstElement) {
+              firstElement.focus();
+            }
+          }
+        }}
       >
         {filteredAndPinnedEvents.length === 0 ? (
           <div className="mt-6 text-center text-xs text-neutral-600 px-3">
@@ -462,8 +521,14 @@ export default function GraphContextStream({
                       ref={(el) => {
                         if (el) {
                           itemRefs.current.set(event.id, el);
+                          if (eventFocused) {
+                            focusedItemRef.current = el;
+                          }
                         } else {
                           itemRefs.current.delete(event.id);
+                          if (focusedItemRef.current === el) {
+                            focusedItemRef.current = null;
+                          }
                         }
                       }}
                       role="article"
@@ -472,15 +537,20 @@ export default function GraphContextStream({
                       data-test="ctx-item"
                       data-test-pinned={event.isPinned ? "true" : "false"}
                       key={event.id}
-                      className={`border p-3 transition-colors cursor-pointer ${
+                      className={`border p-3 transition-all duration-200 cursor-pointer ${
                         activeNodeId && event.nodeId === activeNodeId
                           ? "border-brand/40 bg-brand-dark/30 hover:bg-brand-dark/40"
                           : "border-neutral-800 hover:bg-surface-hover"
                       } ${event.isPinned ? "border-brand-soft shadow-glow" : ""} ${
                         eventFocused
-                          ? "ring-2 ring-brand ring-offset-2 ring-offset-surface-base"
+                          ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-surface-base glow-interactive"
                           : ""
                       }`}
+                      style={{
+                        boxShadow: eventFocused
+                          ? "0 0 20px rgba(6, 182, 212, 0.4)"
+                          : undefined,
+                      }}
                       initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={

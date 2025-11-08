@@ -7,21 +7,65 @@ import { startVoiceCapture } from "@/lib/voiceInput";
 import { useSessionStore } from "@/store/SessionStore";
 import { useFeedbackStore } from "@/store/FeedbackStore";
 
+type IntentType = "add" | "link" | "goal" | "due" | null;
+
 interface BrainbarProps {
-  onThoughtSubmit?: (text: string, thoughtType: string) => void;
+  onThoughtSubmit?: (text: string, thoughtType: string, intent?: IntentType) => void;
+  prefilledValue?: string;
+  onPrefilledValueChange?: (value: string) => void;
 }
 
-export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
-  const [inputValue, setInputValue] = useState("");
+// Detect intent from input text
+function detectIntent(text: string): IntentType {
+  const trimmed = text.trim().toLowerCase();
+  if (trimmed.startsWith("/add")) return "add";
+  if (trimmed.startsWith("/link")) return "link";
+  if (trimmed.startsWith("/goal")) return "goal";
+  if (trimmed.startsWith("/due")) return "due";
+  return null;
+}
+
+// Extract text after intent command
+function extractTextAfterIntent(text: string, intent: IntentType): string {
+  if (!intent) return text;
+  const prefix = `/${intent}`;
+  const index = text.toLowerCase().indexOf(prefix);
+  if (index === -1) return text;
+  return text.slice(index + prefix.length).trim();
+}
+
+export default function Brainbar({ 
+  onThoughtSubmit,
+  prefilledValue,
+  onPrefilledValueChange,
+}: BrainbarProps) {
+  const [inputValue, setInputValue] = useState(prefilledValue || "");
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [submitAnnouncement, setSubmitAnnouncement] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [lastKeyTime, setLastKeyTime] = useState<number>(0);
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const enqueueThought = useSessionStore((s) => s.enqueueThought);
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
   const addFeedback = useFeedbackStore((s) => s.addFeedback);
   const reduced = useReducedMotion();
   const liveRegionRef = useRef<HTMLDivElement>(null);
+
+  // Sync prefilled value
+  React.useEffect(() => {
+    if (prefilledValue !== undefined && prefilledValue !== inputValue) {
+      setInputValue(prefilledValue);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }
+  }, [prefilledValue]);
+
+  // Notify parent of value changes
+  React.useEffect(() => {
+    onPrefilledValueChange?.(inputValue);
+  }, [inputValue, onPrefilledValueChange]);
 
   const handleSubmit = useCallback(
     async (text: string, thoughtType?: string) => {
@@ -55,20 +99,29 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
 
       setIsSaving(true);
 
-      // Default to "Idea" if no type provided
-      // TODO: Integrate ThoughtTypeSelector modal for type selection
-      const type = thoughtType || "Idea";
+      // Detect intent from input
+      const intent = detectIntent(text);
+      const cleanText = intent ? extractTextAfterIntent(text, intent) : text;
 
-      // TODO: Integrate with GraphCanvas thought creation logic
-      // TODO: Add Quick Chip Commands (/add, /link, /goal) parsing
+      // Map intent to thought type
+      let type = thoughtType || "Idea";
+      if (intent === "goal") {
+        type = "Goal";
+      } else if (intent === "link") {
+        type = "Link";
+      } else if (intent === "due") {
+        type = "Task";
+      }
+
+      // Submit with intent information
       if (onThoughtSubmit) {
-        onThoughtSubmit(text, type);
+        onThoughtSubmit(cleanText, type, intent);
       } else {
         // Fallback: add to pending thoughts
         if (activeSessionId) {
           enqueueThought({
             sessionId: activeSessionId,
-            content: text,
+            content: cleanText,
             thoughtType: type,
           });
         }
@@ -76,8 +129,8 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
 
       setInputValue("");
       setSubmitAnnouncement(
-        `Gedanke "${text.substring(0, 30)}${
-          text.length > 30 ? "..." : ""
+        `Gedanke "${cleanText.substring(0, 30)}${
+          cleanText.length > 30 ? "..." : ""
         }" wurde hinzugefügt.`
       );
 
@@ -160,14 +213,27 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
           Gedanken eingeben
         </label>
         <input
+          ref={inputRef}
           id="brainbar-input"
           type="text"
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder="Denke hier... (Tippe oder sprich)"
           aria-label="Gedanken eingeben"
-          className="flex-1 bg-transparent outline-none text-text-primary placeholder-text-muted text-sm rounded-xl focus:ring-2 focus:ring-brand focus-visible:ring-brand"
+          aria-description="Eingabefeld für neue Gedanken. Unterstützt Befehle: /add, /link, /goal, /due"
+          className={`flex-1 bg-transparent outline-none text-text-primary placeholder-text-muted text-sm rounded-xl transition-all duration-200 ${
+            isFocused
+              ? "focus:ring-2 focus:ring-cyan-400 focus-visible:ring-cyan-400 glow-interactive"
+              : "focus:ring-2 focus:ring-brand focus-visible:ring-brand"
+          }`}
+          style={{
+            boxShadow: isFocused
+              ? "0 0 20px rgba(6, 182, 212, 0.4)"
+              : undefined,
+          }}
         />
 
         {/* Saving indicator with Framer Motion fade < 150ms */}
@@ -198,42 +264,6 @@ export default function Brainbar({ onThoughtSubmit }: BrainbarProps) {
         >
           <Mic size={16} />
         </button>
-
-        {/* Quick Chips */}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            role="button"
-            onClick={() => {
-              // TODO: Implement /add command logic
-              addFeedback({
-                type: "user_action",
-                payload: { message: "/add Befehl wird implementiert..." },
-              });
-            }}
-            aria-label="/add Befehl"
-            title="/add Befehl"
-            className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-text-secondary hover:text-text-primary hover:glow transition-colors"
-          >
-            /add
-          </button>
-          <button
-            type="button"
-            role="button"
-            onClick={() => {
-              // TODO: Implement /link command logic
-              addFeedback({
-                type: "user_action",
-                payload: { message: "/link Befehl wird implementiert..." },
-              });
-            }}
-            aria-label="/link Befehl"
-            title="/link Befehl"
-            className="px-2 py-1 rounded-md bg-neutral-800 text-xs text-text-secondary hover:text-text-primary hover:glow transition-colors"
-          >
-            /link
-          </button>
-        </div>
 
         {/* Thought Type Selector (conditional) */}
         {/* TODO: Show ThoughtTypeSelector when input has content or on focus */}

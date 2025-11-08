@@ -1,0 +1,92 @@
+/* FILON Step 16 - Glow System CSS Variables */
+
+:root {
+  /* Glow intensity variable - controls the strength of glow effects */
+  --glow-intensity: 1;
+  
+  /* Animation speed variable - controls transition durations */
+  --animation-speed: 0.18s;
+  
+  /* Glow color variables */
+  --glow-color-primary: rgba(6, 182, 212, 0.4); /* cyan-400 */
+  --glow-color-focus: rgba(6, 182, 212, 0.8);
+  --glow-color-hover: rgba(6, 182, 212, 0.6);
+  
+  /* Glow radius multipliers */
+  --glow-radius-base: 12px;
+  --glow-radius-focus: 20px;
+  --glow-radius-hover: 16px;
+}
+
+/* Focus glow animation */
+@keyframes focus-glow {
+  0%, 100% {
+    box-shadow: 0 0 calc(var(--glow-radius-base) * var(--glow-intensity)) var(--glow-color-primary);
+  }
+  50% {
+    box-shadow: 0 0 calc(var(--glow-radius-focus) * var(--glow-intensity)) var(--glow-color-focus);
+  }
+}
+
+/* Hover glow animation */
+@keyframes hover-glow {
+  0%, 100% {
+    box-shadow: 0 0 calc(var(--glow-radius-base) * var(--glow-intensity)) var(--glow-color-primary);
+  }
+  50% {
+    box-shadow: 0 0 calc(var(--glow-radius-hover) * var(--glow-intensity)) var(--glow-color-hover);
+  }
+}
+
+/* Focus glow class */
+.focus-glow {
+  transition: box-shadow var(--animation-speed) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.focus-glow:focus,
+.focus-glow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 calc(var(--glow-radius-focus) * var(--glow-intensity)) var(--glow-color-focus);
+  animation: focus-glow 1.6s ease-in-out infinite;
+}
+
+/* Hover glow class */
+.hover-glow {
+  transition: box-shadow var(--animation-speed) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 calc(var(--glow-radius-hover) * var(--glow-intensity)) var(--glow-color-hover);
+}
+
+/* Combined focus + hover glow */
+.glow-interactive {
+  transition: box-shadow var(--animation-speed) cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.glow-interactive:focus,
+.glow-interactive:focus-visible {
+  outline: none;
+  box-shadow: 0 0 calc(var(--glow-radius-focus) * var(--glow-intensity)) var(--glow-color-focus);
+  animation: focus-glow 1.6s ease-in-out infinite;
+}
+
+.glow-interactive:hover {
+  box-shadow: 0 0 calc(var(--glow-radius-hover) * var(--glow-intensity)) var(--glow-color-hover);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animation-speed: 0.01s;
+  }
+  
+  .focus-glow:focus,
+  .focus-glow:focus-visible,
+  .glow-interactive:focus,
+  .glow-interactive:focus-visible {
+    animation: none;
+    box-shadow: 0 0 2px var(--glow-color-primary);
+  }
+}
+
