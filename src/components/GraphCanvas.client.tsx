@@ -15,9 +15,15 @@ import {
   useNodesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import { useAutosaveFeedback } from "../hooks/useAutosaveFeedback";
-import { useSessionToast } from "../hooks/useSessionToast";
-import { autosaveSnapshot } from "../utils/autosaveMock";
+import { useAutosaveFeedback } from "@/hooks/useAutosaveFeedback";
+import { useSessionToast } from "@/hooks/useSessionToast";
+import { autosaveSnapshot } from "@/utils/autosaveMock";
+
+declare global {
+  interface Window {
+    __forceOfflineTest?: boolean;
+  }
+}
 
 type GraphCanvasProps = {
   sessionId?: string;
@@ -61,9 +67,9 @@ export default function GraphCanvas({
   const initialized = useRef(false);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const nodeTypesMemo = useMemo(() => nodeTypes, []);
-  const { markPending, markSaved } = useAutosaveFeedback();
-  const { info: toastInfo, success: toastSuccess, error: toastError } =
-    useSessionToast();
+  const { markPending, markSaved, markError, isPending } =
+    useAutosaveFeedback();
+  const toast = useSessionToast();
   const graphApi = useMemo<GraphContextValue>(
     () => ({
       updateNodeNote: (_nodeId: string, _note: string) => {
@@ -74,62 +80,54 @@ export default function GraphCanvas({
   );
 
   useEffect(() => {
-    if (!sessionId || nodes.length === 0) return;
-
-    let isCancelled = false;
+    if (!initialized.current) return;
+    if (nodes.length === 0) return;
 
     markPending();
-    toastInfo("Saving…");
+    toast.info("Saving…");
 
-    const persist = async () => {
+    const timeout = window.setTimeout(async () => {
+      const offlineForced =
+        typeof window !== "undefined" && window.__forceOfflineTest === true;
+      const randomFail =
+        process.env.NODE_ENV !== "test" && Math.random() < 0.05;
+      const shouldFail = offlineForced || randomFail;
+
+      if (shouldFail) {
+        markError("Network timeout");
+        toast.error("Autosave failed – offline mode active");
+        return;
+      }
+
       try {
-        await autosaveSnapshot(sessionId, { nodes, edges });
-        if (isCancelled) return;
-
+        await autosaveSnapshot(sessionId ?? "offline-session", {
+          nodes,
+          edges,
+        });
         markSaved();
-        toastSuccess("Saved ✓");
+        toast.success("Saved ✓");
 
         if (process.env.NEXT_PUBLIC_QA_MODE === "true") {
-          try {
-            await fetch("/api/qa-log", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                event: "autosave",
-                sessionId,
-                nodes: nodes.length,
-                edges: edges.length,
-                time: new Date().toISOString(),
-              }),
-            });
-          } catch (qaError) {
-            console.warn("[autosave:qa-log]", qaError);
-          }
+          console.log("[QA] Autosave event at", new Date().toISOString());
         }
       } catch (error) {
-        if (isCancelled) return;
-
         console.error("[autosave:error]", error);
-        toastError("Autosave failed");
+        markError(
+          error instanceof Error ? error.message : "Autosave failed unexpectedly"
+        );
+        toast.error("Autosave failed – offline mode active");
       }
-    };
+    }, 1000);
 
-    void persist();
-
-    return () => {
-      isCancelled = true;
-    };
+    return () => window.clearTimeout(timeout);
   }, [
-    sessionId,
     nodes,
     edges,
+    sessionId,
     markPending,
     markSaved,
-    toastInfo,
-    toastSuccess,
-    toastError,
+    markError,
+    toast,
   ]);
 
   useEffect(() => {
@@ -194,6 +192,11 @@ export default function GraphCanvas({
           </ReactFlow>
         </ReactFlowProvider>
       </GraphContext.Provider>
+      {isPending() && (
+        <div className="absolute bottom-3 right-4 text-sm text-cyan-300/80 animate-pulse select-none">
+          Saving changes…
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 export function useSessionToast() {
   const success = useCallback((message: string) => {
@@ -13,6 +13,13 @@ export function useSessionToast() {
     console.log("[toast:info]", message);
   }, []);
 
-  return { success, error, info };
+  return useMemo(
+    () => ({
+      success,
+      error,
+      info,
+    }),
+    [success, error, info]
+  );
 }
 

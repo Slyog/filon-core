@@ -18,7 +18,17 @@ const history = fs.existsSync(historyFile)
   ? JSON.parse(fs.readFileSync(historyFile, "utf-8"))
   : [];
 
-history.push({ date, report: dest, screenshot: "tests/__snapshots__/baseline-canvas.png" });
+history.push({
+  date,
+  report: dest,
+  screenshot: "tests/__snapshots__/baseline-canvas.png",
+});
+history.push({
+  date: new Date().toISOString(),
+  event: "autosave",
+  status: "manual",
+  pending: false,
+});
 fs.writeFileSync(historyFile, JSON.stringify(history, null, 2));
 console.log(`✅ QA report archived for ${date}`);
 

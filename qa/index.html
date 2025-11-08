@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FILON QA Dashboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      body {
+        background: #0a0f12;
+        color: #e6e6e6;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        margin: 0;
+        padding: 2.5rem clamp(1.5rem, 5vw, 3.5rem);
+      }
+
+      h1 {
+        color: #2ff3ff;
+        text-shadow: 0 0 12px #2ff3ff55;
+        font-size: clamp(1.8rem, 3vw, 2.5rem);
+        margin-bottom: 0.25rem;
+      }
+
+      h2 {
+        margin: 0 0 1rem;
+        font-size: 1.25rem;
+        color: #9adbe8;
+      }
+
+      .subtitle {
+        font-size: 0.95rem;
+        color: #8bb6c3;
+        margin-bottom: 1.5rem;
+      }
+
+      .panel {
+        background: #101820;
+        border: 1px solid #2ff3ff22;
+        border-radius: 16px;
+        padding: clamp(1.25rem, 4vw, 2rem);
+        box-shadow: 0 0 12px #2ff3ff11;
+        margin-bottom: 2rem;
+      }
+
+      .history-list {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .history-entry {
+        background: #0c141b;
+        border: 1px solid #2ff3ff22;
+        border-radius: 12px;
+        padding: 1rem;
+        display: grid;
+        gap: 0.6rem;
+        transition: border-color 0.2s, transform 0.2s;
+      }
+
+      .history-entry:hover {
+        border-color: #2ff3ff55;
+        transform: translateY(-2px);
+      }
+
+      .history-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        font-size: 0.8rem;
+        color: #9adbe8;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.2rem 0.65rem;
+        border-radius: 999px;
+        background: #111f2a;
+        border: 1px solid #2ff3ff33;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge.status-passed {
+        background: #123224;
+        border-color: #44f3bd55;
+        color: #81ffd9;
+      }
+
+      .badge.status-failed {
+        background: #31141f;
+        border-color: #ff4d7d55;
+        color: #ff9cb4;
+      }
+
+      .report-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.4rem;
+        font-size: 0.85rem;
+        color: #2ff3ff;
+        text-decoration: none;
+        padding: 0.25rem 0.5rem;
+        border-radius: 8px;
+        background: #0c141b;
+        border: 1px solid transparent;
+        transition: border-color 0.2s, background 0.2s;
+      }
+
+      .report-link:hover {
+        border-color: #2ff3ff44;
+        background: #11212b;
+      }
+
+      .grid-section {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1.5rem;
+      }
+
+      .card {
+        background: #111820;
+        border: 1px solid #2ff3ff22;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 0 8px #2ff3ff11;
+        transition: transform 0.2s, border-color 0.2s;
+      }
+
+      .card:hover {
+        transform: translateY(-3px);
+        border-color: #2ff3ff55;
+      }
+
+      .card h3 {
+        margin: 0;
+        font-size: 1rem;
+        color: #9adbe8;
+      }
+
+      .card p {
+        font-size: 0.85rem;
+        color: #9adbe8cc;
+        margin: 0.4rem 0 0;
+      }
+
+      .snapshot {
+        margin-top: 0.75rem;
+        border-radius: 10px;
+        border: 1px solid #2ff3ff22;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        background: #0a1015;
+      }
+
+      .snapshot-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+      }
+
+      .empty-state {
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px dashed #2ff3ff33;
+        background: #0c141b;
+        font-size: 0.9rem;
+        color: #9adbe8aa;
+      }
+
+      @media (max-width: 600px) {
+        body {
+          padding: 1.8rem 1.25rem;
+        }
+
+        .panel {
+          padding: 1.25rem;
+          margin-bottom: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>FILON QA Artifact Viewer</h1>
+      <p class="subtitle">
+        Autosave snapshots, QA history &amp; Playwright reports — offline ready.
+      </p>
+    </header>
+
+    <section class="panel">
+      <h2>Latest Autosave Results</h2>
+      <div id="latest-autosave" class="grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>History</h2>
+      <div id="history" class="history-list"></div>
+    </section>
+
+    <section class="panel grid-section">
+      <h2>Autosave Snapshots</h2>
+      <div id="snapshots" class="grid"></div>
+    </section>
+
+    <script>
+      const HISTORY_PATH = "./history.json";
+      const REPORT_ROOT = "./reports/";
+      const SNAPSHOT_DIR = "../tests/__snapshots__/autosave/";
+
+      async function loadHistory() {
+        try {
+          const response = await fetch(HISTORY_PATH, { cache: "no-store" });
+          if (!response.ok) throw new Error("Missing history.json");
+          return await response.json();
+        } catch (error) {
+          console.warn("[FILON QA Dashboard] Unable to load history:", error);
+          return [];
+        }
+      }
+
+      function formatDate(date) {
+        if (!date) return "Unknown";
+        try {
+          const parsed = new Date(date);
+          return parsed.toLocaleString();
+        } catch (error) {
+          return String(date);
+        }
+      }
+
+      function createHistoryEntry(entry) {
+        const container = document.createElement("article");
+        container.className = "history-entry";
+
+        const status = (entry.status || "unknown").toLowerCase();
+        const badgeClass = `badge status-${status}`;
+
+        const reportLink = entry.report
+          ? `<a class="report-link" href="${REPORT_ROOT}${entry.report}" target="_blank" rel="noopener">Open report →</a>`
+          : `<span class="log">No HTML report archived.</span>`;
+
+        container.innerHTML = `
+          <div class="history-meta">
+            <span class="badge">${entry.event || "event"}</span>
+            <span class="${badgeClass}">Status: ${status}</span>
+            ${entry.branch ? `<span class="badge">Branch: ${entry.branch}</span>` : ""}
+          </div>
+          <div>
+            <strong>${formatDate(entry.date)}</strong>
+            ${
+              entry.commit
+                ? `<div class="log">Commit: <span>${entry.commit}</span></div>`
+                : ""
+            }
+            <div>${reportLink}</div>
+          </div>
+        `;
+
+        return container;
+      }
+
+      function renderHistory(history) {
+        const container = document.getElementById("history");
+        container.innerHTML = "";
+
+        if (!history.length) {
+          container.innerHTML =
+            '<div class="empty-state">⚠️ No history recorded yet. Run the QA workflow to populate this list.</div>';
+          return;
+        }
+
+        const lastTwenty = history.slice(-20).reverse();
+        lastTwenty.forEach((entry) => container.appendChild(createHistoryEntry(entry)));
+      }
+
+      function renderLatestAutosave(history) {
+        const container = document.getElementById("latest-autosave");
+        container.innerHTML = "";
+
+        const autosaves = history
+          .filter((entry) => (entry.event || "").toLowerCase().includes("autosave"))
+          .slice(-3)
+          .reverse();
+
+        if (!autosaves.length) {
+          container.innerHTML =
+            '<div class="empty-state">No autosave runs recorded yet.</div>';
+          return;
+        }
+
+        autosaves.forEach((entry) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <div class="snapshot-header">
+              <strong>${formatDate(entry.date)}</strong>
+              <span class="badge status-${(entry.status || "unknown").toLowerCase()}">
+                ${entry.status || "n/a"}
+              </span>
+            </div>
+            <p>${entry.event || "Autosave run"}</p>
+            ${
+              entry.report
+                ? `<a class="report-link" href="${REPORT_ROOT}${entry.report}" target="_blank" rel="noopener">Open report →</a>`
+                : ""
+            }
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      function renderSnapshots() {
+        const container = document.getElementById("snapshots");
+        container.innerHTML = "";
+
+        const files = [
+          "before.png",
+          "during.png",
+          "after.png",
+          "final-state.png",
+          "comparison.png",
+        ];
+
+        let anyFound = false;
+        files.forEach((file) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <h3>${file}</h3>
+            <img src="${SNAPSHOT_DIR}${file}" alt="${file}" class="snapshot" loading="lazy" />
+          `;
+          card.querySelector("img").addEventListener("error", () => {
+            card.remove();
+          });
+          container.appendChild(card);
+          anyFound = true;
+        });
+
+        if (!anyFound) {
+          container.innerHTML =
+            '<div class="empty-state">No snapshot images found in tests/__snapshots__/autosave/.</div>';
+        }
+      }
+
+      async function init() {
+        const history = await loadHistory();
+        renderHistory(history);
+        renderLatestAutosave(history);
+        renderSnapshots();
+      }
+
+      init();
+    </script>
+  </body>
+</html>
+

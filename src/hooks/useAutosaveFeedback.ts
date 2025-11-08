@@ -1,18 +1,25 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useState } from "react";
 
 export function useAutosaveFeedback() {
-  const pendingRef = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [errorValue, setErrorValue] = useState<string | null>(null);
 
   const markPending = useCallback(() => {
-    pendingRef.current = true;
+    setPending(true);
   }, []);
 
   const markSaved = useCallback(() => {
-    pendingRef.current = false;
+    setPending(false);
+    setErrorValue(null);
   }, []);
 
-  const isPending = useCallback(() => pendingRef.current, []);
+  const markError = useCallback((message: string) => {
+    setPending(false);
+    setErrorValue(message);
+  }, []);
 
-  return { markPending, markSaved, isPending };
+  const isPending = useCallback(() => pending, [pending]);
+  const error = useCallback(() => errorValue, [errorValue]);
+
+  return { markPending, markSaved, markError, isPending, error };
 }
-
