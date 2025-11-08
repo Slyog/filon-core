@@ -2004,6 +2004,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
               Clear
             </button>
             <button
+              hidden
               onClick={saveDB}
               className="focus-glow px-sm py-xs rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Save graph to database"
@@ -2011,6 +2012,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
               💾 Save DB
             </button>
             <button
+              hidden
               onClick={loadDB}
               className="focus-glow px-sm py-xs rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium shadow-md transition-all duration-fast"
               aria-label="Load graph from database"
@@ -2018,6 +2020,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
               📥 Load DB
             </button>
             <button
+              hidden
               onClick={() => setSnapshotPanelOpen(!snapshotPanelOpen)}
               role="button"
               aria-label={
