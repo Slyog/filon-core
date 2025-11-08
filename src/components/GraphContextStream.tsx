@@ -12,6 +12,7 @@ import { useExplainConfidenceColor } from "@/hooks/useExplainConfidenceColor";
 import localforage from "localforage";
 import { Panel } from "@/components/Panel";
 import { useAutoFocusScroll } from "@/hooks/useAutoFocusScroll";
+import { t } from "@/config/strings";
 
 type FilterMode = "all" | "ai" | "events";
 
@@ -466,11 +467,11 @@ export default function GraphContextStream({
       >
         <div className="flex min-w-0 items-center gap-2">
           <Info size={16} className="text-brand" />
-          <span className="font-semibold">Context Stream</span>
+          <span className="font-semibold">{t.contextStream}</span>
           {activeNodeLabel ? (
             <span className="truncate">• {activeNodeLabel}</span>
           ) : (
-            <span className="italic text-text-muted">• Kein Node ausgewählt</span>
+            <span className="italic text-text-muted">• {t.noNodeSelected}</span>
           )}
         </div>
         <div className="flex gap-2">
@@ -515,10 +516,10 @@ export default function GraphContextStream({
           <Filter size={14} />
           <span>
             {filter === "all"
-              ? "Alle Ereignisse"
+              ? t.allEvents
               : filter === "ai"
-              ? "AI Zusammenfassungen"
-              : "Verlauf & Sync"}
+              ? t.aiSummaries
+              : t.historySync}
           </span>
         </div>
         {activeNodeLabel && (
@@ -557,7 +558,7 @@ export default function GraphContextStream({
         >
           {filteredAndPinnedEvents.length === 0 ? (
             <div className="mt-6 text-center text-xs text-neutral-600 px-3">
-              Keine Ereignisse für diesen Filter.
+              {t.noEventsForFilter}
             </div>
           ) : (
             <Virtuoso
@@ -609,7 +610,7 @@ export default function GraphContextStream({
             className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand/20 px-3 py-2 text-sm text-brand transition-colors hover:bg-brand/30 hover:glow"
           >
             <Sparkles size={16} />
-            Erkläre diesen Gedanken
+            {t.explainThisThought}
           </button>
         </div>
       )}
@@ -764,7 +765,7 @@ const ContextStreamItem = memo(({
                         id={`event-text-${event.id}`}
                         className="text-sm text-text-primary whitespace-pre-wrap"
                       >
-                        {event.message || "(kein Text)"}
+                        {event.message || t.noText}
                       </div>
                       
                       {/* Display last AI summary inline under related feedback entry */}

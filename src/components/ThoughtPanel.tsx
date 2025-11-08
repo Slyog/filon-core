@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import localforage from "localforage";
 import ReactMarkdown from "react-markdown";
 import { useActiveNode } from "@/context/ActiveNodeContext";
+import { t } from "@/config/strings";
 
 export default function ThoughtPanel({
   isForcedOpen: _isForcedOpen,
@@ -98,20 +99,20 @@ export default function ThoughtPanel({
                 showPreview ? "Switch to edit mode" : "Switch to preview mode"
               }
             >
-              {showPreview ? "Bearbeiten" : "Vorschau"}
+              {showPreview ? t.edit : t.preview}
             </button>
           </div>
 
           {showPreview ? (
             <div className="prose prose-invert max-w-none overflow-y-auto">
-              <ReactMarkdown>{note || "_(leer)_"}</ReactMarkdown>
+              <ReactMarkdown>{note || t.empty}</ReactMarkdown>
             </div>
           ) : (
             <textarea
               ref={editorRef}
               value={note}
               onChange={handleChange}
-              placeholder="✏️ Schreibe deine Gedanken hier … (Markdown unterstützt)"
+              placeholder={t.writeYourThoughts}
               className="focus-glow flex-1 resize-none rounded-md border border-zinc-700 bg-zinc-800 p-3 text-sm text-white outline-none"
             />
           )}

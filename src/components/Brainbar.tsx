@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
+import { t } from "@/config/strings";
 
 export type BrainbarCommandType = "add" | "link" | "goal" | "due";
 
@@ -80,12 +81,12 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
 
     const handleSubmit = useCallback(() => {
       if (!parsed.text.trim()) {
-        announce("Bitte gib zuerst einen Gedanken ein.");
+        announce(t.enterThoughtFirst);
         return;
       }
       onSubmit(parsed);
       triggerPulse();
-      announce(`Gedanke ${clampText(parsed.text)} hinzugefügt.`);
+      announce(t.thoughtAdded.replace("{text}", clampText(parsed.text)));
       setValue("");
     }, [announce, onSubmit, parsed, triggerPulse]);
 
@@ -101,7 +102,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
       if (event.key === "Escape") {
         event.preventDefault();
         setValue("");
-        announce("Eingabe gelöscht.");
+        announce(t.inputCleared);
       }
     };
 
@@ -157,7 +158,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
           <Sparkles aria-hidden="true" className="text-brand" size={18} />
           <div className="flex flex-1 flex-col">
             <label htmlFor="brainbar-input" className="sr-only">
-              Gedanken eingeben
+              {t.enterThought}
             </label>
             <input
               ref={inputRef}
@@ -170,8 +171,8 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
               onKeyDown={handleKeyDown}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              placeholder="Schreib einen Gedanken…  (/add, /link, /goal, /due)"
-              aria-label="Gedanken eingeben"
+              placeholder={t.writeThought}
+              aria-label={t.enterThought}
               aria-describedby="brainbar-description"
               className="w-full bg-transparent text-base text-text-primary placeholder:text-text-secondary/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base rounded-md"
             />
@@ -179,7 +180,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
               id="brainbar-description"
               className="mt-1 text-xs text-text-secondary/70"
             >
-              {hasCommand ? "Slash-Command aktiv" : "Enter zum Bestätigen · ESC zum Leeren"}
+              {hasCommand ? t.slashCommandActive : t.enterToConfirm}
             </div>
           </div>
           <AnimatePresence>

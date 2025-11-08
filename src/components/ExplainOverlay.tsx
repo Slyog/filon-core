@@ -251,14 +251,11 @@ export default function ExplainOverlay({
               </div>
             </div>
 
-            {/* Offline badge */}
-            {fromCache && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs px-2 py-1 rounded-xl bg-neutral-800 text-text-secondary">
-                  Offline (cached)
-                </span>
-              </div>
-            )}
+            {/* Connection badge */}
+            <div className="flex items-center gap-2 text-xs text-text-muted">
+              <span className="inline-flex h-2 w-2 rounded-full bg-amber-400" />
+              <span>No connection (cached)</span>
+            </div>
 
             {/* Regenerate button */}
             <button

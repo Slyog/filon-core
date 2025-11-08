@@ -1,5 +1,6 @@
 "use client";
 import { motion } from "framer-motion";
+import { t } from "@/config/strings";
 
 const colors: Record<string, string> = {
   saved: "text-emerald-400",
@@ -11,13 +12,13 @@ const colors: Record<string, string> = {
 export default function SaveStatusBadge({ state }: { state: string }) {
   const label =
     state === "saved"
-      ? "Gespeichert"
+      ? t.savedStatus
       : state === "syncing"
-      ? "Synchronisiere…"
+      ? t.syncingStatus
       : state === "error"
-      ? "Offline – lokal gespeichert"
+      ? t.offlineSaved
       : state === "conflict"
-      ? "Konflikt gelöst"
+      ? t.conflictResolved
       : "";
 
   return (

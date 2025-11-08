@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
+import { t } from "@/config/strings";
 
 interface SyncIndicatorProps {
   isSyncing: boolean;
@@ -29,19 +30,19 @@ export default function SyncIndicator({
           {isSyncing ? (
             <>
               <div className="h-2 w-2 animate-pulse rounded-full bg-sky-400" />
-              <span className="text-sm text-[hsl(var(--filon-primary))]">Speichern...</span>
+              <span className="text-sm text-[hsl(var(--filon-primary))]">{t.saving}</span>
             </>
           ) : queueSize > 0 ? (
             <>
               <div className="h-2 w-2 rounded-full bg-amber-400" />
               <span className="text-sm text-[hsl(var(--filon-primary))]">
-                {queueSize} {queueSize === 1 ? "Änderung" : "Änderungen"} wartet
+                {queueSize} {queueSize === 1 ? t.change : t.changes} {t.waiting}
               </span>
             </>
           ) : (
             <>
               <div className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="text-sm text-[hsl(var(--filon-primary))]">Synchronisiert</span>
+              <span className="text-sm text-[hsl(var(--filon-primary))]">{t.synchronized}</span>
             </>
           )}
         </div>

@@ -224,7 +224,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       expect(form).toHaveAttribute("aria-label", "Brainbar");
       
       const input = container.querySelector("input");
-      expect(input).toHaveAttribute("aria-label", "Gedanken eingeben");
+      expect(input).toHaveAttribute("aria-label", "Enter thought");
       expect(input).toHaveAttribute("id", "brainbar-input");
     });
 

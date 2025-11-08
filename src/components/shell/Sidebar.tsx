@@ -17,6 +17,7 @@ import Section from "./Section";
 import WorkspaceListLite from "@/components/WorkspaceListLite";
 import { useUIShellStore } from "@/store/UIShellStore";
 import { usePanelRegistry } from "@/store/PanelRegistry";
+import { t } from "@/config/strings";
 
 export default function SidebarNav() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export default function SidebarNav() {
               type="button"
               onClick={() => router.push("/")}
               className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900 text-cyan-300 hover:bg-zinc-800"
-              title="Zur Landing"
+              title={t.goToLanding}
             >
               <Folder size={18} />
             </button>
@@ -57,7 +58,7 @@ export default function SidebarNav() {
           className="sticky top-12 h-[calc(100vh-48px)] w-64 shrink-0 overflow-y-auto border-r border-zinc-900 bg-black/90"
         >
           <div className="flex h-full flex-col gap-6 px-3 py-4">
-            <Section title="Workspaces" icon={<Folder size={14} />}>
+            <Section title={t.workspaces} icon={<Folder size={14} />}>
               <WorkspaceListLite />
             </Section>
 
@@ -68,7 +69,7 @@ export default function SidebarNav() {
                 className="flex w-full items-center gap-2 rounded px-2 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 hover:bg-zinc-900"
               >
                 <Plus size={14} />
-                Quick Actions
+                {t.quickActions}
                 <span
                   className={`ml-auto text-xs ${quickOpen ? "" : "rotate-180"}`}
                 >
@@ -81,40 +82,34 @@ export default function SidebarNav() {
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                     onClick={() =>
-                      window.alert(
-                        "Import (Platzhalter) – folgt in zukünftiger Version."
-                      )
+                      window.alert(t.importPlaceholder)
                     }
                   >
-                    <Upload size={16} /> Import
+                    <Upload size={16} /> {t.import}
                   </button>
                   <button
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                     onClick={() =>
-                      window.alert(
-                        "Snapshots (Platzhalter) – später hinzufügen."
-                      )
+                      window.alert(t.snapshotsPlaceholder)
                     }
                   >
-                    <Database size={16} /> Snapshots
+                    <Database size={16} /> {t.snapshots}
                   </button>
                   <button
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                     onClick={() =>
-                      window.alert(
-                        "Settings (Platzhalter) – demnächst verfügbar."
-                      )
+                      window.alert(t.settingsPlaceholder)
                     }
                   >
-                    <Settings size={16} /> Settings
+                    <Settings size={16} /> {t.settings}
                   </button>
                 </div>
               )}
             </div>
 
-            <Section title="Active Panels" icon={<Circle size={14} />}>
+            <Section title={t.activePanels} icon={<Circle size={14} />}>
               <div className="space-y-2">
                 {panels.map((panel) => (
                   <motion.div
@@ -147,30 +142,30 @@ export default function SidebarNav() {
               </div>
             </Section>
 
-            <Section title="Archiv" icon={<Archive size={14} />}>
+            <Section title={t.archive} icon={<Archive size={14} />}>
               <button
                 type="button"
                 onClick={() =>
-                  window.alert("Archiv (Platzhalter) – später verfügbar.")
+                  window.alert(t.archivePlaceholderAlert)
                 }
                 className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
               >
-                Gehe zum Archiv
+                {t.goToArchive}
               </button>
             </Section>
 
             <div className="mt-auto border-t border-zinc-900 pt-4">
               <div className="text-xs uppercase tracking-wide text-zinc-500">
-                Account
+                {t.account}
               </div>
               <button
                 type="button"
                 onClick={() =>
-                  window.alert("Login / Single Sign-On (Platzhalter).")
+                  window.alert(t.loginPlaceholder)
                 }
                 className="mt-2 flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
               >
-                <LogIn size={16} /> Login
+                <LogIn size={16} /> {t.login}
               </button>
               <p className="mt-2 text-xs text-zinc-500">
                 Helmut Sey (Platzhalter)

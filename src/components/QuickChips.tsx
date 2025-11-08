@@ -1,6 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
+import { t } from "@/config/strings";
 
 type ChipCommand = "/add" | "/link" | "/goal" | "/due" | "/explain" | "/mark";
 
@@ -9,10 +10,10 @@ interface QuickChipsProps {
 }
 
 const CHIPS: Array<{ label: string; command: ChipCommand; helper: string }> = [
-  { label: "Ziel hinzufügen", command: "/goal", helper: "Ziel notieren" },
-  { label: "Verknüpfen", command: "/link", helper: "Verbindungen entdecken" },
-  { label: "Erklären", command: "/explain", helper: "Erklärung anfordern" },
-  { label: "Markieren", command: "/mark", helper: "Gedanke markieren" },
+  { label: t.addGoal, command: "/goal", helper: t.goalNote },
+  { label: t.link, command: "/link", helper: t.discoverConnections },
+  { label: t.explain, command: "/explain", helper: t.requestExplanation },
+  { label: t.mark, command: "/mark", helper: t.markThought },
 ];
 
 export default function QuickChips({ onPick }: QuickChipsProps) {
@@ -21,7 +22,7 @@ export default function QuickChips({ onPick }: QuickChipsProps) {
   return (
     <div
       role="group"
-      aria-label="Schnellaktionen"
+      aria-label={t.quickActions}
       className="flex flex-wrap gap-2"
     >
       {CHIPS.map((chip) => (

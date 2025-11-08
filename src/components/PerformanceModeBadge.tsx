@@ -1,6 +1,7 @@
 "use client";
 
 import { useRuntimeFlags } from "@/hooks/useRuntimeFlags";
+import { t } from "@/config/strings";
 
 /**
  * FILON Step 16.2 - Performance Mode Badge
@@ -27,7 +28,7 @@ export default function PerformanceModeBadge() {
         fontSize: "0.75rem",
       }}
     >
-      ⚙️ Performance Mode – Visual + Audio disabled
+      ⚙️ {t.performanceMode}
     </div>
   );
 }

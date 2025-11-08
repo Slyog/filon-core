@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useAutoFocusScroll } from "@/hooks/useAutoFocusScroll";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import { t } from "@/config/strings";
 
 export interface ContextStreamItem {
   id: string;
@@ -30,7 +31,7 @@ List.displayName = "ContextStreamList";
 const relativeTime = (timestamp: number) => {
   const delta = Date.now() - timestamp;
   const minutes = Math.round(delta / 60000);
-  if (minutes < 1) return "Gerade eben";
+  if (minutes < 1) return t.justNow;
   if (minutes < 60) return `${minutes}m`;
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `${hours}h`;
@@ -121,7 +122,7 @@ const StreamRow = React.memo(
         </p>
         <div className="flex items-center justify-between text-[11px] text-text-secondary/70">
           <span>{relativeTime(item.ts)}</span>
-          <span>Enter auswählen · ↑↓ navigieren</span>
+          <span>{t.selectWithEnter}</span>
         </div>
       </div>
     );
@@ -140,15 +141,15 @@ const ContextStream = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const [announcement, setAnnouncement] = useState("");
 
-  const announceSelection = useCallback(
-    (id: string) => {
-      const item = items.find((entry) => entry.id === id);
-      if (!item) return;
-      setAnnouncement(`"${item.title}" ausgewählt.`);
-      onSelect(id);
-    },
-    [items, onSelect]
-  );
+      const announceSelection = useCallback(
+        (id: string) => {
+          const item = items.find((entry) => entry.id === id);
+          if (!item) return;
+          setAnnouncement(t.selected.replace("{title}", item.title));
+          onSelect(id);
+        },
+        [items, onSelect]
+      );
 
   const data = useMemo(() => items, [items]);
   const throttledHover = useThrottledCallback((id: string | null) => {
@@ -166,10 +167,10 @@ const ContextStream = ({
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-cyan-200">
-          Context Stream
+          {t.contextStream}
         </h2>
         <span className="text-xs text-text-secondary/80">
-          {items.length} Einträge
+          {items.length} {t.entries}
         </span>
       </div>
       <Virtuoso

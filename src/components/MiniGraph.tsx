@@ -17,6 +17,7 @@ import {
 import { motion, useReducedMotion } from "framer-motion";
 import "reactflow/dist/style.css";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+import { t } from "@/config/strings";
 
 type MiniGraphNode = { id: string; label: string };
 type MiniGraphEdge = { id: string; source: string; target: string };
@@ -99,8 +100,7 @@ export default function MiniGraph({
   const compact = useIsCompact();
   const hostRef = useRef<HTMLDivElement>(null);
   const visible = useIsVisible(hostRef);
-  const describeMiniGraph =
-    "Zeigt die letzten fünf Gedanken inklusive Verbindungen als kompakte Vorschau.";
+  const describeMiniGraph = t.miniGraphDescription;
 
   const recentNodes = useMemo(() => formatNodes(nodes), [nodes]);
   const flowNodes = useMemo(() => layoutNodes(recentNodes), [recentNodes]);
@@ -157,7 +157,7 @@ export default function MiniGraph({
   if (recentNodes.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-cyan-400/30 text-sm text-text-secondary/70">
-        Noch keine Gedanken im Graph
+        {t.noThoughtsInGraph}
       </div>
     );
   }
@@ -215,7 +215,7 @@ export default function MiniGraph({
         </ReactFlowProvider>
       ) : (
         <div className="flex h-full w-full items-center justify-center text-xs text-text-secondary/70">
-          Vorschau pausiert
+          {t.previewPaused}
         </div>
       )}
     </div>

@@ -11,14 +11,14 @@ export default function SaveStatusBar() {
   const status = lastSyncEvent
     ? lastSyncEvent.type === "sync_success"
       ? "synced"
-      : "offline"
+      : "disconnected"
     : "idle";
 
   const colors = {
     idle: "text-gray-400",
     saving: "text-yellow-400 animate-pulse",
     synced: "text-cyan-400",
-    offline: "text-red-400",
+    disconnected: "text-red-400",
   };
 
   const text = {
@@ -27,7 +27,7 @@ export default function SaveStatusBar() {
     synced: `Synced (${new Date(
       lastSyncEvent?.timestamp || 0
     ).toLocaleTimeString()})`,
-    offline: "Offline (local only)",
+    disconnected: "No connection (local only)",
   };
 
   return (

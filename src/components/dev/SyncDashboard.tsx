@@ -151,7 +151,7 @@ export default function SyncDashboard({
                 isOnlineStatus ? "text-emerald-400" : "text-rose-400"
               }`}
             >
-              {isOnlineStatus ? "🟢 Online" : "🔴 Offline"}
+              {isOnlineStatus ? "🟢 Online" : "🔴 Disconnected"}
             </span>
           </div>
 

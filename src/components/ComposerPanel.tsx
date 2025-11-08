@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { SendHorizonal, Mic, Upload } from "lucide-react";
 import { useSessionStore } from "@/store/SessionStore";
 import { useFeedbackStore } from "@/store/FeedbackStore";
+import { t } from "@/config/strings";
 
 const TYPES = [
   "Idea",
@@ -55,7 +56,7 @@ export default function ComposerPanel() {
     if (!trimmed) {
       addFeedback({
         type: "user_action",
-        payload: { message: "Bitte zuerst Text eingeben.", error: true },
+        payload: { message: t.pleaseEnterTextFirst, error: true },
       });
       return;
     }
@@ -66,7 +67,7 @@ export default function ComposerPanel() {
       addFeedback({
         type: "user_action",
         payload: {
-          message: "⚠️ Workspace konnte nicht erstellt werden.",
+          message: t.workspaceCouldNotBeCreated,
           error: true,
         },
       });
@@ -88,13 +89,12 @@ export default function ComposerPanel() {
     addFeedback({
       type: "user_action",
       payload: {
-        message:
-          "✨ Thought wird hinzugefügt, sobald der Workspace bereit ist.",
+        message: t.thoughtWillBeAdded,
       },
     });
     addFeedback({
       type: "node_added",
-      payload: { message: "🧠 Thought in den Workspace übernommen." },
+      payload: { message: t.thoughtAddedToWorkspace },
     });
 
     if (!ready) {
@@ -152,7 +152,7 @@ export default function ComposerPanel() {
         <textarea
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Schreibe deinen Thought… (Enter oder Button zum Bestätigen)"
+          placeholder={t.writeYourThought}
           className="min-h-[120px] flex-1 rounded-2xl border border-zinc-800 bg-black/70 px-4 py-3 text-sm text-zinc-100 outline-none focus:border-cyan-500"
         />
         <div className="flex w-full flex-row gap-2 lg:w-auto lg:flex-col">
@@ -160,7 +160,7 @@ export default function ComposerPanel() {
             type="button"
             disabled
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-500"
-            title="Voice Input (bald verfügbar)"
+            title={t.voiceInputComingSoon}
           >
             <Mic size={16} />
             Voice
@@ -169,7 +169,7 @@ export default function ComposerPanel() {
             type="button"
             disabled
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-500"
-            title="Upload (bald verfügbar)"
+            title={t.uploadComingSoon}
           >
             <Upload size={16} />
             Upload
@@ -190,7 +190,7 @@ export default function ComposerPanel() {
         </div>
       </div>
       <p className="mt-3 text-xs text-zinc-500">
-        Beim ersten Confirm wird automatisch ein Workspace erstellt.
+        {t.workspaceCreatedAutomatically}
       </p>
     </div>
   );

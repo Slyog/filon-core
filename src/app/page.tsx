@@ -14,29 +14,30 @@ import ContextStream, {
 import { useSessionStore } from "@/store/SessionStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { motion, AnimatePresence } from "framer-motion";
+import { t } from "@/config/strings";
 
 const INITIAL_STREAM: ContextStreamItem[] = [
   {
     id: "seed-1",
-    title: "Launch Brainbar Konzept",
+    title: "Launch Brainbar Concept",
     summary:
-      "Synthese der letzten Brainbar-Inputs. Fokus auf klare Kommandos, Minimierung von Ablenkung und sofortige Verknüpfung.",
+      "Synthesis of the latest Brainbar inputs. Focus on clear commands, minimal distraction, and instant linking.",
     confidence: 92,
     ts: Date.now() - 1000 * 60 * 2,
   },
   {
     id: "seed-2",
-    title: "Mini-Graph aktualisieren",
+    title: "Mini-Graph Refresh",
     summary:
-      "Die letzten Verknüpfungen werden als kompaktes ReactFlow-Preview gezeigt, um Trends in der Gedankenstruktur sichtbar zu machen.",
+      "The latest connections show up as a compact ReactFlow preview so you can spot structure trends fast.",
     confidence: 88,
     ts: Date.now() - 1000 * 60 * 7,
   },
   {
     id: "seed-3",
-    title: "Context Stream fokus",
+    title: "Context Stream Focus",
     summary:
-      "Der Stream nutzt Virtualisierung, um 200+ Einträge performant anzuzeigen und die Navigation per Tastatur zu priorisieren.",
+      "The stream uses virtualization to render 200+ entries smoothly while keeping keyboard navigation responsive.",
     confidence: 85,
     ts: Date.now() - 1000 * 60 * 17,
   },
@@ -91,8 +92,8 @@ export default function Home() {
         const summaryText =
           command.text ||
           (command.type === "goal"
-            ? "Neues Ziel geplant."
-            : "Neuer Gedankenfunke.");
+            ? t.newGoalPlanned
+            : t.newThoughtSpark);
         const title =
           summaryText.length > 48
             ? `${summaryText.slice(0, 45)}…`
@@ -155,7 +156,7 @@ export default function Home() {
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4">
         <header className="flex flex-col gap-2">
           <p className="text-xs uppercase tracking-[0.3em] text-text-secondary/70">
-            Filon · Offline ready
+            Filon · Works without connection
           </p>
           <h1 className="text-3xl font-semibold text-text-primary">
             Brainbar · Context Stream
@@ -213,12 +214,11 @@ export default function Home() {
                   className="text-xs text-text-secondary underline decoration-dotted"
                   onClick={() => setCommandPaletteOpen(false)}
                 >
-                  Schließen
+                  {t.close}
                 </button>
               </div>
               <p className="text-text-secondary/80">
-                Hier entsteht ein globaler Command-Autocomplete. Aktuell dient er als
-                visuelles Feedback für <kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>K</kbd>.
+                {t.commandPaletteDescription}
               </p>
             </motion.div>
           </motion.div>

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Folder, Plus, Trash2, Archive } from "lucide-react";
 import { useSessionStore } from "@/store/SessionStore";
+import { t } from "@/config/strings";
 
 type WorkspaceListLiteProps = {
   collapsed?: boolean;
@@ -31,7 +32,7 @@ export default function WorkspaceListLite({
   );
 
   const handleCreate = async () => {
-    const id = await addSession("Neuer Workspace");
+    const id = await addSession(t.newWorkspace);
     setActiveSession(id);
     router.push(`/f/${id}`);
   };
@@ -42,7 +43,7 @@ export default function WorkspaceListLite({
         <button
           type="button"
           onClick={handleCreate}
-          title="Neuen Workspace erstellen"
+          title={t.createNewWorkspace}
           className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-900 text-cyan-300 hover:bg-zinc-800"
         >
           <Plus size={18} />
@@ -77,12 +78,12 @@ export default function WorkspaceListLite({
         className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
       >
         <Plus size={16} />
-        Neuer Workspace
+        {t.newWorkspace}
       </button>
       <div className="space-y-1">
         {sorted.length === 0 && (
           <p className="rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-500">
-            Noch keine Workspaces vorhanden.
+            {t.noWorkspacesYet}
           </p>
         )}
         {sorted.map((workspace) => (
@@ -110,7 +111,7 @@ export default function WorkspaceListLite({
                 type="button"
                 onClick={() => {
                   const value = window.prompt(
-                    "Neuer Name",
+                    t.newName,
                     workspace.title
                   );
                   if (value && value.trim()) {
@@ -124,12 +125,10 @@ export default function WorkspaceListLite({
               <button
                 type="button"
                 onClick={() =>
-                  window.alert(
-                    "Archivieren (Platzhalter) – später implementieren."
-                  )
+                  window.alert(t.archivePlaceholder)
                 }
                 className="rounded bg-zinc-900 p-1 text-zinc-400 hover:bg-zinc-800"
-                title="Archivieren (Platzhalter)"
+                title={t.archivePlaceholder}
               >
                 <Archive size={14} />
               </button>
@@ -137,7 +136,7 @@ export default function WorkspaceListLite({
                 type="button"
                 onClick={async () => {
                   const confirmed = window.confirm(
-                    "Workspace löschen? (Platzhalter: später archivieren statt löschen)"
+                    t.deleteWorkspace
                   );
                   if (!confirmed) return;
                   const wasActive = workspace.id === activeSessionId;
@@ -147,7 +146,7 @@ export default function WorkspaceListLite({
                   }
                 }}
                 className="rounded bg-red-600 p-1 text-black hover:bg-red-500"
-                title="Löschen"
+                title={t.delete}
               >
                 <Trash2 size={14} />
               </button>

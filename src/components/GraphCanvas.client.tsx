@@ -108,6 +108,7 @@ import {
   loadSpatialState,
   type SpatialState,
 } from "@/core/spatialMemory";
+import { t } from "@/config/strings";
 import { useSettings } from "@/store/settings";
 
 // 🌀 dynamic import: RFDebugPanel loaded only in dev
@@ -518,8 +519,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChangesRef.current) {
         e.preventDefault();
-        e.returnValue =
-          "Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen?";
+        e.returnValue = t.noUnsavedChanges;
         return e.returnValue;
       }
     };
@@ -662,7 +662,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
                       edges: e.length,
                     });
                     const trend = getTrend();
-                    if (trend !== "Noch keine Trends.") {
+                    if (trend !== t.noTrends) {
                       addFeedback({
                         type: "user_action",
                         payload: { message: `📈 ${trend}` },
@@ -721,7 +721,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           });
           addFeedback({
             type: "sync_failed",
-            payload: { message: "⚠️ Offline – local backup only" },
+            payload: { message: "⚠️ No connection – local backup only" },
           });
           // setStatus removed
           logError({
@@ -1208,7 +1208,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         id: `node_${Date.now()}`,
         position: center,
         data: {
-          label: label || `Neuer Gedanke ${nodes.length + 1}`,
+          label: label || t.newThought.replace("{num}", String(nodes.length + 1)),
           thoughtType: thoughtType || "Idea",
           createdAt: nowIso,
           updatedAt: nowIso,
@@ -2782,7 +2782,7 @@ function GraphFlowWithHotkeys({
           id,
           position: center,
           data: {
-            label: "🧠 Neuer Gedanke",
+            label: `🧠 ${t.newThought.replace("{num}", "")}`,
             note: "",
             thoughtType: "Idea",
             createdAt: nowIso,

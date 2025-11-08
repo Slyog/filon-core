@@ -115,7 +115,7 @@ describe("Focus order and shortcuts", () => {
   test("Tab order respects Brainbar > Chips > Stream > MiniGraph", async () => {
     render(<FocusHarness />);
 
-    const brainbarInput = await screen.findByLabelText("Gedanken eingeben");
+    const brainbarInput = await screen.findByLabelText("Enter thought");
     const firstChip = await screen.findByTestId("quickchip-/goal");
     await waitFor(() =>
       expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(2)
@@ -147,7 +147,7 @@ describe("Focus order and shortcuts", () => {
 
   test("Ctrl+N focuses Brainbar via shortcut", async () => {
     render(<FocusHarness />);
-    const brainbarInput = await screen.findByLabelText("Gedanken eingeben");
+    const brainbarInput = await screen.findByLabelText("Enter thought");
     const miniGraph = await screen.findByTestId("mini-graph");
     miniGraph.focus();
     expect(document.activeElement).toBe(miniGraph);
