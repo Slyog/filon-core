@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import fs from "fs";
+import path from "path";
 
 test.describe("FILON Canvas QA Snapshot", () => {
   const graphRoute = "/graph/playwright-qa?q=Playwright";
@@ -41,5 +43,31 @@ test.describe("FILON Canvas QA Snapshot", () => {
 
     expect(results.violations).toEqual([]);
   });
+});
+
+test.afterEach(async ({ page }, testInfo) => {
+  const historyPath = path.resolve("qa/history.json");
+  let history: Array<Record<string, unknown>> = [];
+
+  if (fs.existsSync(historyPath)) {
+    try {
+      const raw = fs.readFileSync(historyPath, "utf-8");
+      history = JSON.parse(raw);
+    } catch (error) {
+      console.warn("[qa-history] Failed to read history file:", error);
+      history = [];
+    }
+  }
+
+  history.push({
+    date: new Date().toISOString(),
+    report: "playwright-report/index.html",
+    screenshot: "tests/__snapshots__/canvas-visible.png",
+    route: page.url(),
+    status: testInfo.status,
+    title: testInfo.title,
+  });
+
+  fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
 });
 

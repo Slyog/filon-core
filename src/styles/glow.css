@@ -19,6 +19,10 @@
   --glow-radius-hover: 16px;
 }
 
+:root.qa-mode {
+  --glow-intensity: 0.25;
+}
+
 /* Focus glow animation */
 @keyframes focus-glow {
   0%, 100% {

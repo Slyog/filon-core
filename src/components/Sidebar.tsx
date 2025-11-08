@@ -4,6 +4,7 @@ import { useSessionStore, type Session } from "@/store/SessionStore";
 import { useRouter } from "next/navigation";
 import GraphPreview from "./GraphPreview";
 import QAPanel from "./QAPanel";
+import { useUIShellStore } from "@/store/UIShellStore";
 
 export default function Sidebar() {
   const {
@@ -17,6 +18,7 @@ export default function Sidebar() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Session["category"] | "All">("All");
   const [qaPanelOpen, setQaPanelOpen] = useState(false);
+  const sidebarOpen = useUIShellStore((state) => state.sidebarOpen);
 
   const filtered = useMemo(() => {
     return sessions.filter((s) => {
@@ -63,7 +65,10 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="fixed top-0 left-0 h-full w-64 bg-layer border-r border-[var(--border-glow)] text-[var(--foreground)] flex flex-col p-4 z-40 scrollbar">
+    <aside
+      className="fixed left-0 top-0 z-30 flex h-full flex-col border-r border-cyan-400/10 bg-[#0A0F12]/95 p-4 transition-all duration-300 scrollbar text-[var(--foreground)]"
+      style={{ width: sidebarOpen ? "256px" : "80px" }}
+    >
       <h2 className="text-[var(--accent)] font-semibold mb-3">Workspaces</h2>
 
       <button
