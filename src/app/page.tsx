@@ -1,229 +1,143 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import AppShell from "@/components/shell/AppShell";
-import Brainbar, {
-  type BrainbarCommand,
-  type BrainbarHandle,
-} from "@/components/Brainbar";
-import QuickChips from "@/components/QuickChips";
-import MiniGraph from "@/components/MiniGraph";
-import ContextStream, {
-  type ContextStreamItem,
-} from "@/components/ContextStream";
-import { useSessionStore } from "@/store/SessionStore";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { motion, AnimatePresence } from "framer-motion";
-import { t } from "@/config/strings";
-
-const INITIAL_STREAM: ContextStreamItem[] = [
-  {
-    id: "seed-1",
-    title: "Launch Brainbar Concept",
-    summary:
-      "Synthesis of the latest Brainbar inputs. Focus on clear commands, minimal distraction, and instant linking.",
-    confidence: 92,
-    ts: Date.now() - 1000 * 60 * 2,
-  },
-  {
-    id: "seed-2",
-    title: "Mini-Graph Refresh",
-    summary:
-      "The latest connections show up as a compact ReactFlow preview so you can spot structure trends fast.",
-    confidence: 88,
-    ts: Date.now() - 1000 * 60 * 7,
-  },
-  {
-    id: "seed-3",
-    title: "Context Stream Focus",
-    summary:
-      "The stream uses virtualization to render 200+ entries smoothly while keeping keyboard navigation responsive.",
-    confidence: 85,
-    ts: Date.now() - 1000 * 60 * 17,
-  },
-];
-
-const INITIAL_NODES = [
-  { id: "seed-1", label: "Brainbar Konzept" },
-  { id: "seed-2", label: "Mini Graph" },
-  { id: "seed-3", label: "Context Stream" },
-];
-
-const INITIAL_EDGES = [
-  { id: "seed-edge-1", source: "seed-1", target: "seed-2" },
-  { id: "seed-edge-2", source: "seed-2", target: "seed-3" },
-];
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import BackgroundStars from "@/components/BackgroundStars";
 
 export default function Home() {
-  const setActiveSession = useSessionStore((state) => state.setActiveSession);
-  const [streamItems, setStreamItems] =
-    useState<ContextStreamItem[]>(INITIAL_STREAM);
-  const [nodes, setNodes] = useState(INITIAL_NODES);
-  const [edges, setEdges] = useState(INITIAL_EDGES);
-  const [hoveredId, setHoveredId] = useState<string | undefined>();
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const brainbarRef = useRef<BrainbarHandle>(null);
-  const previousNodeRef = useRef<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const router = useRouter();
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setActiveSession(null);
-    if (typeof document !== "undefined") {
-      document.title = "FILON – Gedankengraph";
+    if (typeof window === "undefined") {
+      return;
     }
-  }, [setActiveSession]);
 
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+    const lastId = window.localStorage.getItem("lastWorkspaceId");
+    if (lastId) {
+      router.replace(`/f/${lastId}`);
+    }
+  }, [router]);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const trimmed = input.trim();
+    if (!trimmed || loading) {
+      return;
+    }
+
+    setLoading(true);
+
+    const workspaceId =
+      typeof window !== "undefined" &&
+      typeof window.crypto?.randomUUID === "function"
+        ? window.crypto.randomUUID()
+        : `ws-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.setItem("lastWorkspaceId", workspaceId);
+      } catch (_error) {
+        // localStorage can be unavailable (private mode, storage restrictions)
       }
-    };
-  }, []);
 
-  const handleSubmit = useCallback(
-    (command: BrainbarCommand) => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      try {
+        window.sessionStorage.setItem("initialThought", trimmed);
+      } catch (_error) {
+        // sessionStorage can be unavailable; ignore silently
       }
+    }
 
-      debounceRef.current = setTimeout(() => {
-        const id = `ctx-${Date.now()}`;
-        const summaryText =
-          command.text ||
-          (command.type === "goal"
-            ? t.newGoalPlanned
-            : t.newThoughtSpark);
-        const title =
-          summaryText.length > 48
-            ? `${summaryText.slice(0, 45)}…`
-            : summaryText;
-        const confidence =
-          command.type === "goal" ? 95 : command.type === "due" ? 87 : 90;
+    router.push(`/f/${workspaceId}?q=${encodeURIComponent(trimmed)}`);
+  };
 
-        previousNodeRef.current = nodes[nodes.length - 1]?.id ?? null;
-
-        setStreamItems((items) =>
-          [
-            { id, title, summary: summaryText, confidence, ts: Date.now() },
-            ...items,
-          ].slice(0, 300)
-        );
-
-        setNodes((prev) => [...prev.slice(-19), { id, label: title }]);
-
-        setEdges((prev) => {
-          const source = previousNodeRef.current;
-          if (!source) return prev;
-          return [
-            ...prev.slice(-19),
-            {
-              id: `edge-${Date.now()}`,
-              source,
-              target: id,
-            },
-          ];
-        });
-
-        setHoveredId(id);
-      }, 200);
-    },
-    [nodes]
-  );
-
-  const focusBrainbar = useCallback(() => {
-    brainbarRef.current?.focus();
-  }, []);
-
-  const togglePalette = useCallback(() => {
-    setCommandPaletteOpen((open) => !open);
-  }, []);
-
-  const shortcuts = useMemo(
-    () => [
-      { key: "n", ctrl: true, handler: focusBrainbar, allowInInputs: true },
-      { key: "n", meta: true, handler: focusBrainbar, allowInInputs: true },
-      { key: "k", ctrl: true, handler: togglePalette, allowInInputs: true },
-      { key: "k", meta: true, handler: togglePalette, allowInInputs: true },
-    ],
-    [focusBrainbar, togglePalette]
-  );
-
-  useKeyboardShortcuts(shortcuts);
+  const confirmDisabled = loading || input.trim().length === 0;
 
   return (
-    <AppShell>
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-4">
-        <header className="flex flex-col gap-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-text-secondary/70">
-            Filon · Works without connection
-          </p>
-          <h1 className="text-3xl font-semibold text-text-primary">
-            Brainbar · Context Stream
-          </h1>
-        </header>
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0A0F12] text-cyan-100">
+      <BackgroundStars />
 
-        <section className="flex flex-col gap-4 rounded-3xl border border-cyan-400/10 bg-surface-base/60 p-6 backdrop-blur-2xl">
-          <Brainbar ref={brainbarRef} onSubmit={handleSubmit} autoFocus />
-          <QuickChips
-            onPick={(command) => {
-              brainbarRef.current?.prefill(command);
-              focusBrainbar();
-            }}
-          />
-        </section>
+      <main className="relative z-10 flex w-full max-w-3xl flex-col items-center px-6 text-center">
+        <p className="text-xs uppercase tracking-[0.4em] text-cyan-400/60">
+          Filon
+        </p>
+        <h1 className="mt-8 text-4xl font-light tracking-widest text-cyan-100 sm:text-5xl">
+          The mind that visualizes itself.
+        </h1>
+        <p className="mt-4 max-w-xl text-sm text-cyan-100/60 sm:text-base">
+          Start with a single thought. We will grow the workspace around it.
+        </p>
 
-        <ContextStream
-          items={streamItems}
-          hoveredId={hoveredId}
-          onSelect={(id) => setHoveredId(id)}
-          onHover={(id) => setHoveredId(id ?? undefined)}
-        />
+        <form
+          onSubmit={handleSubmit}
+          className="mt-12 w-full"
+          autoComplete="off"
+          noValidate
+        >
+          <div className="group flex w-full flex-col gap-3 rounded-2xl border border-cyan-400/20 bg-white/5 p-3 text-left shadow-[0_0_25px_rgba(47,243,255,0.08)] backdrop-blur-md transition focus-within:border-cyan-300/40 focus-within:shadow-[0_0_35px_rgba(47,243,255,0.15)] sm:flex-row sm:items-center sm:gap-4 sm:p-4">
+            <input
+              type="text"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Write a thought..."
+              aria-label="Write a thought"
+              className="flex-1 bg-transparent text-base text-cyan-100 placeholder-cyan-400/40 outline-none sm:text-lg"
+              disabled={loading}
+              autoFocus
+            />
 
-        <MiniGraph
-          nodes={nodes}
-          edges={edges}
-          onHoverNode={(id) => setHoveredId(id ?? undefined)}
-        />
-      </div>
+            <div className="flex items-center justify-end gap-2 sm:justify-center">
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/10 text-cyan-200 transition hover:border-cyan-300/50 hover:bg-cyan-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F12] sm:h-12 sm:w-12"
+                aria-label="Voice capture (coming soon)"
+                title="Voice capture (coming soon)"
+              >
+                <MicIcon />
+              </button>
 
-      <AnimatePresence>
-        {commandPaletteOpen && (
-          <motion.div
-            role="dialog"
-            aria-modal="false"
-            aria-label="Command Palette"
-            className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 140, damping: 20 }}
-              className="mt-24 w-full max-w-lg rounded-2xl border border-cyan-400/20 bg-surface-active/90 p-6 text-sm text-text-primary"
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-base font-semibold text-cyan-100">
-                  Quick Command Palette (Beta)
-                </h2>
-                <button
-                  type="button"
-                  className="text-xs text-text-secondary underline decoration-dotted"
-                  onClick={() => setCommandPaletteOpen(false)}
-                >
-                  {t.close}
-                </button>
-              </div>
-              <p className="text-text-secondary/80">
-                {t.commandPaletteDescription}
-              </p>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </AppShell>
+              <button
+                type="submit"
+                disabled={confirmDisabled}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-cyan-400/80 px-8 text-sm font-semibold uppercase tracking-[0.2em] text-[#0A0F12] transition hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0F12] disabled:cursor-not-allowed disabled:bg-cyan-400/40 sm:h-12 sm:px-10"
+              >
+                {loading ? "Redirecting..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <p className="mt-6 text-xs uppercase tracking-[0.3em] text-cyan-400/50">
+          Press Enter or Confirm to create a new workspace
+        </p>
+      </main>
+    </div>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg
+      className="h-5 w-5 text-cyan-200/80"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 3a2.5 2.5 0 0 1 2.5 2.5v6a2.5 2.5 0 0 1-5 0v-6A2.5 2.5 0 0 1 12 3Z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19 11.5a7 7 0 0 1-14 0M12 18.5V21"
+      />
+    </svg>
   );
 }
