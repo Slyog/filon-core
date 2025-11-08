@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import WorkspaceLayout from "@/components/layout/WorkspaceLayout";
 import GraphCanvas from "@/components/GraphCanvas.client";
 import { useSessionStore } from "@/store/SessionStore";
 
@@ -16,7 +17,7 @@ export default function WorkspacePage() {
 
     const titleKey = `workspaceTitle:${id}`;
     const storedTitle = window.localStorage.getItem(titleKey)?.trim() ?? null;
-    document.title = storedTitle ? `FILON - ${storedTitle}` : "FILON";
+    document.title = storedTitle ? `FILON – ${storedTitle}` : "FILON";
 
     try {
       window.localStorage.setItem("lastWorkspaceId", id);
@@ -64,7 +65,7 @@ export default function WorkspacePage() {
         if (!currentTitle) {
           window.localStorage.setItem(titleKey, trimmed);
         }
-        document.title = `FILON - ${trimmed}`;
+        document.title = `FILON – ${trimmed}`;
       } catch (_error) {
         // Ignore storage limitations
       }
@@ -89,5 +90,9 @@ export default function WorkspacePage() {
     return null;
   }
 
-  return <GraphCanvas sessionId={id} />;
+  return (
+    <WorkspaceLayout>
+      <GraphCanvas sessionId={id} />
+    </WorkspaceLayout>
+  );
 }
