@@ -1,0 +1,18 @@
+{
+  "meta": {
+    "commit": "uninitialized",
+    "date": "1970-01-01T00-00-00-000Z",
+    "total": 0,
+    "passed": 0,
+    "failed": 0
+  },
+  "data": {
+    "stats": {
+      "tests": 0,
+      "passed": 0,
+      "failed": 0
+    },
+    "suites": []
+  }
+}
+
