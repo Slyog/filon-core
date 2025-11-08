@@ -2,79 +2,445 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>FILON QA Viewer</title>
+    <title>FILON QA Artifact Viewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.10/dist/tailwind.min.css"
-    />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: #0b0c10;
+        color: #e6e6e6;
+        margin: 0;
+        padding: clamp(1.5rem, 4vw, 2.75rem);
+      }
+
+      h1 {
+        color: #2ff3ff;
+        margin-bottom: 0.5rem;
+        font-size: clamp(1.9rem, 4vw, 2.8rem);
+        text-shadow: 0 0 12px #2ff3ff44;
+      }
+
+      .subtitle {
+        color: #9adbe8;
+        margin-bottom: 2rem;
+        font-size: 1rem;
+      }
+
+      #runs {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        max-width: 1200px;
+        margin-inline: auto;
+      }
+
+      .run {
+        border: 1px solid #2ff3ff33;
+        border-radius: 14px;
+        padding: clamp(1rem, 2.5vw, 1.6rem);
+        background: linear-gradient(145deg, #10161b, #0b0f15);
+        box-shadow: 0 0 18px #2ff3ff11;
+        transition: border-color 0.2s, transform 0.2s;
+      }
+
+      .run:hover {
+        border-color: #2ff3ff77;
+        transform: translateY(-3px);
+      }
+
+      .run header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        align-items: baseline;
+      }
+
+      .run-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #d7f9ff;
+      }
+
+      .timestamp {
+        color: #8fbac8;
+        font-size: 0.95rem;
+      }
+
+      .meta {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.75rem;
+        font-size: 0.8rem;
+        color: #9adbe8;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(47, 243, 255, 0.08);
+        border: 1px solid rgba(47, 243, 255, 0.18);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .badge.status-passed {
+        background: rgba(82, 255, 197, 0.12);
+        border-color: rgba(82, 255, 197, 0.3);
+        color: #b7ffe7;
+      }
+
+      .badge.status-failed {
+        background: rgba(255, 113, 138, 0.15);
+        border-color: rgba(255, 113, 138, 0.3);
+        color: #ffc7d2;
+      }
+
+      .run a {
+        color: #2ff3ff;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .run a:hover {
+        text-decoration: underline;
+      }
+
+      .images {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-top: 1.2rem;
+      }
+
+      .img-card {
+        position: relative;
+        background: #050709;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(47, 243, 255, 0.2);
+      }
+
+      .img-card img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        background: #000;
+        min-height: 160px;
+      }
+
+      .img-card figcaption {
+        position: absolute;
+        inset: auto 0 0 0;
+        padding: 0.5rem 0.75rem;
+        background: linear-gradient(180deg, transparent, rgba(9, 17, 25, 0.9));
+        font-size: 0.8rem;
+        color: #9adbe8;
+      }
+
+      .actions {
+        margin-top: 1rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      button {
+        background: rgba(47, 243, 255, 0.15);
+        border: 1px solid rgba(47, 243, 255, 0.5);
+        color: #2ff3ff;
+        padding: 0.45rem 0.9rem;
+        border-radius: 9px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: background 0.2s, transform 0.2s;
+      }
+
+      button:hover {
+        background: rgba(47, 243, 255, 0.28);
+        transform: translateY(-1px);
+      }
+
+      .empty {
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px dashed rgba(47, 243, 255, 0.3);
+        background: rgba(15, 25, 33, 0.8);
+        color: #8fbac8;
+        text-align: center;
+        font-size: 0.95rem;
+      }
+
+      dialog {
+        border: none;
+        border-radius: 18px;
+        padding: 0;
+        max-width: min(90vw, 1100px);
+        width: 100%;
+        color: #e6e6e6;
+        background: rgba(7, 10, 13, 0.96);
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+      }
+
+      dialog::backdrop {
+        background: rgba(2, 6, 12, 0.86);
+        backdrop-filter: blur(6px);
+      }
+
+      .diff-modal header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.1rem 1.5rem;
+        border-bottom: 1px solid rgba(47, 243, 255, 0.2);
+      }
+
+      .diff-modal h2 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: #2ff3ff;
+      }
+
+      .diff-modal .body {
+        display: grid;
+        gap: 0.75rem;
+        padding: 1.1rem;
+        background: #090d12;
+      }
+
+      .diff-column {
+        display: grid;
+        gap: 0.5rem;
+      }
+
+      .diff-column img {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid rgba(47, 243, 255, 0.25);
+        background: #040607;
+      }
+
+      @media (min-width: 720px) {
+        .diff-modal .body {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-[#0A0F12] text-cyan-100 min-h-screen">
-    <div class="p-6 max-w-6xl mx-auto space-y-6">
-      <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 class="text-2xl font-semibold text-cyan-300">
-          FILON QA Artifact Viewer
-        </h1>
-        <div
-          id="metadata"
-          class="text-xs text-gray-400 flex flex-wrap gap-3 items-center"
-        ></div>
+  <body>
+    <main>
+      <h1>FILON QA Artifact Viewer</h1>
+      <p class="subtitle">
+        QA History, Playwright Reports &amp; Autosave Snapshots — offline ready.
+      </p>
+      <div id="runs"></div>
+    </main>
+
+    <dialog id="diff-modal" class="diff-modal">
+      <header>
+        <h2>Snapshot Comparison</h2>
+        <button type="button" id="diff-close">Close ✕</button>
       </header>
-
-      <section
-        id="controls"
-        class="bg-[#10161B]/70 backdrop-blur-sm border border-cyan-400/20 rounded-lg p-4 space-y-4"
-      >
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div class="flex flex-wrap gap-2 items-center" id="filter-buttons"></div>
-          <label class="relative block">
-            <span class="sr-only">Search timeline</span>
-            <span
-              class="absolute inset-y-0 left-3 flex items-center text-cyan-400/70"
-              aria-hidden="true"
-              >🔍</span
-            >
-            <input
-              id="search-input"
-              type="search"
-              placeholder="Search by event, branch, status…"
-              class="pl-9 pr-3 py-2 bg-[#0C1218] border border-cyan-400/20 rounded-lg text-sm w-full focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/40 transition"
-            />
-          </label>
+      <div class="body">
+        <div class="diff-column">
+          <span>Reference</span>
+          <img id="diff-ref" alt="Reference snapshot" />
         </div>
-        <div id="active-filter" class="text-xs text-gray-400"></div>
-      </section>
+        <div class="diff-column">
+          <span>Target</span>
+          <img id="diff-target" alt="Target snapshot" />
+        </div>
+      </div>
+    </dialog>
 
-      <section id="timeline" class="space-y-4"></section>
-    </div>
+    <script>
+      const HISTORY_PATH = "../history.json";
+      const SNAPSHOT_ROOT = "../../tests/__snapshots__/autosave/";
+      const DEFAULT_PHASES = ["before", "during", "after", "final-state"];
 
-    <div
-      id="lightbox"
-      class="fixed inset-0 hidden bg-black/80 backdrop-blur-sm items-center justify-center p-6 z-50"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Snapshot preview"
-    >
-      <button
-        id="lightbox-close"
-        class="absolute top-6 right-6 text-cyan-200 text-3xl leading-none"
-        aria-label="Close preview"
-      >
-        &times;
-      </button>
-      <img
-        id="lightbox-image"
-        src=""
-        alt="Snapshot preview"
-        class="max-h-full max-w-full border border-cyan-400/30 rounded-lg shadow-2xl"
-      />
-      <p
-        id="lightbox-caption"
-        class="absolute bottom-6 left-6 right-6 text-center text-sm text-gray-300"
-      ></p>
-    </div>
+      const runsContainer = document.getElementById("runs");
+      const diffModal = document.getElementById("diff-modal");
+      const diffRef = document.getElementById("diff-ref");
+      const diffTarget = document.getElementById("diff-target");
+      const diffClose = document.getElementById("diff-close");
 
-    <script type="module" src="./viewer.js"></script>
+      async function loadHistory() {
+        try {
+          const res = await fetch(HISTORY_PATH, { cache: "no-store" });
+          if (!res.ok) throw new Error("history.json not available");
+          return await res.json();
+        } catch (error) {
+          console.warn("[FILON QA Viewer] history.json missing:", error);
+          return [];
+        }
+      }
+
+      function formatDate(date) {
+        if (!date) return "Unknown date";
+        const parsed = new Date(date);
+        if (Number.isNaN(parsed.valueOf())) return String(date);
+        return parsed.toLocaleString();
+      }
+
+      function resolveSnapshots(run) {
+        const fromHistory = Array.isArray(run?.screenshots)
+          ? run.screenshots
+          : run?.screenshot
+          ? [run.screenshot]
+          : [];
+
+        const normalized = fromHistory.map((src) => ({
+          label: src.split("/").pop() || "snapshot",
+          src,
+        }));
+
+        if (normalized.length) return normalized;
+
+        return DEFAULT_PHASES.map((phase) => ({
+          label: phase,
+          src: `${SNAPSHOT_ROOT}${phase}.png`,
+        }));
+      }
+
+      function createImageCard({ label, src }) {
+        const figure = document.createElement("figure");
+        figure.className = "img-card";
+
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = label;
+        img.loading = "lazy";
+        img.onerror = () => {
+          figure.remove();
+        };
+
+        const caption = document.createElement("figcaption");
+        caption.textContent = label;
+
+        figure.appendChild(img);
+        figure.appendChild(caption);
+
+        return { figure, img };
+      }
+
+      function openDiff(referenceSrc, targetSrc, label) {
+        if (!referenceSrc || !targetSrc) return;
+        diffRef.src = referenceSrc;
+        diffTarget.src = targetSrc;
+        diffRef.alt = `${label} reference`;
+        diffTarget.alt = `${label} target`;
+        if (typeof diffModal.showModal === "function") {
+          diffModal.showModal();
+        } else {
+          alert("Modal API is not supported in this browser.");
+        }
+      }
+
+      function renderRun(run) {
+        const container = document.createElement("article");
+        container.className = "run";
+
+        const header = document.createElement("header");
+        header.innerHTML = `
+          <div class="run-title">${run.event || "QA Run"}</div>
+          <div class="timestamp">${formatDate(run.date)}</div>
+        `;
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.innerHTML = `
+          <span class="badge status-${(run.status || "unknown").toLowerCase()}">
+            Status: ${run.status || "unknown"}
+          </span>
+          ${run.branch ? `<span class="badge">Branch: ${run.branch}</span>` : ""}
+          ${run.commit ? `<span class="badge">Commit: ${run.commit.slice(0, 8)}</span>` : ""}
+          ${run.type ? `<span class="badge">${run.type}</span>` : ""}
+        `;
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        if (run.report) {
+          const reportLink = document.createElement("a");
+          reportLink.href = `../reports/${run.report}`;
+          reportLink.target = "_blank";
+          reportLink.rel = "noopener";
+          reportLink.textContent = "View Playwright report ↗";
+          actions.appendChild(reportLink);
+        }
+
+        const snapshots = resolveSnapshots(run);
+        const imagesWrapper = document.createElement("div");
+        imagesWrapper.className = "images";
+
+        const createdFigures = snapshots.map((snapshot) => {
+          const { figure, img } = createImageCard(snapshot);
+          imagesWrapper.appendChild(figure);
+          return { img, label: snapshot.label, src: snapshot.src };
+        });
+
+        const comparisonCandidates = createdFigures.filter(({ img }) => img);
+        if (comparisonCandidates.length >= 2) {
+          const compareButton = document.createElement("button");
+          compareButton.type = "button";
+          compareButton.textContent = "Vergleich anzeigen";
+          compareButton.addEventListener("click", () => {
+            const [reference, target] = comparisonCandidates;
+            openDiff(reference.src, target.src, run.event || "Snapshot");
+          });
+          actions.appendChild(compareButton);
+        }
+
+        container.appendChild(header);
+        container.appendChild(meta);
+        if (actions.children.length) container.appendChild(actions);
+        if (imagesWrapper.children.length) {
+          container.appendChild(imagesWrapper);
+        } else {
+          const emptyMessage = document.createElement("div");
+          emptyMessage.className = "empty";
+          emptyMessage.textContent =
+            "Keine Snapshots für diesen Durchlauf gefunden.";
+          container.appendChild(emptyMessage);
+        }
+
+        runsContainer.appendChild(container);
+      }
+
+      async function render() {
+        const history = await loadHistory();
+
+        if (!history.length) {
+          runsContainer.innerHTML =
+            '<div class="empty">⚠️ Keine QA-History gefunden. Führe zunächst die QA-Pipeline aus.</div>';
+          return;
+        }
+
+        history
+          .slice()
+          .reverse()
+          .forEach((run) => renderRun(run));
+      }
+
+      diffClose.addEventListener("click", () => diffModal.close());
+      diffModal.addEventListener("cancel", () => diffModal.close());
+
+      render();
+    </script>
   </body>
 </html>
 
