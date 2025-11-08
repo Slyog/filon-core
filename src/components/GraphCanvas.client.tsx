@@ -239,7 +239,9 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   );
   const [lastVisitedNodes, setLastVisitedNodes] = useState<string[]>([]);
   const { rememberSpatial } = useSettings();
-  const spatialSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spatialSaveDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // 🔄 Update Automerge binary when nodes/edges change
   useEffect(() => {
@@ -441,7 +443,9 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         // Show feedback toast when state is restored
         addFeedback({
           type: "user_action",
-          payload: { message: "🧩 Spatial Memory loaded — returning to your last focus." },
+          payload: {
+            message: "🧩 Spatial Memory loaded — returning to your last focus.",
+          },
         });
       }
     });
@@ -474,7 +478,13 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         clearTimeout(spatialSaveDebounceRef.current);
       }
     };
-  }, [sessionId, flowInstance, focusedNodeId, lastVisitedNodes, rememberSpatial]);
+  }, [
+    sessionId,
+    flowInstance,
+    focusedNodeId,
+    lastVisitedNodes,
+    rememberSpatial,
+  ]);
 
   // 🧩 Spatial Memory: Save state on unmount/beforeunload (immediate save)
   useEffect(() => {
@@ -500,7 +510,13 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       // Also save on component unmount
       handleUnload();
     };
-  }, [sessionId, flowInstance, focusedNodeId, lastVisitedNodes, rememberSpatial]);
+  }, [
+    sessionId,
+    flowInstance,
+    focusedNodeId,
+    lastVisitedNodes,
+    rememberSpatial,
+  ]);
 
   // 🧩 Track node focus changes
   useEffect(() => {
@@ -508,7 +524,10 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       setFocusedNodeId(activeNodeId);
       // Update last visited nodes (keep last 10)
       setLastVisitedNodes((prev) => {
-        const updated = [activeNodeId, ...prev.filter((id) => id !== activeNodeId)].slice(0, 10);
+        const updated = [
+          activeNodeId,
+          ...prev.filter((id) => id !== activeNodeId),
+        ].slice(0, 10);
         return updated;
       });
     }
@@ -1208,7 +1227,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         id: `node_${Date.now()}`,
         position: center,
         data: {
-          label: label || t.newThought.replace("{num}", String(nodes.length + 1)),
+          label:
+            label || t.newThought.replace("{num}", String(nodes.length + 1)),
           thoughtType: thoughtType || "Idea",
           createdAt: nowIso,
           updatedAt: nowIso,
@@ -1713,11 +1733,11 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
     const text =
       saveState === "saving"
-        ? "💾 Speichern …"
+        ? "💾 Saving …"
         : saveState === "saved"
         ? `✅ Gespeichert • ${lastSavedAt ? fmtTime(lastSavedAt) : ""}`
         : saveState === "error"
-        ? "⚠️ Speichern fehlgeschlagen"
+        ? "⚠️ Save failed"
         : " "; // idle = leer
 
     Object.assign(badge.style, {
@@ -1778,7 +1798,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const activeElement = document.activeElement as HTMLElement | null;
-      
+
       // Don't trigger shortcuts when typing in inputs/textareas
       if (
         activeElement &&
@@ -1801,7 +1821,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         const currentIndex = activeNodeId
           ? nodes.findIndex((n) => n.id === activeNodeId)
           : -1;
-        const nextIndex = currentIndex + 1 < nodes.length ? currentIndex + 1 : 0;
+        const nextIndex =
+          currentIndex + 1 < nodes.length ? currentIndex + 1 : 0;
         if (nodes[nextIndex]) {
           setActiveNodeId(nodes[nextIndex].id);
         }
@@ -1813,7 +1834,8 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         const currentIndex = activeNodeId
           ? nodes.findIndex((n) => n.id === activeNodeId)
           : -1;
-        const prevIndex = currentIndex - 1 >= 0 ? currentIndex - 1 : nodes.length - 1;
+        const prevIndex =
+          currentIndex - 1 >= 0 ? currentIndex - 1 : nodes.length - 1;
         if (nodes[prevIndex]) {
           setActiveNodeId(nodes[prevIndex].id);
         }
@@ -1832,7 +1854,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
           <MiniGraph
             nodes={nodes.map((node) => ({
               id: node.id,
-              label: String(node.data?.label ?? "Gedanke"),
+              label: String(node.data?.label ?? "Thought"),
             }))}
             edges={edges.map((edge) => ({
               id: edge.id,
@@ -2283,7 +2305,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         )}
 
         {/* 🧠 React Flow Graph */}
-        {uiConfig.contextPosition === 'bottom' ? (
+        {uiConfig.contextPosition === "bottom" ? (
           <div className="flex flex-col flex-1 overflow-hidden relative">
             <div className="flex-1 relative">
               <ReactFlowProvider>

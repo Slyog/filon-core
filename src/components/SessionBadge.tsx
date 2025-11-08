@@ -10,20 +10,20 @@ export default function SessionBadge({ status }: SessionBadgeProps) {
     switch (status) {
       case "active":
         return {
-          text: "🟢 Aktiv",
+          text: "🟢 Active",
           color: "text-emerald-400",
           glow: "0 0 16px rgba(74, 222, 128, 0.5)",
         };
       case "saving":
         return {
-          text: "💾 Speichern...",
+          text: "💾 Saving...",
           color: "text-amber-400",
           glow: "0 0 16px rgba(251, 191, 36, 0.5)",
         };
       case "idle":
       default:
         return {
-          text: "⚪ Inaktiv",
+          text: "⚪ Idle",
           color: "text-zinc-500",
           glow: "none",
         };

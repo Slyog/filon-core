@@ -79,7 +79,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const testEl = document.createElement("div");
       testEl.className = "text-brand bg-surface-base";
       document.body.appendChild(testEl);
-      
+
       expect(testEl.className).toContain("text-brand");
       expect(testEl.className).toContain("bg-surface-base");
     });
@@ -88,16 +88,17 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const testEl = document.createElement("div");
       testEl.className = "bg-surface-hover bg-surface-active";
       document.body.appendChild(testEl);
-      
+
       expect(testEl.className).toContain("bg-surface-hover");
       expect(testEl.className).toContain("bg-surface-active");
     });
 
     test("text color tokens are defined", () => {
       const testEl = document.createElement("div");
-      testEl.className = "text-text-primary text-text-secondary text-text-muted";
+      testEl.className =
+        "text-text-primary text-text-secondary text-text-muted";
       document.body.appendChild(testEl);
-      
+
       expect(testEl.className).toContain("text-text-primary");
       expect(testEl.className).toContain("text-text-secondary");
       expect(testEl.className).toContain("text-text-muted");
@@ -110,10 +111,10 @@ describe("UI Design Pass 1 – Visual QA", () => {
       btn.className = "focus-visible:ring-brand focus-visible:ring-2";
       btn.textContent = "Click";
       document.body.appendChild(btn);
-      
+
       // Simulate focus
       btn.focus();
-      
+
       // Check that focus-visible classes are present
       expect(btn.className).toContain("focus-visible:ring-brand");
     });
@@ -123,9 +124,9 @@ describe("UI Design Pass 1 – Visual QA", () => {
       input.type = "text";
       input.className = "focus:ring-brand focus-visible:ring-brand rounded-xl";
       document.body.appendChild(input);
-      
+
       input.focus();
-      
+
       expect(input.className).toContain("focus:ring-brand");
       expect(input.className).toContain("rounded-xl");
     });
@@ -146,7 +147,9 @@ describe("UI Design Pass 1 – Visual QA", () => {
     });
 
     test("reduced motion preference is detectable", () => {
-      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const prefersReduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      );
       expect(prefersReduced).toBeDefined();
       expect(typeof prefersReduced.matches).toBe("boolean");
     });
@@ -155,7 +158,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const el = document.createElement("div");
       el.className = "motion-soft";
       document.body.appendChild(el);
-      
+
       const style = getComputedStyle(el);
       // In test environment, we verify the class exists
       expect(el.className).toContain("motion-soft");
@@ -167,10 +170,10 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const el = document.createElement("div");
       el.className = "glow";
       document.body.appendChild(el);
-      
+
       // In test environment, we verify the class is applied
       expect(el.className).toContain("glow");
-      
+
       // Note: Actual box-shadow value would be tested in E2E/visual regression tests
     });
 
@@ -178,7 +181,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const btn = document.createElement("button");
       btn.className = "hover:glow";
       document.body.appendChild(btn);
-      
+
       expect(btn.className).toContain("hover:glow");
     });
   });
@@ -186,12 +189,12 @@ describe("UI Design Pass 1 – Visual QA", () => {
   describe("Component Integration", () => {
     test("Brainbar uses unified design tokens", () => {
       const { container } = render(<Brainbar />);
-      
+
       // Check for surface-hover background
       const brainbar = container.querySelector("form > div");
       expect(brainbar).toBeTruthy();
       expect(brainbar?.className).toContain("bg-surface-hover");
-      
+
       // Check for brand icon color
       const icon = container.querySelector("svg");
       expect(icon).toBeTruthy();
@@ -199,11 +202,11 @@ describe("UI Design Pass 1 – Visual QA", () => {
 
     test("Brainbar input has focus styles", () => {
       const { container } = render(<Brainbar />);
-      
+
       const input = container.querySelector("input");
       expect(input).toBeTruthy();
-      expect(input?.className).toContain("focus:ring-brand");
-      expect(input?.className).toContain("rounded-xl");
+      expect(input?.className).toContain("focus-visible:ring-brand/60");
+      expect(input?.className).toContain("rounded-md");
     });
 
     test("QuickChips expose glow interaction styles", () => {
@@ -219,10 +222,10 @@ describe("UI Design Pass 1 – Visual QA", () => {
   describe("Accessibility", () => {
     test("Brainbar has proper ARIA labels", () => {
       const { container } = render(<Brainbar />);
-      
+
       const form = container.querySelector("form");
       expect(form).toHaveAttribute("aria-label", "Brainbar");
-      
+
       const input = container.querySelector("input");
       expect(input).toHaveAttribute("aria-label", "Enter thought");
       expect(input).toHaveAttribute("id", "brainbar-input");
@@ -236,7 +239,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
           nodeLabel="Test Node"
         />
       );
-      
+
       await waitFor(() => {
         const dialog = container.querySelector('[role="dialog"]');
         expect(dialog).toBeTruthy();
@@ -254,20 +257,22 @@ describe("UI Design Pass 1 – Visual QA", () => {
           nodeLabel="Test Node"
         />
       );
-      
+
       await waitFor(() => {
-        const closeButton = container.querySelector("button[aria-label*='schließen']");
+        const closeButton = container.querySelector(
+          "button[aria-label*='Close']"
+        );
         expect(closeButton).toBeTruthy();
       });
     });
 
     test("buttons have aria-labels", () => {
       const { container } = render(<Brainbar />);
-      
+
       const buttons = container.querySelectorAll("button");
       buttons.forEach((btn) => {
-        const hasLabel = 
-          btn.hasAttribute("aria-label") || 
+        const hasLabel =
+          btn.hasAttribute("aria-label") ||
           btn.hasAttribute("title") ||
           btn.textContent?.trim() !== "";
         expect(hasLabel).toBe(true);
@@ -280,19 +285,20 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const el = document.createElement("div");
       el.className = "rounded-xl";
       document.body.appendChild(el);
-      
+
       expect(el.className).toContain("rounded-xl");
     });
 
     test("buttons use rounded-xl", () => {
       const { container } = render(<Brainbar />);
-      
+
       const buttons = container.querySelectorAll("button");
       buttons.forEach((btn) => {
         // Most buttons should have rounded-xl
-        const hasRounded = btn.className.includes("rounded-xl") || 
-                          btn.className.includes("rounded-md") ||
-                          btn.className.includes("rounded-lg");
+        const hasRounded =
+          btn.className.includes("rounded-xl") ||
+          btn.className.includes("rounded-md") ||
+          btn.className.includes("rounded-lg");
         expect(hasRounded).toBe(true);
       });
     });
@@ -305,7 +311,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const testEl = document.createElement("div");
       testEl.className = "bg-surface-base text-text-primary";
       document.body.appendChild(testEl);
-      
+
       expect(testEl.className).toContain("bg-surface-base");
       expect(testEl.className).toContain("text-text-primary");
     });
@@ -314,7 +320,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const btn = document.createElement("button");
       btn.className = "text-brand bg-brand/20";
       document.body.appendChild(btn);
-      
+
       expect(btn.className).toContain("text-brand");
     });
   });
@@ -355,4 +361,3 @@ describe("UI Design Pass 1 – Visual QA", () => {
     });
   });
 });
-

@@ -31,76 +31,79 @@ export default function ExplainOverlay({
   const reduced = useReducedMotion();
   const confidenceColor = useExplainConfidenceColor(confidence);
 
-  const generateSummary = useCallback(async (forceRegenerate = false) => {
-    if (!nodeId) {
-      setError("Kein Node ausgewählt.");
-      setLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-
-    const run = async () => {
-      setLoading(true);
-      setError(null);
-      
-      const content = nodeLabel?.trim() || "Unbenannter Gedanke";
-      
-      // Check cache first (unless forcing regenerate)
-      if (!forceRegenerate && cachedSummary) {
-        if (cancelled) return;
-        console.info("ExplainCache hit", nodeId);
-        setSummary(cachedSummary);
-        setConfidence(0.9); // Default confidence for cached entries
-        setFromCache(true);
+  const generateSummary = useCallback(
+    async (forceRegenerate = false) => {
+      if (!nodeId) {
+        setError("No node selected.");
         setLoading(false);
         return;
       }
 
-      // Clear cache if regenerating
-      if (forceRegenerate) {
-        clearCache();
-      }
+      let cancelled = false;
 
-      try {
-        const result = await generateSummaryV2(nodeId, content);
-        if (cancelled) return;
+      const run = async () => {
+        setLoading(true);
+        setError(null);
 
-        const safeConfidence = Math.max(0, Math.min(1, result.confidence));
-        setSummary(result.text);
-        setConfidence(safeConfidence);
-        setFromCache(result.fromCache || false);
-        setLoading(false);
+        const content = nodeLabel?.trim() || "Untitled thought";
 
-        // Update cache after successful generation
-        if (!result.fromCache) {
-          setCache(result.text);
+        // Check cache first (unless forcing regenerate)
+        if (!forceRegenerate && cachedSummary) {
+          if (cancelled) return;
+          console.info("ExplainCache hit", nodeId);
+          setSummary(cachedSummary);
+          setConfidence(0.9); // Default confidence for cached entries
+          setFromCache(true);
+          setLoading(false);
+          return;
         }
 
-        addFeedback({
-          type: "ai_summary_v2",
-          payload: {
-            message: result.text,
-            nodeId,
-            confidence: safeConfidence,
-          },
-          nodeId,
-          message: result.text,
-          confidence: safeConfidence,
-        });
-      } catch (err) {
-        if (cancelled) return;
-        console.error("[ExplainOverlay] Failed to generate summary", err);
-        setError("Fehler beim Laden der Zusammenfassung.");
-        setLoading(false);
-      }
-    };
+        // Clear cache if regenerating
+        if (forceRegenerate) {
+          clearCache();
+        }
 
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, [nodeId, nodeLabel, addFeedback, cachedSummary, setCache, clearCache]);
+        try {
+          const result = await generateSummaryV2(nodeId, content);
+          if (cancelled) return;
+
+          const safeConfidence = Math.max(0, Math.min(1, result.confidence));
+          setSummary(result.text);
+          setConfidence(safeConfidence);
+          setFromCache(result.fromCache || false);
+          setLoading(false);
+
+          // Update cache after successful generation
+          if (!result.fromCache) {
+            setCache(result.text);
+          }
+
+          addFeedback({
+            type: "ai_summary_v2",
+            payload: {
+              message: result.text,
+              nodeId,
+              confidence: safeConfidence,
+            },
+            nodeId,
+            message: result.text,
+            confidence: safeConfidence,
+          });
+        } catch (err) {
+          if (cancelled) return;
+          console.error("[ExplainOverlay] Failed to generate summary", err);
+          setError("Failed to load the summary.");
+          setLoading(false);
+        }
+      };
+
+      void run();
+      return () => {
+        cancelled = true;
+      };
+    },
+    [nodeId, nodeLabel, addFeedback, cachedSummary, setCache, clearCache]
+  );
 
   useEffect(() => {
     generateSummary(false);
@@ -158,7 +161,9 @@ export default function ExplainOverlay({
       initial={reduced ? { opacity: 1 } : { opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={reduced ? { opacity: 1 } : { opacity: 0 }}
-      transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+      transition={
+        reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }
+      }
       onClick={(e) => {
         // Close on backdrop click
         if (e.target === e.currentTarget) {
@@ -172,10 +177,16 @@ export default function ExplainOverlay({
         aria-modal="true"
         aria-labelledby="explain-title"
         className="relative w-[420px] rounded-xl border border-neutral-800 bg-surface-active p-6 shadow-2xl motion-soft"
-        initial={reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
+        initial={
+          reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }
+        }
         animate={{ scale: 1, opacity: 1 }}
         exit={reduced ? { scale: 1, opacity: 1 } : { scale: 0.95, opacity: 0 }}
-        transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+        transition={
+          reduced
+            ? { duration: 0 }
+            : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }
+        }
         onClick={(e) => e.stopPropagation()}
         data-test="explain-overlay"
         data-conf={confidence}
@@ -185,15 +196,18 @@ export default function ExplainOverlay({
           type="button"
           onClick={onClose}
           className="absolute right-3 top-3 text-text-muted transition-all hover:text-text-primary hover:scale-110 hover:glow rounded-lg p-1"
-          aria-label="Overlay schließen"
+          aria-label="Close overlay"
         >
           <X size={18} />
         </button>
 
         <div className="mb-3 flex items-center gap-2">
           <Sparkles className="text-brand" size={18} />
-          <h3 id="explain-title" className="text-sm font-medium text-text-primary">
-            AI Erklärung
+          <h3
+            id="explain-title"
+            className="text-sm font-medium text-text-primary"
+          >
+            AI Explanation
             {nodeLabel ? ` – ${nodeLabel}` : ""}
           </h3>
         </div>
@@ -208,7 +222,7 @@ export default function ExplainOverlay({
             <div className="text-sm text-neutral-500">
               {typeof navigator !== "undefined" && !navigator.onLine
                 ? "Waiting for connection…"
-                : "Generiere Zusammenfassung…"}
+                : "Generating summary…"}
             </div>
           </div>
         )}
@@ -224,20 +238,28 @@ export default function ExplainOverlay({
             initial={reduced ? { opacity: 1 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={reduced ? { opacity: 1 } : { opacity: 0 }}
-            transition={reduced ? { duration: 0 } : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
+            transition={
+              reduced
+                ? { duration: 0 }
+                : { duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }
+            }
             className="space-y-4 text-sm text-text-primary"
           >
             <p>{summary}</p>
-            
+
             {/* Confidence Bar */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs text-text-secondary">
                 <span>Confidence</span>
-                <span className={`font-medium ${
-                  confidenceColor === "emerald-400" ? "text-emerald-400" :
-                  confidenceColor === "yellow-400" ? "text-yellow-400" :
-                  "text-orange-400"
-                }`}>
+                <span
+                  className={`font-medium ${
+                    confidenceColor === "emerald-400"
+                      ? "text-emerald-400"
+                      : confidenceColor === "yellow-400"
+                      ? "text-yellow-400"
+                      : "text-orange-400"
+                  }`}
+                >
                   {confidencePercent}%
                 </span>
               </div>

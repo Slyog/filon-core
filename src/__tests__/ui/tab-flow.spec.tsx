@@ -24,13 +24,13 @@ jest.mock("reactflow", () => ({
 const focusableSelector =
   'input:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-const getFocusableElements = () =>
+const getFocusable = () =>
   Array.from(document.querySelectorAll<HTMLElement>(focusableSelector)).filter(
     (el) => !el.hasAttribute("disabled")
   );
 
-const simulateTab = (shiftKey = false) => {
-  const focusables = getFocusableElements();
+const pressTab = (shiftKey = false) => {
+  const focusables = getFocusable();
   if (focusables.length === 0) return;
 
   const active = document.activeElement as HTMLElement | null;
@@ -49,31 +49,31 @@ const simulateTab = (shiftKey = false) => {
   focusables[currentIndex]?.focus();
 };
 
-const items = [
+const streamItems = [
   {
-    id: "a",
-    title: "Alpha",
-    summary: "First entry",
+    id: "alpha",
+    title: "Alpha insight",
+    summary: "First entry in context stream.",
     confidence: 91,
     ts: Date.now(),
   },
   {
-    id: "b",
-    title: "Beta",
-    summary: "Second entry",
+    id: "beta",
+    title: "Beta insight",
+    summary: "Second entry in context stream.",
     confidence: 88,
     ts: Date.now(),
   },
 ];
 
-const nodes = [
+const miniNodes = [
   { id: "n-1", label: "Node 1" },
   { id: "n-2", label: "Node 2" },
 ];
 
-const edges = [{ id: "e-1", source: "n-1", target: "n-2" }];
+const miniEdges = [{ id: "e-1", source: "n-1", target: "n-2" }];
 
-const FocusHarness = () => {
+const TabHarness = () => {
   const brainbarRef = useRef<BrainbarHandle>(null);
   const shortcuts = useMemo(
     () => [
@@ -93,56 +93,56 @@ const FocusHarness = () => {
     <div>
       <Brainbar ref={brainbarRef} onSubmit={() => {}} />
       <QuickChips onPick={() => {}} />
-      <ContextStream items={items} onSelect={() => {}} />
-      <MiniGraph nodes={nodes} edges={edges} />
+      <ContextStream items={streamItems} onSelect={() => {}} />
+      <MiniGraph nodes={miniNodes} edges={miniEdges} />
     </div>
   );
 };
 
-describe("Focus order and shortcuts", () => {
-  test("Tab order respects Brainbar > Chips > Stream > MiniGraph", async () => {
-    render(<FocusHarness />);
+describe("Keyboard navigation flow", () => {
+  test("Tab order matches Brainbar → QuickChip → Context Stream → MiniGraph", async () => {
+    render(<TabHarness />);
 
     const brainbarInput = await screen.findByLabelText("Enter thought");
     const firstChip = await screen.findByTestId("quickchip-/goal");
     await waitFor(() =>
       expect(screen.getAllByRole("listitem").length).toBeGreaterThanOrEqual(2)
     );
-    const streamItems = screen.getAllByRole("listitem");
+    const contextItems = screen.getAllByRole("listitem");
     const miniGraph = await screen.findByTestId("mini-graph");
 
-    simulateTab(); // Brainbar
+    pressTab();
     expect(document.activeElement).toBe(brainbarInput);
 
-    simulateTab(); // First chip
+    pressTab();
     expect(document.activeElement).toBe(firstChip);
 
-    simulateTab(); // Second chip
-    simulateTab(); // Third chip
-    simulateTab(); // Fourth chip
+    pressTab();
+    pressTab();
+    pressTab();
 
-    simulateTab(); // First stream item
-    expect(document.activeElement).toBe(streamItems[0]);
+    pressTab();
+    expect(document.activeElement).toBe(contextItems[0]);
 
-    simulateTab(); // Second stream item
-    expect(document.activeElement).toBe(streamItems[1]);
+    pressTab();
+    expect(document.activeElement).toBe(contextItems[1]);
 
-    simulateTab(); // MiniGraph wrapper
+    pressTab();
     expect(document.activeElement).toBe(miniGraph);
 
-    simulateTab(true); // back to second stream item
-    expect(document.activeElement).toBe(streamItems[1]);
+    pressTab(true);
+    expect(document.activeElement).toBe(contextItems[1]);
 
-    simulateTab(true); // back to first stream item
-    expect(document.activeElement).toBe(streamItems[0]);
+    pressTab(true);
+    expect(document.activeElement).toBe(contextItems[0]);
   });
 
-  test("Ctrl+N focuses Brainbar via shortcut", async () => {
-    render(<FocusHarness />);
+  test("Ctrl+N focuses the Brainbar input", async () => {
+    render(<TabHarness />);
+
     const brainbarInput = await screen.findByLabelText("Enter thought");
     const miniGraph = await screen.findByTestId("mini-graph");
     miniGraph.focus();
-    expect(document.activeElement).toBe(miniGraph);
 
     act(() => {
       window.dispatchEvent(

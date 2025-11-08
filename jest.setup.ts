@@ -99,3 +99,13 @@ Object.defineProperty(window, "localStorage", {
     };
   })(),
 });
+
+// Mock element.animate used in focus helpers
+if (!Element.prototype.animate) {
+  Element.prototype.animate = function () {
+    return {
+      cancel: () => {},
+      finish: () => {},
+    } as unknown as Animation;
+  };
+}

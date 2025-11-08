@@ -81,27 +81,21 @@ export default function SidebarNav() {
                   <button
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
-                    onClick={() =>
-                      window.alert(t.importPlaceholder)
-                    }
+                    onClick={() => window.alert(t.importPlaceholder)}
                   >
                     <Upload size={16} /> {t.import}
                   </button>
                   <button
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
-                    onClick={() =>
-                      window.alert(t.snapshotsPlaceholder)
-                    }
+                    onClick={() => window.alert(t.snapshotsPlaceholder)}
                   >
                     <Database size={16} /> {t.snapshots}
                   </button>
                   <button
                     type="button"
                     className="flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
-                    onClick={() =>
-                      window.alert(t.settingsPlaceholder)
-                    }
+                    onClick={() => window.alert(t.settingsPlaceholder)}
                   >
                     <Settings size={16} /> {t.settings}
                   </button>
@@ -145,10 +139,9 @@ export default function SidebarNav() {
             <Section title={t.archive} icon={<Archive size={14} />}>
               <button
                 type="button"
-                onClick={() =>
-                  window.alert(t.archivePlaceholderAlert)
-                }
+                onClick={() => window.alert(t.archivePlaceholderAlert)}
                 className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
+                aria-label={t.goToArchive}
               >
                 {t.goToArchive}
               </button>
@@ -160,9 +153,7 @@ export default function SidebarNav() {
               </div>
               <button
                 type="button"
-                onClick={() =>
-                  window.alert(t.loginPlaceholder)
-                }
+                onClick={() => window.alert(t.loginPlaceholder)}
                 className="mt-2 flex w-full items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
               >
                 <LogIn size={16} /> {t.login}
