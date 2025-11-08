@@ -12,6 +12,7 @@ import "@testing-library/jest-dom";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { motion } from "@/lib/motionPresets";
 import Brainbar from "@/components/Brainbar";
+import QuickChips from "@/components/QuickChips";
 import ExplainOverlay from "@/components/ExplainOverlay";
 
 expect.extend(toHaveNoViolations);
@@ -205,15 +206,12 @@ describe("UI Design Pass 1 – Visual QA", () => {
       expect(input?.className).toContain("rounded-xl");
     });
 
-    test("Brainbar quick chips have glow on hover", () => {
-      const { container } = render(<Brainbar />);
-      
-      const chips = container.querySelectorAll("button[aria-label*='Befehl']");
+    test("QuickChips expose glow interaction styles", () => {
+      const { container } = render(<QuickChips onPick={jest.fn()} />);
+      const chips = container.querySelectorAll("button");
       expect(chips.length).toBeGreaterThan(0);
-      
       chips.forEach((chip) => {
-        expect(chip.className).toContain("hover:glow");
-        expect(chip.className).toContain("text-text-secondary");
+        expect(chip.className).toContain("focus-glow");
       });
     });
   });

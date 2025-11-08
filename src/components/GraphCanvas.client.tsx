@@ -93,12 +93,16 @@ import SyncIndicator from "@/components/ui/SyncIndicator";
 import SyncDashboard from "@/components/dev/SyncDashboard";
 import { registerDashboardToggle } from "@/utils/hotkeys";
 // Step 16.1: Modular components
-import Brainbar from "@/components/Brainbar";
+import Brainbar, {
+  type BrainbarHandle,
+  type BrainbarCommand,
+} from "@/components/Brainbar";
 import GraphMiniMap from "@/components/GraphMiniMap";
 import GraphContextStream from "@/components/GraphContextStream";
 import MiniGraph from "@/components/MiniGraph";
 import QuickChips from "@/components/QuickChips";
 import { useUIStore } from "@/store/UIStore";
+import { uiConfig } from "@/config/uiConfig";
 import {
   saveSpatialState,
   loadSpatialState,
@@ -1748,22 +1752,27 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
   // Step 16: Brainbar thought submission with intent support
   const handleThoughtSubmit = useCallback(
-    (text: string, thoughtType: string, intent?: "add" | "link" | "goal" | "due" | null) => {
-      createTextNode(text, thoughtType);
-      
-      // Add feedback for intent-based actions
-      if (intent) {
-        addFeedback({
-          type: "user_action",
-          payload: { message: `Intent erkannt: /${intent}` },
-        });
-      }
+    (command: BrainbarCommand) => {
+      const thoughtType =
+        command.type === "goal"
+          ? "Goal"
+          : command.type === "link"
+          ? "Link"
+          : command.type === "due"
+          ? "Task"
+          : "Idea";
+
+      createTextNode(command.text, thoughtType);
+
+      addFeedback({
+        type: "user_action",
+        payload: { message: `Intent erkannt: /${command.type}` },
+      });
     },
     [createTextNode, addFeedback]
   );
 
-  // QuickChips prefilled value state
-  const [brainbarPrefilled, setBrainbarPrefilled] = useState<string>("");
+  const brainbarRef = useRef<BrainbarHandle>(null);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -1783,10 +1792,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
       // Ctrl+N / Cmd+N: New thought (focus Brainbar)
       if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
-        const brainbarInput = document.getElementById("brainbar-input") as HTMLInputElement;
-        if (brainbarInput) {
-          brainbarInput.focus();
-        }
+        brainbarRef.current?.focus();
       }
 
       // Tab: Next node (if nodes exist)
@@ -1824,8 +1830,15 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         {/* Step 16: Mini-Graph Preview at top */}
         <div className="w-full px-4 pt-4 pb-2">
           <MiniGraph
-            nodes={nodes}
-            edges={edges}
+            nodes={nodes.map((node) => ({
+              id: node.id,
+              label: String(node.data?.label ?? "Gedanke"),
+            }))}
+            edges={edges.map((edge) => ({
+              id: edge.id,
+              source: edge.source,
+              target: edge.target,
+            }))}
             onNodeHover={(nodeId) => {
               // Highlight corresponding Context Stream item
               // This is handled by GraphContextStream's activeNodeId prop
@@ -1838,26 +1851,9 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
         {/* Step 16: Brainbar with QuickChips */}
         <div className="w-full">
-          <Brainbar
-            onThoughtSubmit={handleThoughtSubmit}
-            prefilledValue={brainbarPrefilled}
-            onPrefilledValueChange={setBrainbarPrefilled}
-          />
+          <Brainbar ref={brainbarRef} onSubmit={handleThoughtSubmit} />
           <QuickChips
-            onChipClick={(command) => {
-              setBrainbarPrefilled(command + " ");
-              const brainbarInput = document.getElementById("brainbar-input") as HTMLInputElement;
-              if (brainbarInput) {
-                brainbarInput.focus();
-                // Move cursor to end
-                setTimeout(() => {
-                  brainbarInput.setSelectionRange(
-                    brainbarInput.value.length,
-                    brainbarInput.value.length
-                  );
-                }, 0);
-              }
-            }}
+            onPick={(command) => brainbarRef.current?.prefill(command)}
           />
         </div>
 
@@ -2287,48 +2283,91 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
         )}
 
         {/* 🧠 React Flow Graph */}
-        <div className="flex flex-row flex-1 overflow-hidden relative">
-          <div className="flex-1 relative">
-            <ReactFlowProvider>
-              <GraphFlowWithHotkeys
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onNodeClick={onNodeClick}
-                onPaneClick={onPaneClick}
-                onNodeDragStop={onNodeDragStop}
-                onNodeContextMenu={onNodeContextMenu}
-                onNodeMouseEnter={onNodeMouseEnter}
-                onNodeMouseLeave={onNodeMouseLeave}
-                registerInstance={setFlowInstance}
-                contextNode={contextNode}
-                menuPos={menuPos}
-                closeContextMenu={closeContextMenu}
-                filteredNodes={filteredNodes}
-                rawNodes={nodes}
-                edges={edges}
-                setNodes={setNodes}
-                withGlow={withGlow}
-                setActiveNodeId={setActiveNodeId}
-                searchRef={searchRef}
-                isEditableTarget={isEditableTarget}
-                isLoading={isLoading}
-                hasNodes={nodes?.length > 0}
-                hasAnimated={hasAnimated}
-                graphLoadedOnce={graphLoadedOnce}
-              />
-            </ReactFlowProvider>
+        {uiConfig.contextPosition === 'bottom' ? (
+          <div className="flex flex-col flex-1 overflow-hidden relative">
+            <div className="flex-1 relative">
+              <ReactFlowProvider>
+                <GraphFlowWithHotkeys
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onNodeClick={onNodeClick}
+                  onPaneClick={onPaneClick}
+                  onNodeDragStop={onNodeDragStop}
+                  onNodeContextMenu={onNodeContextMenu}
+                  onNodeMouseEnter={onNodeMouseEnter}
+                  onNodeMouseLeave={onNodeMouseLeave}
+                  registerInstance={setFlowInstance}
+                  contextNode={contextNode}
+                  menuPos={menuPos}
+                  closeContextMenu={closeContextMenu}
+                  filteredNodes={filteredNodes}
+                  rawNodes={nodes}
+                  edges={edges}
+                  setNodes={setNodes}
+                  withGlow={withGlow}
+                  setActiveNodeId={setActiveNodeId}
+                  searchRef={searchRef}
+                  isEditableTarget={isEditableTarget}
+                  isLoading={isLoading}
+                  hasNodes={nodes?.length > 0}
+                  hasAnimated={hasAnimated}
+                  graphLoadedOnce={graphLoadedOnce}
+                />
+              </ReactFlowProvider>
+            </div>
+            {/* Step 16: GraphContextStream bottom panel */}
+            <GraphContextStream
+              activeNode={activeNode}
+              nodes={nodes}
+              edges={edges}
+              onNodeSelect={setActiveNodeId}
+              position="bottom"
+            />
           </div>
-
-          {/* Step 16.1: GraphContextStream side panel */}
-          {/* TODO (Step 16.2): Add toggle for show/hide, sync with node selection */}
-          <GraphContextStream
-            activeNode={activeNode}
-            nodes={nodes}
-            edges={edges}
-            onNodeSelect={setActiveNodeId}
-          />
-        </div>
+        ) : (
+          <div className="flex flex-row flex-1 overflow-hidden relative">
+            <div className="flex-1 relative">
+              <ReactFlowProvider>
+                <GraphFlowWithHotkeys
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onNodeClick={onNodeClick}
+                  onPaneClick={onPaneClick}
+                  onNodeDragStop={onNodeDragStop}
+                  onNodeContextMenu={onNodeContextMenu}
+                  onNodeMouseEnter={onNodeMouseEnter}
+                  onNodeMouseLeave={onNodeMouseLeave}
+                  registerInstance={setFlowInstance}
+                  contextNode={contextNode}
+                  menuPos={menuPos}
+                  closeContextMenu={closeContextMenu}
+                  filteredNodes={filteredNodes}
+                  rawNodes={nodes}
+                  edges={edges}
+                  setNodes={setNodes}
+                  withGlow={withGlow}
+                  setActiveNodeId={setActiveNodeId}
+                  searchRef={searchRef}
+                  isEditableTarget={isEditableTarget}
+                  isLoading={isLoading}
+                  hasNodes={nodes?.length > 0}
+                  hasAnimated={hasAnimated}
+                  graphLoadedOnce={graphLoadedOnce}
+                />
+              </ReactFlowProvider>
+            </div>
+            {/* Step 16.1: GraphContextStream side panel */}
+            <GraphContextStream
+              activeNode={activeNode}
+              nodes={nodes}
+              edges={edges}
+              onNodeSelect={setActiveNodeId}
+              position="side"
+            />
+          </div>
+        )}
 
         {/* 🔹 Rechtes Notiz-Panel */}
         <ThoughtPanel

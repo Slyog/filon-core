@@ -1,6 +1,6 @@
 "use client";
 
-import { PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren, useEffect, useMemo, useCallback } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import HeaderBar from "./HeaderBar";
 import SidebarNav from "./Sidebar";
@@ -10,12 +10,29 @@ import ContextStream from "@/components/ContextStream";
 import { usePanelHotkeys } from "@/hooks/usePanelHotkeys";
 import { useExplainCache } from "@/store/ExplainCache";
 import { useFramePerf } from "@/hooks/useFramePerf";
+import { useContextStreamStore } from "@/store/ContextStreamStore";
+import type { ContextStreamItem } from "@/components/ContextStream";
 
 export default function AppShell({ children }: PropsWithChildren) {
   useHydrateUIShell();
   usePanelHotkeys();
   const { loadCache } = useExplainCache();
   const { fps, avg } = useFramePerf();
+  const { summaries } = useContextStreamStore();
+  const streamItems = useMemo<ContextStreamItem[]>(
+    () =>
+      summaries.map((summary) => ({
+        id: summary.id,
+        title: summary.text.slice(0, 48),
+        summary: summary.text,
+        confidence: Math.round(summary.confidence * 100),
+        ts: summary.createdAt,
+      })),
+    [summaries]
+  );
+  const handleStreamSelect = useCallback((id: string) => {
+    console.log(`[ContextStream] selected ${id}`);
+  }, []);
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -60,7 +77,10 @@ export default function AppShell({ children }: PropsWithChildren) {
           >
             {/* Core Panels */}
             <DynamicPanel flag="CONTEXT_STREAM" title="Context Stream">
-              <ContextStream />
+              <ContextStream
+                items={streamItems}
+                onSelect={handleStreamSelect}
+              />
             </DynamicPanel>
 
             <DynamicPanel flag="SESSION_FEEDBACK" title="Session Feedback">

@@ -1,66 +1,42 @@
 "use client";
 
-import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
-interface QuickChip {
-  label: string;
-  command: string;
-  description: string;
-}
-
-const QUICK_CHIPS: QuickChip[] = [
-  {
-    label: "Ziel hinzufügen",
-    command: "/goal",
-    description: "Neues Ziel erstellen",
-  },
-  {
-    label: "Verknüpfen",
-    command: "/link",
-    description: "Gedanken verknüpfen",
-  },
-  {
-    label: "Erklären",
-    command: "/explain",
-    description: "AI-Erklärung anfordern",
-  },
-  {
-    label: "Markieren",
-    command: "/mark",
-    description: "Als wichtig markieren",
-  },
-];
+type ChipCommand = "/add" | "/link" | "/goal" | "/due" | "/explain" | "/mark";
 
 interface QuickChipsProps {
-  onChipClick: (command: string) => void;
+  onPick: (command: ChipCommand) => void;
 }
 
-export default function QuickChips({ onChipClick }: QuickChipsProps) {
+const CHIPS: Array<{ label: string; command: ChipCommand; helper: string }> = [
+  { label: "Ziel hinzufügen", command: "/goal", helper: "Ziel notieren" },
+  { label: "Verknüpfen", command: "/link", helper: "Verbindungen entdecken" },
+  { label: "Erklären", command: "/explain", helper: "Erklärung anfordern" },
+  { label: "Markieren", command: "/mark", helper: "Gedanke markieren" },
+];
+
+export default function QuickChips({ onPick }: QuickChipsProps) {
   const reduced = useReducedMotion();
 
   return (
     <div
       role="group"
       aria-label="Schnellaktionen"
-      className="flex flex-wrap gap-2 px-4 pb-3"
+      className="flex flex-wrap gap-2"
     >
-      {QUICK_CHIPS.map((chip) => (
+      {CHIPS.map((chip) => (
         <motion.button
           key={chip.command}
           type="button"
-          role="button"
-          aria-label={chip.description}
-          aria-description={`Prefill Brainbar mit ${chip.command}`}
-          onClick={() => onChipClick(chip.command)}
-          className="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-xs font-medium border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors focus-glow"
-          whileHover={reduced ? {} : { scale: 1.05 }}
-          whileTap={reduced ? {} : { scale: 0.95 }}
-          transition={{
-            type: "spring",
-            stiffness: 120,
-            damping: 22,
-          }}
+          aria-pressed="false"
+          aria-label={chip.label}
+          aria-description={chip.helper}
+          data-testid={`quickchip-${chip.command}`}
+          className="focus-glow rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1.5 text-sm font-medium text-cyan-100 hover:bg-cyan-500/20 focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
+          whileHover={reduced ? undefined : { scale: 1.05 }}
+          whileTap={reduced ? undefined : { scale: 0.95 }}
+          transition={{ type: "spring", stiffness: 120, damping: 22 }}
+          onClick={() => onPick(chip.command)}
         >
           {chip.label}
         </motion.button>
@@ -68,4 +44,3 @@ export default function QuickChips({ onChipClick }: QuickChipsProps) {
     </div>
   );
 }
-

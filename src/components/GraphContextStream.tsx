@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useCallback, useEffect, memo } from "react";
+import React, { useMemo, useState, useRef, useCallback, useEffect, memo, Profiler } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Node, Edge } from "reactflow";
 import { Sparkles, Pin, Filter, Info } from "lucide-react";
@@ -22,6 +22,7 @@ interface GraphContextStreamProps {
   nodes?: Node[];
   edges?: Edge[];
   onNodeSelect?: (nodeId: string) => void;
+  position?: "bottom" | "side";
 }
 
 interface StreamEvent {
@@ -102,7 +103,9 @@ function AISummaryInline({
 export default function GraphContextStream({
   activeNode,
   nodes = [],
+  edges: _edges = [],
   onNodeSelect,
+  position = "side",
 }: GraphContextStreamProps) {
   const [filter, setFilter] = useState<FilterMode>("all");
   const [showExplain, setShowExplain] = useState<boolean>(false);
@@ -369,6 +372,17 @@ export default function GraphContextStream({
     scrollPositionRef.current = scrollTop;
   }, []);
 
+  // Throttle hover sync to 60ms
+  const hoverSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const throttledHoverSync = useCallback((nodeId: string | null) => {
+    if (hoverSyncTimeoutRef.current) {
+      clearTimeout(hoverSyncTimeoutRef.current);
+    }
+    hoverSyncTimeoutRef.current = setTimeout(() => {
+      // Hover sync logic here if needed
+    }, 60);
+  }, []);
+
   // Set up scroll listener with cleanup and debounce
   useEffect(() => {
     const element = scrollElementRef.current;
@@ -411,27 +425,59 @@ export default function GraphContextStream({
     }
   }, []);
 
+  // Calculate height based on position
+  const heightStyle = position === "bottom"
+    ? { 
+        height: 'clamp(35vh, var(--context-height, 40vh), 45vh)',
+        maxHeight: typeof window !== 'undefined' && window.innerWidth < 768 
+          ? 'clamp(50vh, var(--context-height, 55vh), 60vh)' 
+          : 'clamp(35vh, var(--context-height, 40vh), 45vh)',
+      }
+    : { height: '100%' };
+
+  const wrapperClasses = position === "bottom"
+    ? "relative flex w-full flex-col overflow-hidden border-t border-neutral-800 bg-neutral-900/95 motion-soft"
+    : "relative flex h-full w-[360px] flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900/95 motion-soft";
+
+  const initialAnimation = position === "bottom"
+    ? reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+    : reduced ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 };
+
+  const animateAnimation = position === "bottom"
+    ? { opacity: 1, y: 0 }
+    : { opacity: 1, x: 0 };
+  const panelRole = position === "side" ? "complementary" : "region";
+
   return (
     <motion.div
-      className="relative flex h-full w-[360px] flex-col overflow-hidden border-l border-neutral-800 bg-neutral-900/95 motion-soft"
-      initial={reduced ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
-      animate={{ opacity: 1, x: 0 }}
+      className={wrapperClasses}
+      style={heightStyle}
+      role={panelRole}
+      aria-label="Context Stream Panel"
+      data-testid="graph-context-stream"
+      data-position={position}
+      initial={initialAnimation}
+      animate={animateAnimation}
       transition={reduced ? { duration: 0 } : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }}
     >
-      <div className="flex items-center justify-between border-b border-neutral-800 bg-surface-hover/90 p-3 text-sm text-text-primary backdrop-blur-md shadow-inner">
+      <div
+        data-testid="graph-context-stream-header"
+        className={`flex items-center justify-between ${position === "bottom" ? "border-b" : "border-b"} border-neutral-800 bg-surface-hover/90 p-3 text-sm text-text-primary backdrop-blur-md shadow-inner sticky top-0 z-10`}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <Info size={16} className="text-brand" />
+          <span className="font-semibold">Context Stream</span>
           {activeNodeLabel ? (
-            <span className="truncate">{activeNodeLabel}</span>
+            <span className="truncate">• {activeNodeLabel}</span>
           ) : (
-            <span className="italic text-text-muted">Kein Node ausgewählt</span>
+            <span className="italic text-text-muted">• Kein Node ausgewählt</span>
           )}
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setFilter("all")}
-            className={`px-2 py-1 text-xs rounded-xl ${
+            className={`px-2 py-1 text-xs rounded-xl focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 ${
               filter === "all"
                 ? "bg-brand/20 text-brand"
                 : "bg-neutral-800 text-text-secondary"
@@ -442,7 +488,7 @@ export default function GraphContextStream({
           <button
             type="button"
             onClick={() => setFilter("ai")}
-            className={`px-2 py-1 text-xs ${
+            className={`px-2 py-1 text-xs focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 ${
               filter === "ai"
                 ? "rounded-md bg-cyan-500/20 text-cyan-300"
                 : "rounded-md bg-neutral-800 text-neutral-400"
@@ -453,7 +499,7 @@ export default function GraphContextStream({
           <button
             type="button"
             onClick={() => setFilter("events")}
-            className={`px-2 py-1 text-xs ${
+            className={`px-2 py-1 text-xs focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 ${
               filter === "events"
                 ? "rounded-md bg-cyan-500/20 text-cyan-300"
                 : "rounded-md bg-neutral-800 text-neutral-400"
@@ -482,31 +528,39 @@ export default function GraphContextStream({
         )}
       </div>
 
-      <section
-        role="list"
-        aria-label="Context Stream"
-        className="flex-1 overflow-hidden"
-        data-perf-id="context-stream"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          // Global keyboard shortcuts for Context Stream
-          if (e.key === "ArrowDown" && filteredAndPinnedEvents.length > 0) {
-            e.preventDefault();
-            const firstEvent = filteredAndPinnedEvents[0];
-            setFocusedId(firstEvent.id);
-            const firstElement = itemRefs.current.get(firstEvent.id);
-            if (firstElement) {
-              firstElement.focus();
-            }
+      <Profiler
+        id="ContextStream"
+        onRender={(id, phase, actualDuration) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[React.Profiler] ${id} ${phase}: ${actualDuration.toFixed(2)}ms`);
           }
         }}
       >
-        {filteredAndPinnedEvents.length === 0 ? (
-          <div className="mt-6 text-center text-xs text-neutral-600 px-3">
-            Keine Ereignisse für diesen Filter.
-          </div>
-        ) : (
-          <Virtuoso
+        <section
+          role="list"
+          aria-label="Context Stream"
+          className="flex-1 overflow-hidden"
+          data-perf-id="context-stream"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            // Global keyboard shortcuts for Context Stream
+            if (e.key === "ArrowDown" && filteredAndPinnedEvents.length > 0) {
+              e.preventDefault();
+              const firstEvent = filteredAndPinnedEvents[0];
+              setFocusedId(firstEvent.id);
+              const firstElement = itemRefs.current.get(firstEvent.id);
+              if (firstElement) {
+                firstElement.focus();
+              }
+            }
+          }}
+        >
+          {filteredAndPinnedEvents.length === 0 ? (
+            <div className="mt-6 text-center text-xs text-neutral-600 px-3">
+              Keine Ereignisse für diesen Filter.
+            </div>
+          ) : (
+            <Virtuoso
             ref={virtuosoRef}
             scrollerRef={handleScrollerRef}
             data={filteredAndPinnedEvents}
@@ -515,115 +569,23 @@ export default function GraphContextStream({
             itemContent={(index, event) => {
               const eventFocused = isFocused(event);
               return (
-                <div className="px-3 pb-3">
-                  <Panel id={event.id}>
-                    <motion.div
-                      ref={(el) => {
-                        if (el) {
-                          itemRefs.current.set(event.id, el);
-                          if (eventFocused) {
-                            focusedItemRef.current = el;
-                          }
-                        } else {
-                          itemRefs.current.delete(event.id);
-                          if (focusedItemRef.current === el) {
-                            focusedItemRef.current = null;
-                          }
-                        }
-                      }}
-                      role="article"
-                      aria-describedby={`event-text-${event.id}`}
-                      tabIndex={0}
-                      data-test="ctx-item"
-                      data-test-pinned={event.isPinned ? "true" : "false"}
-                      key={event.id}
-                      className={`border p-3 transition-all duration-200 cursor-pointer ${
-                        activeNodeId && event.nodeId === activeNodeId
-                          ? "border-brand/40 bg-brand-dark/30 hover:bg-brand-dark/40"
-                          : "border-neutral-800 hover:bg-surface-hover"
-                      } ${event.isPinned ? "border-brand-soft shadow-glow" : ""} ${
-                        eventFocused
-                          ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-surface-base glow-interactive"
-                          : ""
-                      }`}
-                      style={{
-                        boxShadow: eventFocused
-                          ? "0 0 20px rgba(6, 182, 212, 0.4)"
-                          : undefined,
-                      }}
-                      initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={
-                        reduced
-                          ? { duration: 0 }
-                          : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
-                      }
-                      onKeyDown={(e) => handleItemKeyDown(e, event)}
-                      onClick={() => {
-                        if (event.nodeId && onNodeSelect) {
-                          onNodeSelect(event.nodeId);
-                        }
-                      }}
-                      onFocus={() => setFocusedId(event.id)}
-                      onBlur={() => {
-                        // Only clear focus if not switching to another item
-                        setTimeout(() => {
-                          const activeEl = document.activeElement;
-                          if (!itemRefs.current.has(event.id) || 
-                              (activeEl && !itemRefs.current.get(event.id)?.contains(activeEl))) {
-                            setFocusedId(null);
-                          }
-                        }, 0);
-                      }}
-                    >
-                      <div className="mb-1 flex items-center justify-between">
-                        <span className="sr-only">{event.type}</span>
-                        <span className="text-xs uppercase tracking-wide text-text-secondary">
-                          {event.type}
-                          {event.isPinned && (
-                            <span className="ml-2 text-accent-warning" aria-label="Pinned">
-                              📌
-                            </span>
-                          )}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePinToggle(event.id);
-                          }}
-                          aria-label={event.isPinned ? "Unpin entry" : "Pin entry"}
-                          aria-pressed={event.isPinned ? "true" : "false"}
-                          className={`transition-colors ${
-                            event.isPinned
-                              ? "text-accent-warning hover:text-accent-warning/80"
-                              : "text-text-muted hover:text-brand"
-                          }`}
-                        >
-                          <Pin size={14} fill={event.isPinned ? "currentColor" : "none"} />
-                        </button>
-                      </div>
-                      <div
-                        id={`event-text-${event.id}`}
-                        className="text-sm text-text-primary whitespace-pre-wrap"
-                      >
-                        {event.message || "(kein Text)"}
-                      </div>
-                      
-                      {/* Display last AI summary inline under related feedback entry */}
-                      {event.nodeId && nodeSummaries.has(event.nodeId) && (
-                        <AISummaryInline
-                          summary={nodeSummaries.get(event.nodeId)!}
-                          nodeId={event.nodeId!}
-                          onOpenExplain={() => {
-                            setExplainNodeId(event.nodeId);
-                            setShowExplainOverlay(true);
-                          }}
-                        />
-                      )}
-                    </motion.div>
-                  </Panel>
-                </div>
+                <ContextStreamItem
+                  key={event.id}
+                  event={event}
+                  eventFocused={eventFocused}
+                  activeNodeId={activeNodeId}
+                  onNodeSelect={onNodeSelect}
+                  onPinToggle={handlePinToggle}
+                  onItemKeyDown={handleItemKeyDown}
+                  setFocusedId={setFocusedId}
+                  itemRefs={itemRefs}
+                  focusedItemRef={focusedItemRef}
+                  nodeSummaries={nodeSummaries}
+                  setExplainNodeId={setExplainNodeId}
+                  setShowExplainOverlay={setShowExplainOverlay}
+                  nodes={nodes}
+                  reduced={reduced}
+                />
               );
             }}
             scrollSeekConfiguration={{
@@ -637,6 +599,7 @@ export default function GraphContextStream({
           />
         )}
       </section>
+      </Profiler>
 
       {activeNodeId && (
         <div className="border-t border-neutral-800 bg-surface-hover/90 p-3 backdrop-blur-md shadow-inner">
@@ -673,3 +636,152 @@ export default function GraphContextStream({
     </motion.div>
   );
 }
+
+// Memoized Context Stream Item component for performance
+const ContextStreamItem = memo(({
+  event,
+  eventFocused,
+  activeNodeId,
+  onNodeSelect,
+  onPinToggle,
+  onItemKeyDown,
+  setFocusedId,
+  itemRefs,
+  focusedItemRef,
+  nodeSummaries,
+  setExplainNodeId,
+  setShowExplainOverlay,
+  nodes,
+  reduced,
+}: {
+  event: StreamEvent;
+  eventFocused: boolean;
+  activeNodeId: string | null;
+  onNodeSelect?: (nodeId: string) => void;
+  onPinToggle: (eventId: string) => void;
+  onItemKeyDown: (e: React.KeyboardEvent, event: StreamEvent) => void;
+  setFocusedId: (id: string) => void;
+  itemRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
+  focusedItemRef: React.MutableRefObject<HTMLDivElement | null>;
+  nodeSummaries: Map<string, { text: string; confidence: number; eventId: string }>;
+  setExplainNodeId: (id: string | null) => void;
+  setShowExplainOverlay: (show: boolean) => void;
+  nodes: Node[];
+  reduced: boolean;
+}) => {
+  const handleRef = useCallback((el: HTMLDivElement | null) => {
+    if (el) {
+      itemRefs.current.set(event.id, el);
+      if (eventFocused) {
+        focusedItemRef.current = el;
+      }
+    } else {
+      itemRefs.current.delete(event.id);
+      if (focusedItemRef.current === el) {
+        focusedItemRef.current = null;
+      }
+    }
+  }, [event.id, eventFocused, itemRefs]);
+
+  return (
+    <div className="px-3 pb-3">
+      <Panel id={event.id}>
+        <motion.div
+          ref={handleRef}
+                      role="article"
+                      aria-describedby={`event-text-${event.id}`}
+                      tabIndex={0}
+                      data-test="ctx-item"
+                      data-test-pinned={event.isPinned ? "true" : "false"}
+                      key={event.id}
+                      className={`border p-3 transition-all duration-200 cursor-pointer ${
+                        activeNodeId && event.nodeId === activeNodeId
+                          ? "border-brand/40 bg-brand-dark/30 hover:bg-brand-dark/40"
+                          : "border-neutral-800 hover:bg-surface-hover"
+                      } ${event.isPinned ? "border-brand-soft shadow-glow" : ""} ${
+                        eventFocused
+                          ? "ring-2 ring-cyan-400 ring-offset-2 ring-offset-surface-base glow-interactive"
+                          : ""
+                      }`}
+                      style={{
+                        boxShadow: eventFocused
+                          ? "0 0 20px rgba(6, 182, 212, 0.4)"
+                          : undefined,
+                      }}
+                      initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={
+                        reduced
+                          ? { duration: 0 }
+                          : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
+                      }
+                      onKeyDown={(e) => onItemKeyDown(e, event)}
+                      onClick={() => {
+                        if (event.nodeId && onNodeSelect) {
+                          onNodeSelect(event.nodeId);
+                        }
+                      }}
+                      onFocus={() => setFocusedId(event.id)}
+                      onBlur={() => {
+                        // Only clear focus if not switching to another item
+                        setTimeout(() => {
+                          const activeEl = document.activeElement;
+                          if (!itemRefs.current.has(event.id) || 
+                              (activeEl && !itemRefs.current.get(event.id)?.contains(activeEl))) {
+                            setFocusedId(null);
+                          }
+                        }, 0);
+                      }}
+                    >
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="sr-only">{event.type}</span>
+                        <span className="text-xs uppercase tracking-wide text-text-secondary">
+                          {event.type}
+                          {event.isPinned && (
+                            <span className="ml-2 text-accent-warning" aria-label="Pinned">
+                              📌
+                            </span>
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onPinToggle(event.id);
+                          }}
+                          aria-label={event.isPinned ? "Unpin entry" : "Pin entry"}
+                          aria-pressed={event.isPinned ? "true" : "false"}
+                          className={`transition-colors ${
+                            event.isPinned
+                              ? "text-accent-warning hover:text-accent-warning/80"
+                              : "text-text-muted hover:text-brand"
+                          }`}
+                        >
+                          <Pin size={14} fill={event.isPinned ? "currentColor" : "none"} />
+                        </button>
+                      </div>
+                      <div
+                        id={`event-text-${event.id}`}
+                        className="text-sm text-text-primary whitespace-pre-wrap"
+                      >
+                        {event.message || "(kein Text)"}
+                      </div>
+                      
+                      {/* Display last AI summary inline under related feedback entry */}
+                      {event.nodeId && nodeSummaries.has(event.nodeId) && (
+                        <AISummaryInline
+                          summary={nodeSummaries.get(event.nodeId)!}
+                          nodeId={event.nodeId!}
+                          onOpenExplain={() => {
+                            setExplainNodeId(event.nodeId);
+                            setShowExplainOverlay(true);
+                          }}
+                        />
+                      )}
+                    </motion.div>
+                  </Panel>
+                </div>
+  );
+});
+
+ContextStreamItem.displayName = 'ContextStreamItem';

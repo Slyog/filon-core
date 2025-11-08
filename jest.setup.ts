@@ -17,6 +17,16 @@ class ResizeObserver {
 }
 (global as any).ResizeObserver = ResizeObserver;
 
+class IntersectionObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
+}
+(global as any).IntersectionObserver = IntersectionObserver;
+
 // Mock requestAnimationFrame
 (global as any).requestAnimationFrame = (cb: FrameRequestCallback) =>
   setTimeout(cb, 0);

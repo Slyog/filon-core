@@ -9,11 +9,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest --config jest.config.ts",
+    "test:a11y": "jest --config jest.config.ts src/__tests__/a11y",
     "test:watch": "jest --watch --config jest.config.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:performance": "playwright test e2e/performance.spec.ts",
-    "db:reset": "ts-node prisma/reset.ts"
+    "db:reset": "ts-node prisma/reset.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@automerge/automerge": "^3.2.0",

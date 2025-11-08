@@ -1,283 +1,211 @@
 "use client";
 
-import React, { useState, useCallback, useRef } from "react";
-import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
-import { Sparkles, Mic } from "lucide-react";
-import { startVoiceCapture } from "@/lib/voiceInput";
-import { useSessionStore } from "@/store/SessionStore";
-import { useFeedbackStore } from "@/store/FeedbackStore";
+import React, {
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles } from "lucide-react";
 
-type IntentType = "add" | "link" | "goal" | "due" | null;
+export type BrainbarCommandType = "add" | "link" | "goal" | "due";
+
+export interface BrainbarCommand {
+  type: BrainbarCommandType;
+  text: string;
+}
+
+export interface BrainbarHandle {
+  focus: () => void;
+  prefill: (value: string) => void;
+  clear: () => void;
+}
 
 interface BrainbarProps {
-  onThoughtSubmit?: (text: string, thoughtType: string, intent?: IntentType) => void;
-  prefilledValue?: string;
-  onPrefilledValueChange?: (value: string) => void;
+  onSubmit: (command: BrainbarCommand) => void;
+  autoFocus?: boolean;
 }
 
-// Detect intent from input text
-function detectIntent(text: string): IntentType {
-  const trimmed = text.trim().toLowerCase();
-  if (trimmed.startsWith("/add")) return "add";
-  if (trimmed.startsWith("/link")) return "link";
-  if (trimmed.startsWith("/goal")) return "goal";
-  if (trimmed.startsWith("/due")) return "due";
-  return null;
-}
+const COMMAND_MAP: Record<string, BrainbarCommandType> = {
+  "/add": "add",
+  "/link": "link",
+  "/goal": "goal",
+  "/due": "due",
+};
 
-// Extract text after intent command
-function extractTextAfterIntent(text: string, intent: IntentType): string {
-  if (!intent) return text;
-  const prefix = `/${intent}`;
-  const index = text.toLowerCase().indexOf(prefix);
-  if (index === -1) return text;
-  return text.slice(index + prefix.length).trim();
-}
+const clampText = (text: string) => {
+  if (text.length <= 32) return text;
+  return `${text.slice(0, 29)}…`;
+};
 
-export default function Brainbar({ 
-  onThoughtSubmit,
-  prefilledValue,
-  onPrefilledValueChange,
-}: BrainbarProps) {
-  const [inputValue, setInputValue] = useState(prefilledValue || "");
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [submitAnnouncement, setSubmitAnnouncement] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastKeyTime, setLastKeyTime] = useState<number>(0);
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const enqueueThought = useSessionStore((s) => s.enqueueThought);
-  const activeSessionId = useSessionStore((s) => s.activeSessionId);
-  const addFeedback = useFeedbackStore((s) => s.addFeedback);
-  const reduced = useReducedMotion();
-  const liveRegionRef = useRef<HTMLDivElement>(null);
+const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
+  ({ onSubmit, autoFocus = false }, ref) => {
+    const [value, setValue] = useState("");
+    const [focused, setFocused] = useState(false);
+    const [pulse, setPulse] = useState(false);
+    const [announcement, setAnnouncement] = useState("");
+    const inputRef = useRef<HTMLInputElement>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync prefilled value
-  React.useEffect(() => {
-    if (prefilledValue !== undefined && prefilledValue !== inputValue) {
-      setInputValue(prefilledValue);
-      if (inputRef.current) {
-        inputRef.current.focus();
+    const hasCommand = value.trimStart().startsWith("/");
+
+    const parsed = useMemo(() => {
+      const trimmed = value.trim();
+      const [potentialCommand, ...rest] = trimmed.split(" ");
+      const normalized = COMMAND_MAP[potentialCommand?.toLowerCase() ?? ""] ?? "add";
+      const text =
+        COMMAND_MAP[potentialCommand?.toLowerCase() ?? ""] !== undefined
+          ? rest.join(" ").trim()
+          : trimmed;
+      return {
+        type: normalized,
+        text,
+      };
+    }, [value]);
+
+    const triggerPulse = useCallback(() => {
+      setPulse(true);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
-    }
-  }, [prefilledValue]);
+      timeoutRef.current = setTimeout(() => setPulse(false), 280);
+    }, []);
 
-  // Notify parent of value changes
-  React.useEffect(() => {
-    onPrefilledValueChange?.(inputValue);
-  }, [inputValue, onPrefilledValueChange]);
+    const announce = useCallback((message: string) => {
+      setAnnouncement(message);
+      setTimeout(() => setAnnouncement(""), 1800);
+    }, []);
 
-  const handleSubmit = useCallback(
-    async (text: string, thoughtType?: string) => {
-      if (!text.trim()) {
-        addFeedback({
-          type: "user_action",
-          payload: { message: "Bitte zuerst Text eingeben.", error: true },
-        });
-        setSubmitAnnouncement("Bitte zuerst Text eingeben.");
+    const handleSubmit = useCallback(() => {
+      if (!parsed.text.trim()) {
+        announce("Bitte gib zuerst einen Gedanken ein.");
+        return;
+      }
+      onSubmit(parsed);
+      triggerPulse();
+      announce(`Gedanke ${clampText(parsed.text)} hinzugefügt.`);
+      setValue("");
+    }, [announce, onSubmit, parsed, triggerPulse]);
+
+    const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (
+      event
+    ) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        handleSubmit();
         return;
       }
 
-      // QA: Log keystroke to action delay
-      if (lastKeyTime > 0) {
-        const delay = performance.now() - lastKeyTime;
-        if (
-          typeof window !== "undefined" &&
-          (
-            window as unknown as {
-              __filonPerf?: { logKeystrokeDelay: (delay: number) => void };
-            }
-          ).__filonPerf
-        ) {
-          (
-            window as unknown as {
-              __filonPerf: { logKeystrokeDelay: (delay: number) => void };
-            }
-          ).__filonPerf.logKeystrokeDelay(delay);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setValue("");
+        announce("Eingabe gelöscht.");
+      }
+    };
+
+    React.useEffect(() => {
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
         }
-      }
+      };
+    }, []);
 
-      setIsSaving(true);
+    useImperativeHandle(
+      ref,
+      () => ({
+        focus: () => inputRef.current?.focus(),
+        prefill: (next) => {
+          const command = next.startsWith("/") ? next : `/${next}`;
+          setValue(`${command} `);
+          const focusInput = () => {
+            inputRef.current?.focus();
+            const len = inputRef.current?.value.length ?? 0;
+            inputRef.current?.setSelectionRange(len, len);
+          };
+          if (typeof window !== "undefined" && window.requestAnimationFrame) {
+            window.requestAnimationFrame(focusInput);
+          } else {
+            focusInput();
+          }
+        },
+        clear: () => setValue(""),
+      }),
+      []
+    );
 
-      // Detect intent from input
-      const intent = detectIntent(text);
-      const cleanText = intent ? extractTextAfterIntent(text, intent) : text;
-
-      // Map intent to thought type
-      let type = thoughtType || "Idea";
-      if (intent === "goal") {
-        type = "Goal";
-      } else if (intent === "link") {
-        type = "Link";
-      } else if (intent === "due") {
-        type = "Task";
-      }
-
-      // Submit with intent information
-      if (onThoughtSubmit) {
-        onThoughtSubmit(cleanText, type, intent);
-      } else {
-        // Fallback: add to pending thoughts
-        if (activeSessionId) {
-          enqueueThought({
-            sessionId: activeSessionId,
-            content: cleanText,
-            thoughtType: type,
-          });
-        }
-      }
-
-      setInputValue("");
-      setSubmitAnnouncement(
-        `Gedanke "${cleanText.substring(0, 30)}${
-          cleanText.length > 30 ? "..." : ""
-        }" wurde hinzugefügt.`
-      );
-
-      // Hide saving indicator after short delay
-      setTimeout(() => {
-        setIsSaving(false);
-      }, 150);
-
-      // Clear announcement after a delay
-      setTimeout(() => {
-        setSubmitAnnouncement("");
-      }, 3000);
-    },
-    [onThoughtSubmit, enqueueThought, activeSessionId, addFeedback, lastKeyTime]
-  );
-
-  const handleVoiceInput = useCallback(async () => {
-    try {
-      setIsVoiceActive(true);
-      const transcript = await startVoiceCapture();
-      if (transcript) {
-        setInputValue(transcript);
-        await handleSubmit(transcript);
-      }
-    } catch (err) {
-      console.error("Voice input error:", err);
-      addFeedback({
-        type: "user_action",
-        payload: { message: "Spracherkennung fehlgeschlagen.", error: true },
-      });
-    } finally {
-      setIsVoiceActive(false);
-    }
-  }, [handleSubmit, addFeedback]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      // Track keystroke time for QA
-      setLastKeyTime(performance.now());
-
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSubmit(inputValue);
-      }
-    },
-    [inputValue, handleSubmit]
-  );
-
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      setInputValue(e.target.value);
-      setLastKeyTime(performance.now());
-    },
-    []
-  );
-
-  return (
-    <form
-      role="search"
-      aria-label="Brainbar"
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit(inputValue);
-      }}
-      className="w-full"
-    >
-      <motion.div
-        className="w-full flex items-center gap-3 px-4 py-3 bg-surface-hover backdrop-blur-md border-b border-neutral-800 motion-soft"
-        initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={
-          reduced
-            ? { duration: 0 }
-            : { duration: 0.18, ease: [0.2, 0.8, 0.2, 1] }
-        }
+    return (
+      <form
+        role="search"
+        aria-label="Brainbar"
+        className="w-full space-y-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          handleSubmit();
+        }}
       >
-        <Sparkles className="text-brand shrink-0" size={20} />
-
-        <label htmlFor="brainbar-input" className="sr-only">
-          Gedanken eingeben
-        </label>
-        <input
-          ref={inputRef}
-          id="brainbar-input"
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholder="Denke hier... (Tippe oder sprich)"
-          aria-label="Gedanken eingeben"
-          aria-description="Eingabefeld für neue Gedanken. Unterstützt Befehle: /add, /link, /goal, /due"
-          className={`flex-1 bg-transparent outline-none text-text-primary placeholder-text-muted text-sm rounded-xl transition-all duration-200 ${
-            isFocused
-              ? "focus:ring-2 focus:ring-cyan-400 focus-visible:ring-cyan-400 glow-interactive"
-              : "focus:ring-2 focus:ring-brand focus-visible:ring-brand"
-          }`}
-          style={{
-            boxShadow: isFocused
-              ? "0 0 20px rgba(6, 182, 212, 0.4)"
-              : undefined,
-          }}
-        />
-
-        {/* Saving indicator with Framer Motion fade < 150ms */}
-        <AnimatePresence>
-          {isSaving && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: [0.2, 0.8, 0.2, 1] }}
-              className="text-xs text-cyan-400"
-            >
-              Saving…
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Voice Input Button */}
-        <button
-          onClick={handleVoiceInput}
-          disabled={isVoiceActive}
-          className={`px-3 py-1.5 rounded-xl text-xs transition-colors ${
-            isVoiceActive
-              ? "bg-brand text-white animate-pulse"
-              : "bg-neutral-800 text-text-secondary hover:bg-neutral-700"
-          }`}
-          title="Spracheingabe"
+        <motion.div
+          layout
+          data-focused={focused || pulse}
+          className="focus-glow relative flex w-full items-center gap-3 rounded-2xl border border-cyan-400/10 bg-surface-hover/70 px-4 py-3 backdrop-blur-xl focus-within:ring-2 focus-within:ring-brand/60 focus-within:ring-offset-2 focus-within:ring-offset-surface-base"
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1] }}
         >
-          <Mic size={16} />
-        </button>
+          <Sparkles aria-hidden="true" className="text-brand" size={18} />
+          <div className="flex flex-1 flex-col">
+            <label htmlFor="brainbar-input" className="sr-only">
+              Gedanken eingeben
+            </label>
+            <input
+              ref={inputRef}
+              id="brainbar-input"
+              type="text"
+              value={value}
+              autoFocus={autoFocus}
+              spellCheck={false}
+              onChange={(event) => setValue(event.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              placeholder="Schreib einen Gedanken…  (/add, /link, /goal, /due)"
+              aria-label="Gedanken eingeben"
+              aria-describedby="brainbar-description"
+              className="w-full bg-transparent text-base text-text-primary placeholder:text-text-secondary/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base rounded-md"
+            />
+            <div
+              id="brainbar-description"
+              className="mt-1 text-xs text-text-secondary/70"
+            >
+              {hasCommand ? "Slash-Command aktiv" : "Enter zum Bestätigen · ESC zum Leeren"}
+            </div>
+          </div>
+          <AnimatePresence>
+            {value.trim() && (
+              <motion.span
+                key="badge"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 120, damping: 22 }}
+                className="rounded-full bg-brand/10 px-3 py-1 text-xs font-medium text-brand"
+              >
+                /{parsed.type}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
-        {/* Thought Type Selector (conditional) */}
-        {/* TODO: Show ThoughtTypeSelector when input has content or on focus */}
-      </motion.div>
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {announcement}
+        </div>
+      </form>
+    );
+  }
+);
 
-      {/* Live region for announcements */}
-      <div
-        ref={liveRegionRef}
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        {submitAnnouncement}
-      </div>
-    </form>
-  );
-}
+Brainbar.displayName = "Brainbar";
+
+export default Brainbar;

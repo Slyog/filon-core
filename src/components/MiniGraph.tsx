@@ -1,207 +1,223 @@
 "use client";
 
-import React, { useMemo, useCallback, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ReactFlowProvider,
   ReactFlow,
   Background,
-  type Node,
-  type Edge,
+  type Node as FlowNode,
+  type Edge as FlowEdge,
 } from "reactflow";
+import { motion, useReducedMotion } from "framer-motion";
 import "reactflow/dist/style.css";
-import { useActiveNode } from "@/context/ActiveNodeContext";
+import { useThrottledCallback } from "@/hooks/useThrottledCallback";
+
+type MiniGraphNode = { id: string; label: string };
+type MiniGraphEdge = { id: string; source: string; target: string };
 
 interface MiniGraphProps {
-  nodes: Node[];
-  edges: Edge[];
-  onNodeHover?: (nodeId: string | null) => void;
-  onNodeClick?: (nodeId: string) => void;
+  nodes: MiniGraphNode[];
+  edges: MiniGraphEdge[];
+  onHoverNode?: (id: string | null) => void;
+  onNodeClick?: (id: string) => void;
 }
+
+const useIsCompact = () => {
+  const [isCompact, setIsCompact] = useState(false);
+  useEffect(() => {
+    const evaluate = () => setIsCompact(window.innerWidth < 520);
+    evaluate();
+    window.addEventListener("resize", evaluate);
+    return () => window.removeEventListener("resize", evaluate);
+  }, []);
+  return isCompact;
+};
+
+const useIsVisible = (ref: React.RefObject<HTMLDivElement>) => {
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    if (!ref.current || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setVisible(entry.isIntersecting)
+    );
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [ref]);
+  return visible;
+};
+
+const formatNodes = (nodes: MiniGraphNode[]): MiniGraphNode[] =>
+  nodes.slice(-5);
+
+const layoutNodes = (nodes: MiniGraphNode[]): FlowNode[] => {
+  if (nodes.length === 0) return [];
+  const radius = 80;
+  return nodes.map((node, index) => {
+    const angle = (index / nodes.length) * Math.PI * 2;
+    const x = radius + radius * Math.cos(angle);
+    const y = radius + radius * Math.sin(angle);
+    return {
+      id: node.id,
+      data: { label: node.label },
+      position: { x, y },
+      type: "default",
+    } satisfies FlowNode;
+  });
+};
+
+const filterEdges = (
+  nodes: FlowNode[],
+  edges: MiniGraphEdge[]
+): FlowEdge[] => {
+  const ids = new Set(nodes.map((node) => node.id));
+  return edges
+    .filter((edge) => ids.has(edge.source) && ids.has(edge.target))
+    .map((edge) => ({
+      id: edge.id,
+      source: edge.source,
+      target: edge.target,
+      animated: true,
+      style: { stroke: "rgba(47,243,255,0.3)", strokeWidth: 1 },
+    }));
+};
 
 export default function MiniGraph({
   nodes,
   edges,
-  onNodeHover,
+  onHoverNode,
   onNodeClick,
 }: MiniGraphProps) {
-  const { activeNodeId } = useActiveNode();
   const reduced = useReducedMotion();
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [focusWithin, setFocusWithin] = useState(false);
+  const compact = useIsCompact();
+  const hostRef = useRef<HTMLDivElement>(null);
+  const visible = useIsVisible(hostRef);
+  const describeMiniGraph =
+    "Zeigt die letzten fünf Gedanken inklusive Verbindungen als kompakte Vorschau.";
 
-  // Get last 5 nodes (most recently created/updated)
-  const last5Nodes = useMemo(() => {
-    const sorted = [...nodes]
-      .sort((a, b) => {
-        const aTime =
-          new Date(a.data?.updatedAt || a.data?.createdAt || 0).getTime() ||
-          0;
-        const bTime =
-          new Date(b.data?.updatedAt || b.data?.createdAt || 0).getTime() ||
-          0;
-        return bTime - aTime;
-      })
-      .slice(0, 5);
-
-    // Normalize positions for mini view
-    if (sorted.length === 0) return { nodes: [], edges: [] };
-
-    const minX = Math.min(...sorted.map((n) => n.position.x));
-    const minY = Math.min(...sorted.map((n) => n.position.y));
-    const maxX = Math.max(...sorted.map((n) => n.position.x + (n.width || 150)));
-    const maxY = Math.max(
-      ...sorted.map((n) => n.position.y + (n.height || 40))
-    );
-
-    const width = maxX - minX || 400;
-    const height = maxY - minY || 300;
-
-    // Scale and center nodes
-    const scale = Math.min(300 / width, 200 / height, 1);
-    const offsetX = (300 - width * scale) / 2;
-    const offsetY = (200 - height * scale) / 2;
-
-    const normalizedNodes = sorted.map((node) => ({
-      ...node,
-      position: {
-        x: (node.position.x - minX) * scale + offsetX,
-        y: (node.position.y - minY) * scale + offsetY,
-      },
-      style: {
-        ...node.style,
-        width: (node.width || 150) * scale,
-        height: (node.height || 40) * scale,
-      },
-    }));
-
-    // Get edges between these nodes
-    const nodeIds = new Set(sorted.map((n) => n.id));
-    const relevantEdges = edges.filter(
-      (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
-    );
-
-    return { nodes: normalizedNodes, edges: relevantEdges };
-  }, [nodes, edges]);
-
-  const handleNodeMouseEnter = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      setHoveredNodeId(node.id);
-      onNodeHover?.(node.id);
-    },
-    [onNodeHover]
+  const recentNodes = useMemo(() => formatNodes(nodes), [nodes]);
+  const flowNodes = useMemo(() => layoutNodes(recentNodes), [recentNodes]);
+  const flowEdges = useMemo(
+    () => filterEdges(flowNodes, edges),
+    [flowNodes, edges]
   );
 
-  const handleNodeMouseLeave = useCallback(() => {
-    setHoveredNodeId(null);
-    onNodeHover?.(null);
-  }, [onNodeHover]);
+  const emitHover = useThrottledCallback((id: string | null) => {
+    onHoverNode?.(id);
+  });
 
-  const handleNodeClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      onNodeClick?.(node.id);
+  const handleMouseEnter = useCallback(
+    (_event: React.MouseEvent, node: FlowNode) => {
+      setHovered(node.id);
+      emitHover(node.id);
     },
-    [onNodeClick]
+    [emitHover]
   );
 
-  // Mobile: collapse to single glowing circle
-  const [isMobile, setIsMobile] = useState(false);
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
+  const handleMouseLeave = useCallback(() => {
+    setHovered(null);
+    emitHover(null);
+  }, [emitHover]);
 
-  if (isMobile) {
+  if (compact) {
     return (
       <motion.div
-        className="flex items-center justify-center p-4"
-        initial={reduced ? { opacity: 1 } : { opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{
-          type: "spring",
-          stiffness: 120,
-          damping: 22,
-        }}
+        role="img"
+        aria-label="Mini-Graph"
+        aria-description={describeMiniGraph}
+        tabIndex={0}
+        data-testid="mini-graph"
+        className="focus-glow relative flex h-16 w-16 items-center justify-center rounded-full border border-cyan-400/40 bg-cyan-500/10 text-cyan-100 focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
+        data-focused={hovered !== null || focusWithin}
+        whileHover={reduced ? undefined : { scale: 1.05 }}
+        whileTap={reduced ? undefined : { scale: 0.95 }}
+        transition={{ type: "spring", stiffness: 120, damping: 22 }}
+        onMouseEnter={() => emitHover(null)}
+        onMouseLeave={() => emitHover(null)}
+        onFocus={() => setFocusWithin(true)}
+        onBlur={() => setFocusWithin(false)}
       >
-        <div
-          className="w-12 h-12 rounded-full bg-cyan-500/20 border-2 border-cyan-400/50 flex items-center justify-center text-cyan-400 text-xs font-bold glow-interactive"
-          role="button"
-          aria-label={`${last5Nodes.nodes.length} Nodes im Graph`}
-          style={{
-            boxShadow: "0 0 20px rgba(6, 182, 212, 0.4)",
-          }}
-        >
-          {last5Nodes.nodes.length}
-        </div>
+        <span className="text-lg font-semibold">
+          {recentNodes.length || nodes.length}
+        </span>
+        <span className="absolute -right-1 -top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand text-xs font-bold text-surface-base">
+          {recentNodes.length}
+        </span>
       </motion.div>
     );
   }
 
-  if (last5Nodes.nodes.length === 0) {
+  if (recentNodes.length === 0) {
     return (
-      <motion.div
-        className="h-[200px] flex items-center justify-center text-text-muted text-xs"
-        initial={reduced ? { opacity: 1 } : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.18 }}
-      >
-        Keine Nodes
-      </motion.div>
+      <div className="flex h-40 items-center justify-center rounded-2xl border border-dashed border-cyan-400/30 text-sm text-text-secondary/70">
+        Noch keine Gedanken im Graph
+      </div>
     );
   }
 
   return (
-    <motion.div
-      className="relative w-full h-[200px] bg-[#0A0F12] rounded-lg border border-neutral-800 overflow-hidden"
-      initial={reduced ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 120,
-        damping: 22,
-      }}
-      role="region"
-      aria-label="Mini-Graph Vorschau"
+    <div
+      ref={hostRef}
+      className="focus-glow relative h-48 w-full overflow-hidden rounded-2xl border border-cyan-400/20 bg-surface-active/30 focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base"
+      data-focused={hovered !== null || focusWithin}
+      role="img"
+      aria-label="Mini-Graph"
+      aria-description={describeMiniGraph}
+      tabIndex={0}
+      data-testid="mini-graph"
+      onFocus={() => setFocusWithin(true)}
+      onBlur={() => setFocusWithin(false)}
     >
-      <ReactFlowProvider>
-        <ReactFlow
-          nodes={last5Nodes.nodes.map((node) => ({
-            ...node,
-            style: {
-              ...node.style,
-              border:
-                node.id === activeNodeId || node.id === hoveredNodeId
-                  ? "2px solid rgba(6, 182, 212, 0.8)"
-                  : "1px solid rgba(6, 182, 212, 0.3)",
-              boxShadow:
-                node.id === activeNodeId || node.id === hoveredNodeId
-                  ? "0 0 12px rgba(6, 182, 212, 0.6)"
-                  : undefined,
-              transition: "all 0.2s ease",
-            },
-          }))}
-          edges={last5Nodes.edges}
-          onNodeMouseEnter={handleNodeMouseEnter}
-          onNodeMouseLeave={handleNodeMouseLeave}
-          onNodeClick={handleNodeClick}
-          fitView
-          fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
-          nodesDraggable={false}
-          nodesConnectable={false}
-          elementsSelectable={false}
-          panOnScroll={false}
-          zoomOnScroll={false}
-          zoomOnPinch={false}
-          preventScrolling={false}
-          className="minigraph"
-        >
-          <Background color="#1a1a1a" gap={8} size={1} />
-        </ReactFlow>
-      </ReactFlowProvider>
-    </motion.div>
+      {visible ? (
+        <ReactFlowProvider>
+          <ReactFlow
+            nodes={flowNodes.map((node) => ({
+              ...node,
+              style: {
+                padding: 8,
+                borderRadius: 999,
+                border:
+                  hovered === node.id
+                    ? "2px solid rgba(47,243,255,0.9)"
+                    : "1px solid rgba(47,243,255,0.4)",
+                color: "#E6FDFE",
+                background: "rgba(13,23,28,0.9)",
+                fontSize: 12,
+                textTransform: "capitalize",
+                boxShadow:
+                  hovered === node.id
+                    ? "0 0 12px rgba(47,243,255,0.4)"
+                    : "none",
+                transition: "all 0.2s ease",
+              },
+            }))}
+            edges={flowEdges}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={false}
+            panOnDrag={false}
+            zoomOnPinch={false}
+            zoomOnScroll={false}
+            fitView
+            onNodeMouseEnter={handleMouseEnter}
+            onNodeMouseLeave={handleMouseLeave}
+            onNodeClick={(_event, node) => onNodeClick?.(node.id)}
+          >
+            <Background gap={12} color="rgba(47,243,255,0.08)" />
+          </ReactFlow>
+        </ReactFlowProvider>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-xs text-text-secondary/70">
+          Vorschau pausiert
+        </div>
+      )}
+    </div>
   );
 }
-
