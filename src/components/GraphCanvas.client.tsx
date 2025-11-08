@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import {
+  Background,
+  BackgroundVariant,
+  Controls,
+  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   addEdge,
-  Background,
-  Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
   type NodeProps,
+  type ReactFlowInstance,
+  useEdgesState,
+  useNodesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -21,30 +23,34 @@ import "reactflow/dist/style.css";
    - Restores FILON background + glow
 ============================================================ */
 
+const CanvasNode = ({ data }: NodeProps<{ label: string }>) => (
+  <div
+    style={{
+      background: "linear-gradient(145deg, #00D4FF 0%, #0A0F12 100%)",
+      border: "1.5px solid rgba(47,243,255,0.6)",
+      boxShadow: "0 0 30px rgba(47,243,255,0.45)",
+      borderRadius: 14,
+      color: "#FFFFFF",
+      fontWeight: 600,
+      textShadow: "0 0 8px #2FF3FF",
+      padding: "14px 22px",
+      userSelect: "none",
+    }}
+  >
+    {data?.label ?? "🌐 FILON Visible Node"}
+  </div>
+);
+
 const nodeTypes = {
-  default: ({ data }: NodeProps<{ label: string }>) => (
-    <div
-      style={{
-        background: "linear-gradient(145deg, #00D4FF 0%, #0A0F12 100%)",
-        border: "1.5px solid rgba(47,243,255,0.6)",
-        boxShadow: "0 0 30px rgba(47,243,255,0.45)",
-        borderRadius: 14,
-        color: "#FFFFFF",
-        fontWeight: 600,
-        textShadow: "0 0 8px #2FF3FF",
-        padding: "14px 22px",
-        userSelect: "none",
-      }}
-    >
-      {data?.label ?? "🌐 FILON Visible Node"}
-    </div>
-  ),
+  default: CanvasNode,
 };
 
 export default function GraphCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const initialized = useRef(false);
+  const reactFlowInstance = useRef<ReactFlowInstance | null>(null);
+  const nodeTypesMemo = useMemo(() => nodeTypes, []);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -60,18 +66,32 @@ export default function GraphCanvas() {
     ]);
   }, [setNodes]);
 
+  useEffect(() => {
+    if (!reactFlowInstance.current || nodes.length === 0) return;
+
+    const timeout = window.setTimeout(() => {
+      reactFlowInstance.current?.fitView({ padding: 0.2, duration: 400 });
+    }, 120);
+
+    return () => window.clearTimeout(timeout);
+  }, [nodes]);
+
   return (
     <div className="relative w-full h-full bg-[#0A0F12] overflow-hidden">
       <ReactFlowProvider>
         <ReactFlow
           nodes={nodes}
           edges={edges}
-          nodeTypes={nodeTypes}
+          nodeTypes={nodeTypesMemo}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={(params) => setEdges((eds) => addEdge(params, eds))}
+          onInit={(instance) => {
+            reactFlowInstance.current = instance;
+            instance.fitView({ padding: 0.2, duration: 400 });
+          }}
           fitView
-          fitViewOptions={{ padding: 0.2 }}
+          fitViewOptions={{ padding: 0.2, duration: 400 }}
           minZoom={0.4}
           maxZoom={2}
           zoomOnScroll
@@ -87,17 +107,17 @@ export default function GraphCanvas() {
             color="rgba(47,243,255,0.05)"
             gap={32}
             size={1}
-            variant="dots"
+            variant={BackgroundVariant.Dots}
           />
           <MiniMap
-            className="!z-[20]"
+            style={{ zIndex: 20 }}
             nodeColor={() => "#2FF3FF"}
             maskColor="rgba(10,15,18,0.7)"
             zoomable
             pannable
           />
           <Controls
-            className="!z-[21] !opacity-90"
+            style={{ zIndex: 21, opacity: 0.9 }}
             position="bottom-left"
             showInteractive={true}
           />
