@@ -20,7 +20,7 @@ export function useThrottledCallback<T extends AnyFunction>(
     };
   }, []);
 
-  return useCallback((...(args: Parameters<T>)) => {
+  return useCallback((...args: Parameters<T>) => {
     latestArgsRef.current = args;
     if (timeoutRef.current) {
       return;
@@ -34,4 +34,3 @@ export function useThrottledCallback<T extends AnyFunction>(
     }, delay);
   }, [delay]) as T;
 }
-
