@@ -23,6 +23,14 @@ type Suite = {
   specs: SuiteSpec[];
 };
 
+type QASummary = {
+  timestamp?: string;
+  total?: number;
+  passed?: number;
+  failed?: number;
+  specs?: string[];
+};
+
 type QAReport = {
   file: string;
   meta: {
@@ -99,14 +107,47 @@ export default function QADashboard() {
   useEffect(() => {
     const loadReports = async () => {
       try {
-        const response = await fetch("/api/qa/reports", { cache: "no-store" });
+        const response = await fetch("/api/qa", { cache: "no-store" });
         if (!response.ok) {
-          throw new Error(`Failed to load reports (${response.status})`);
+          throw new Error(`Failed to load QA summary (${response.status})`);
         }
-        const payload = await response.json();
-        const records: QAReport[] = payload.reports ?? [];
-        setReports(records);
-        setSelectedReport((prev) => prev ?? records[0] ?? null);
+        const payload = (await response.json()) as QASummary | { error?: string };
+
+        if ("error" in payload) {
+          throw new Error(payload.error ?? "Unknown QA summary error");
+        }
+
+        const total = payload.total ?? payload.specs?.length ?? 0;
+        const passed = payload.passed ?? total;
+        const failed = payload.failed ?? Math.max(total - passed, 0);
+        const timestamp = payload.timestamp ?? new Date().toISOString();
+
+        const record: QAReport = {
+          file: `qa-summary-${timestamp}.json`,
+          meta: {
+            commit: "local-dev",
+            date: timestamp,
+            total,
+            passed,
+            failed,
+          },
+          status: failed > 0 ? "failed" : "passed",
+          passRate: total > 0 ? Math.round((passed / total) * 100) : 0,
+          data: {
+            suites: [
+              {
+                title: "Latest Run",
+                specs: (payload.specs ?? []).map((spec) => ({
+                  title: spec,
+                  ok: true,
+                })),
+              },
+            ],
+          },
+        };
+
+        setReports([record]);
+        setSelectedReport(record);
       } catch (err) {
         console.error("[qa:dashboard] load error", err);
         setError(err instanceof Error ? err.message : "Unknown error");

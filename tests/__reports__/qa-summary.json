@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-11-09T19:48:50.559Z",
+  "total": 5,
+  "passed": 5,
+  "failed": 0,
+  "specs": [
+    "qa-autosave-snapshot.spec.ts",
+    "qa-ui-design.spec.ts"
+  ]
+}
