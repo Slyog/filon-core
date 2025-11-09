@@ -36,7 +36,7 @@ export function attachRFDebug(rf: RF, getNodes: () => Node[]) {
     dump() {
       const obj = rf.toObject();
       const bb = bbox(getNodes());
-      // eslint-disable-next-line no-console
+       
       console.table({
         zoom: obj.viewport.zoom.toFixed(3),
         x: obj.viewport.x.toFixed(1),
@@ -47,12 +47,12 @@ export function attachRFDebug(rf: RF, getNodes: () => Node[]) {
         minX: bb.minX.toFixed(1),
         minY: bb.minY.toFixed(1),
       });
-      // eslint-disable-next-line no-console
+       
       console.log('transforms:', this.transforms());
-      // eslint-disable-next-line no-console
+       
       console.log('viewport transform:', this.vpTransform());
     },
   };
-  // eslint-disable-next-line no-console
+   
   console.info('RF Debug attached → window.__rf');
 }

@@ -63,7 +63,7 @@ export async function syncLambdaHandler(
   try {
     // Generate binary snapshot from change (if document provided)
     let s3Key: string | undefined;
-    let status: SyncStatus = SyncStatus.SYNCED;
+    const status: SyncStatus = SyncStatus.SYNCED;
 
     if (event.change?.binary) {
       // Use the binary directly from the change event

@@ -1,32 +1,70 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+
+import type { AutosaveStatus } from "@/hooks/useAutosave";
 
 type ReviewOverlayProps = {
-  status: "idle" | "saving" | "success" | "error";
-  visible?: boolean;
+  visible: boolean;
+  status: AutosaveStatus;
+  onCommit: () => void;
+  onReject: () => void;
+  onRetry: () => void;
 };
 
-export function ReviewOverlay({
-  status,
-  visible = true,
-}: ReviewOverlayProps) {
-  const active = visible && status !== "idle";
+function getStatusLabel(status: AutosaveStatus) {
+  if (status === "saving") {
+    return "Speichert Änderungen…";
+  }
+  if (status === "success") {
+    return "Änderungen gespeichert ✓";
+  }
+  if (status === "error") {
+    return "Speichern fehlgeschlagen";
+  }
+  return "Änderungen prüfen";
+}
 
+export function ReviewOverlay({
+  visible,
+  status,
+  onCommit,
+  onReject,
+  onRetry,
+}: ReviewOverlayProps) {
   return (
     <AnimatePresence>
-      {active && (
+      {visible && (
         <motion.div
-          key={status}
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 16, scale: 0.97 }}
-          transition={{ duration: 0.28, ease: "easeOut" }}
-          className="ReviewOverlay fixed bottom-6 right-6 bg-neutral-900/80 text-cyan-300 px-4 py-2 rounded-2xl shadow-lg backdrop-blur-md transition-all duration-500"
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ type: "spring", stiffness: 120, damping: 20 }}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 rounded-2xl bg-black/60 backdrop-blur-md px-5 py-3 text-sm text-cyan-200 shadow-xl z-50"
         >
-          {status === "saving" && "Saving..."}
-          {status === "success" && "Saved ✓"}
-          {status === "error" && "Offline – retrying..."}
+          <span className="mr-2">{getStatusLabel(status)}</span>
+          <button
+            type="button"
+            onClick={onCommit}
+            className="rounded-xl border border-cyan-400/30 bg-cyan-500/20 px-3 py-1 text-cyan-100 transition hover:bg-cyan-500/30"
+          >
+            Übernehmen
+          </button>
+          <button
+            type="button"
+            onClick={onReject}
+            className="rounded-xl border border-gray-400/30 bg-gray-500/20 px-3 py-1 text-gray-200 transition hover:bg-gray-500/30"
+          >
+            Verwerfen
+          </button>
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={status !== "error"}
+            className="rounded-xl border border-cyan-700/30 bg-cyan-900/20 px-3 py-1 text-cyan-100 transition hover:bg-cyan-900/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Wiederholen
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

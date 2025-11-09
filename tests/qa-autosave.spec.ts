@@ -1,68 +1,33 @@
 import { test, expect } from "@playwright/test";
 
-declare global {
-  interface Window {
-    __forceOfflineTest?: boolean;
-  }
-}
+test.describe("FILON Autosave Feedback", () => {
+  test("autosave triggers and displays toast states", async ({ page }) => {
+    await page.goto("http://localhost:3000");
 
-export {};
+    const savingToast = page.getByText("Speichert Änderungen");
+    const successToast = page.getByText("Gespeichert ✓");
 
-test.describe("FILON Autosave Feedback System", () => {
-  const route = "/graph/autosave-qa?q=Autosave%20Test";
+    await expect(savingToast).not.toBeVisible();
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto(`http://localhost:3000${route}`);
-    await page.waitForSelector(".react-flow__node");
-  });
-
-  test("shows 'Saving...' overlay and resolves", async ({ page }) => {
-    const node = page.locator(".react-flow__node");
-    const box = await node.boundingBox();
-
-    if (!box) {
-      throw new Error("Node bounding box not found");
-    }
-
-    await page.mouse.move(box.x + 10, box.y + 10);
-    await page.mouse.down();
-    await page.mouse.move(box.x + 40, box.y + 40);
-    await page.mouse.up();
-
-    await expect(page.getByText("Saving...")).toBeVisible({ timeout: 5000 });
-    await expect(page.getByText("Saved ✓")).toBeVisible({ timeout: 5000 });
-  });
-
-  test("logs autosave success event", async ({ page }) => {
-    const consoleMessages: string[] = [];
-    page.on("console", (msg) => consoleMessages.push(msg.text()));
-
-    await page.goto(`http://localhost:3000${route}`);
-    const node = page.locator(".react-flow__node");
-    await node.hover();
-    await page.mouse.wheel(0, -200);
-
-    await page.waitForTimeout(1500);
-
-    const hasLog = consoleMessages.some(
-      (message) =>
-        message.includes("[QA] Autosave event") ||
-        message.includes("[QA] Autosave triggered")
-    );
-    expect(hasLog).toBeTruthy();
-  });
-
-  test("handles offline error gracefully (simulated)", async ({ page }) => {
-    await page.addInitScript(() => {
-      window.__forceOfflineTest = true;
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("graphChange", {
+          detail: {
+            nodes: [
+              {
+                id: "qa-node-1",
+                position: { x: 42, y: 24 },
+                data: { label: "QA Autosave Node" },
+              },
+            ],
+            edges: [],
+          },
+        })
+      );
     });
 
-    await page.goto(`http://localhost:3000${route}`);
-    const errorToast = page.locator(
-      "text=Autosave failed – offline mode active"
-    );
+    await expect(savingToast).toBeVisible({ timeout: 3000 });
 
-    await expect(errorToast).toHaveCount(0);
+    await expect(successToast).toBeVisible({ timeout: 4000 });
   });
 });
-

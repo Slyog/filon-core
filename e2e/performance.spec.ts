@@ -17,7 +17,7 @@ test.describe("FILON Step 16.9 - Performance Tests", () => {
     const fps = await page.evaluate(() => {
       return new Promise<number>((resolve) => {
         let frames = 0;
-        let lastTime = performance.now();
+        const lastTime = performance.now();
         const duration = 2000; // 2 seconds
 
         const measureFrame = () => {
