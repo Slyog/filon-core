@@ -412,14 +412,19 @@ export default function GraphCanvas({
               size={1}
               color="rgba(47,243,255,0.05)"
             />
-            <MiniMap 
-              className="!z-20" 
+            <MiniMap
+              className="!z-20"
               position="bottom-left"
+              maskColor="rgba(0, 0, 0, 0.2)"
+              pannable
+              zoomable
               style={{
-                backgroundColor: 'rgba(10, 15, 18, 0.85)',
-                border: '1px solid rgba(47, 243, 255, 0.3)',
-                borderRadius: '8px',
-                margin: '1rem',
+                backgroundColor: "rgba(10, 15, 18, 0.65)",
+                border: "1px solid rgba(47, 243, 255, 0.3)",
+                borderRadius: "8px",
+                margin: "1rem",
+                width: 140,
+                height: 90,
               }}
             />
             <Controls className="!z-20" position="bottom-left" />

@@ -152,18 +152,31 @@ a:hover {
 button {
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
-  color: hsl(var(--filon-text));
+  color: hsl(180 100% 96%);
 }
 button:hover {
   box-shadow: 0 0 12px rgba(47, 243, 255, 0.5);
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+}
+button:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 16px rgba(47, 243, 255, 0.6);
 }
 
 input {
-  color: hsl(var(--filon-text));
+  color: hsl(180 10% 85%);
+  border: none;
+  border-bottom: 1px solid rgba(47, 243, 255, 0.3);
+  background-color: transparent;
 }
 input::placeholder {
-  color: hsl(var(--filon-text-dim));
+  color: hsl(180 10% 45%);
+}
+input:focus,
+input:focus-visible {
+  border-color: hsl(var(--filon-accent));
+  box-shadow: 0 2px 8px rgba(47, 243, 255, 0.4);
+  outline: none;
 }
 /* Global focus-visible styles for accessibility */
 *:focus-visible {

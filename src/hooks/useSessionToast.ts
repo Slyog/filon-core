@@ -6,7 +6,7 @@ export function useSessionToast() {
   }, []);
 
   const error = useCallback((message: string) => {
-    console.error("[toast:error]", message);
+    console.warn("[toast:error]", message);
   }, []);
 
   const info = useCallback((message: string) => {
