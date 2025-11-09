@@ -22,6 +22,7 @@ import {
   useEdgesState,
   useNodesState,
 } from "reactflow";
+import { motion } from "framer-motion";
 import "reactflow/dist/style.css";
 import { useAutosaveFeedback } from "@/hooks/useAutosaveFeedback";
 import { useSessionToast } from "@/hooks/useSessionToast";
@@ -48,11 +49,23 @@ type GraphContextValue = {
 export const GraphContext = createContext<GraphContextValue | null>(null);
 
 const CanvasNode = ({ data }: NodeProps<{ label: string }>) => (
-  <div
+  <motion.div
+    animate={{
+      scale: [1, 1.015, 1],
+      boxShadow: [
+        "0 0 20px rgba(47,243,255,0.3)",
+        "0 0 30px rgba(47,243,255,0.6)",
+        "0 0 20px rgba(47,243,255,0.3)",
+      ],
+    }}
+    transition={{
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut",
+    }}
     style={{
       background: "linear-gradient(145deg, #00D4FF 0%, #0A0F12 100%)",
       border: "1.5px solid rgba(47, 243, 255, 0.6)",
-      boxShadow: "0 0 30px rgba(47, 243, 255, 0.35)",
       borderRadius: 14,
       color: "#FFFFFF",
       fontWeight: 600,
@@ -62,7 +75,7 @@ const CanvasNode = ({ data }: NodeProps<{ label: string }>) => (
     }}
   >
     {data?.label ?? "🌐 FILON Visible Node"}
-  </div>
+  </motion.div>
 );
 
 const nodeTypes = {
@@ -425,6 +438,7 @@ export default function GraphCanvas({
                 margin: "1rem",
                 width: 140,
                 height: 90,
+                boxShadow: "0 0 10px rgba(47,243,255,0.2)",
               }}
             />
             <Controls className="!z-20" position="bottom-left" />
