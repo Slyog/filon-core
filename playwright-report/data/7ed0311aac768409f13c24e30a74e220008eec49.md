@@ -1,0 +1,43 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - navigation [ref=e4]:
+        - link "QA Dashboard" [ref=e5] [cursor=pointer]:
+          - /url: /qa/dashboard
+        - link "Home" [ref=e6] [cursor=pointer]:
+          - /url: /
+    - main [ref=e7]:
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e13]:
+            - generic:
+              - img [ref=e14]
+              - button "🌐 FILON Visible Node" [active] [ref=e16]:
+                - generic [ref=e17]: 🌐 FILON Visible Node
+          - img
+          - img "React Flow mini map" [ref=e19]
+          - generic [ref=e21]:
+            - button "zoom in" [disabled]:
+              - img
+            - button "zoom out" [ref=e22] [cursor=pointer]:
+              - img [ref=e23]
+            - button "fit view" [ref=e25] [cursor=pointer]:
+              - img [ref=e26]
+            - button "toggle interactivity" [ref=e28] [cursor=pointer]:
+              - img [ref=e29]
+          - link "React Flow attribution" [ref=e32] [cursor=pointer]:
+            - /url: https://reactflow.dev
+            - text: React Flow
+        - generic [ref=e34]: Speichert Änderungen...
+  - button "Open Next.js Dev Tools" [ref=e40] [cursor=pointer]:
+    - generic [ref=e43]:
+      - text: Compiling
+      - generic [ref=e44]:
+        - generic [ref=e45]: .
+        - generic [ref=e46]: .
+        - generic [ref=e47]: .
+  - alert [ref=e48]
+```

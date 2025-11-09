@@ -3,18 +3,27 @@
 import { useState, useEffect } from "react";
 
 export function OfflineIndicator() {
-  const [offline, setOffline] = useState(!navigator.onLine);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    const setTrue = () => setOffline(true);
-    const setFalse = () => setOffline(false);
+    if (typeof window === "undefined") {
+      return;
+    }
 
-    window.addEventListener("offline", setTrue);
-    window.addEventListener("online", setFalse);
+    const updateStatus = () => {
+      const isOffline =
+        typeof navigator !== "undefined" ? !navigator.onLine : false;
+      setOffline(isOffline);
+    };
+
+    updateStatus();
+
+    window.addEventListener("offline", updateStatus);
+    window.addEventListener("online", updateStatus);
 
     return () => {
-      window.removeEventListener("offline", setTrue);
-      window.removeEventListener("online", setFalse);
+      window.removeEventListener("offline", updateStatus);
+      window.removeEventListener("online", updateStatus);
     };
   }, []);
 
@@ -23,7 +32,10 @@ export function OfflineIndicator() {
   }
 
   return (
-    <div className="fixed right-4 top-2 rounded-xl bg-red-500/20 px-3 py-1 text-xs text-red-300 backdrop-blur-md">
+    <div
+      data-testid="offline-indicator"
+      className="fixed right-4 top-2 rounded-xl bg-red-500/20 px-3 py-1 text-xs text-red-300 backdrop-blur-md"
+    >
       Offline-Modus aktiviert
     </div>
   );

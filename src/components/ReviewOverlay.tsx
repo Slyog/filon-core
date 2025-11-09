@@ -40,6 +40,7 @@ export function ReviewOverlay({
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
+          data-testid="review-overlay"
           className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 rounded-2xl bg-black/60 backdrop-blur-md px-5 py-3 text-sm text-cyan-200 shadow-xl z-50"
         >
           <span className="mr-2">{getStatusLabel(status)}</span>

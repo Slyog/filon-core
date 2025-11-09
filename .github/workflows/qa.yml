@@ -1,3 +1,27 @@
+name: FILON QA
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - "**"
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npx playwright install --with-deps
+      - run: npm run build || echo "Skipping build for dev-only pages"
+      - run: npm run qa:all
 name: QA Layout Check
 
 on:

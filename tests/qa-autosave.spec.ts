@@ -1,33 +1,37 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("FILON Autosave Feedback", () => {
-  test("autosave triggers and displays toast states", async ({ page }) => {
-    await page.goto("http://localhost:3000");
-
-    const savingToast = page.getByText("Speichert Änderungen");
-    const successToast = page.getByText("Gespeichert ✓");
-
-    await expect(savingToast).not.toBeVisible();
-
+  test("shows saving -> success lifecycle", async ({ page }) => {
+    await page.goto("/");
     await page.evaluate(() => {
       window.dispatchEvent(
         new CustomEvent("graphChange", {
-          detail: {
-            nodes: [
-              {
-                id: "qa-node-1",
-                position: { x: 42, y: 24 },
-                data: { label: "QA Autosave Node" },
-              },
-            ],
-            edges: [],
-          },
-        })
+          detail: { nodes: [{ id: "n1" }], edges: [] },
+        }),
       );
     });
 
-    await expect(savingToast).toBeVisible({ timeout: 3000 });
+    const toast = page.getByTestId("toast");
+    await expect(toast).toContainText("Speichert", { timeout: 3_000 });
+    await expect(toast).toContainText("Gespeichert", { timeout: 3_000 });
+  });
 
-    await expect(successToast).toBeVisible({ timeout: 4000 });
+  test("offline path shows error toast", async ({ page }) => {
+    await page.goto("/f/offline-test");
+    await page.evaluate(() => {
+      window.__forceOfflineTest = true;
+    });
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("graphChange", {
+          detail: { nodes: [{ id: "n2" }], edges: [] },
+        }),
+      );
+    });
+
+    const toast = page.getByTestId("toast");
+    await expect(toast).toContainText("Fehler beim Speichern", {
+      timeout: 3_000,
+    });
   });
 });

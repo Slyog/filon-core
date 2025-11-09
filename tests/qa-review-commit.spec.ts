@@ -1,24 +1,39 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("FILON Review & Commit Overlay", () => {
-  test("shows overlay on change and commits correctly", async ({ page }) => {
-    await page.goto("http://localhost:3000");
-
+test.describe("Review & Commit Overlay", () => {
+  test("appears on pending edit and commits", async ({ page }) => {
+    await page.goto("/");
     await page.evaluate(() => {
       window.dispatchEvent(
         new CustomEvent("graphChange", {
-          detail: { nodes: [{ id: "X", data: { label: "Queued" } }] },
-        })
+          detail: { nodes: [{ id: "X" }], edges: [] },
+        }),
       );
     });
 
-    const overlay = page.locator("text=Änderungen prüfen");
+    const overlay = page.getByTestId("review-overlay");
     await expect(overlay).toBeVisible();
 
-    await page.click("text=Übernehmen");
+    await page.getByRole("button", { name: "Übernehmen" }).click();
+    await expect(overlay).toBeHidden();
+    await expect(page.getByTestId("toast")).toContainText("Gespeichert");
+  });
 
-    await expect(overlay).not.toBeVisible();
-    await expect(page.locator("text=Gespeichert")).toBeVisible();
+  test("reject hides overlay without success toast", async ({ page }) => {
+    await page.goto("/");
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("graphChange", {
+          detail: { nodes: [{ id: "Y" }], edges: [] },
+        }),
+      );
+    });
+
+    const overlay = page.getByTestId("review-overlay");
+    await expect(overlay).toBeVisible();
+
+    await page.getByRole("button", { name: "Verwerfen" }).click();
+    await expect(overlay).toBeHidden();
+    await expect(page.getByTestId("toast")).not.toContainText("Gespeichert");
   });
 });
-

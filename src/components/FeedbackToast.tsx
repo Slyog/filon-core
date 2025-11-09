@@ -26,6 +26,7 @@ export function FeedbackToast({ status }: FeedbackToastProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 30 }}
           transition={{ duration: 0.4 }}
+          data-testid="toast"
           className={`fixed bottom-4 right-4 rounded-2xl px-4 py-2 text-sm font-medium shadow-lg backdrop-blur-md transition-colors ${
             status === "error"
               ? "bg-red-500/20 text-red-300"
