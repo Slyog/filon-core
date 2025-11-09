@@ -1,25 +1,36 @@
-import { useCallback, useState } from "react";
+"use client";
 
-export function useAutosaveFeedback() {
-  const [pending, setPending] = useState(false);
-  const [errorValue, setErrorValue] = useState<string | null>(null);
+import { useEffect, useMemo } from "react";
 
-  const markPending = useCallback(() => {
-    setPending(true);
-  }, []);
+import type { AutosaveEvent, AutosaveStatus } from "./useAutosaveState";
+import {
+  emitAutosaveEvent,
+  subscribeAutosaveEvents,
+} from "./useAutosaveState";
 
-  const markSaved = useCallback(() => {
-    setPending(false);
-    setErrorValue(null);
-  }, []);
+type AutosaveFeedbackHook = {
+  emit: (status: AutosaveStatus, meta?: Record<string, unknown>) => void;
+  subscribe: (listener: (event: AutosaveEvent) => void) => () => void;
+};
 
-  const markError = useCallback((message: string) => {
-    setPending(false);
-    setErrorValue(message);
-  }, []);
+export function useAutosaveFeedback(
+  listener?: (event: AutosaveEvent) => void
+): AutosaveFeedbackHook {
+  useEffect(() => {
+    if (!listener) return;
+    const unsubscribe = subscribeAutosaveEvents(listener);
+    return () => {
+      unsubscribe();
+    };
+  }, [listener]);
 
-  const isPending = useCallback(() => pending, [pending]);
-  const error = useCallback(() => errorValue, [errorValue]);
-
-  return { markPending, markSaved, markError, isPending, error };
+  return useMemo(
+    () => ({
+      emit: (status: AutosaveStatus, meta?: Record<string, unknown>) =>
+        emitAutosaveEvent(status, { meta }),
+      subscribe: subscribeAutosaveEvents,
+    }),
+    []
+  );
 }
+

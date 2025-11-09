@@ -213,7 +213,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const { container } = render(<QuickChips onPick={jest.fn()} />);
       const chips = container.querySelectorAll("button");
       expect(chips.length).toBeGreaterThan(0);
-      chips.forEach((chip) => {
+      chips.forEach((chip: HTMLButtonElement) => {
         expect(chip.className).toContain("focus-glow");
       });
     });
@@ -270,7 +270,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const { container } = render(<Brainbar />);
 
       const buttons = container.querySelectorAll("button");
-      buttons.forEach((btn) => {
+      buttons.forEach((btn: HTMLButtonElement) => {
         const hasLabel =
           btn.hasAttribute("aria-label") ||
           btn.hasAttribute("title") ||
@@ -293,7 +293,7 @@ describe("UI Design Pass 1 – Visual QA", () => {
       const { container } = render(<Brainbar />);
 
       const buttons = container.querySelectorAll("button");
-      buttons.forEach((btn) => {
+      buttons.forEach((btn: HTMLButtonElement) => {
         // Most buttons should have rounded-xl
         const hasRounded =
           btn.className.includes("rounded-xl") ||

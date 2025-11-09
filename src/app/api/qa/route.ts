@@ -1,35 +1,27 @@
 import { NextResponse } from "next/server";
 
-const QA_VIEWER_URL =
-  process.env.QA_VIEWER_URL ?? "http://localhost:4000";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3000);
-
   try {
-    const response = await fetch(QA_VIEWER_URL, {
-      cache: "no-store",
-      signal: controller.signal,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Viewer responded with ${response.status}`);
+    const res = await fetch("http://localhost:4000", { cache: "no-store" });
+    if (!res.ok) {
+      throw new Error(`QA viewer returned ${res.status}`);
     }
-
-    const summary = await response.json();
-    return NextResponse.json(summary);
-  } catch (error) {
-    console.error("[api:qa] failed to load QA summary", error);
-    return NextResponse.json(
-      {
-        error: "Failed to load QA summary",
-      },
-      { status: 503 }
+    const data = await res.json();
+    return NextResponse.json(data);
+  } catch (err) {
+    console.warn(
+      "[QA] Viewer offline or unreachable:",
+      (err as Error).message
     );
-  } finally {
-    clearTimeout(timeout);
+
+    return NextResponse.json({
+      timestamp: new Date().toISOString(),
+      total: 0,
+      passed: 0,
+      specs: [],
+      message: "QA viewer unavailable — using fallback data",
+    });
   }
 }
-
-

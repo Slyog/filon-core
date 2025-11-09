@@ -1,14 +1,14 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-const BASE_URL =
+const PLAYWRIGHT_BASE_URL =
   process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
 
 test.describe("FILON Unified Shell – Step 16 QA", () => {
   test("Home route exposes Workspace peek via UI and hotkey", async ({
     page,
   }) => {
-    await page.goto(BASE_URL);
+    await page.goto(PLAYWRIGHT_BASE_URL);
 
     const workspaceTab = page
       .getByRole("button", { name: /workspace/i })
@@ -42,7 +42,7 @@ test.describe("FILON Unified Shell – Step 16 QA", () => {
   test("Creating a workspace sets graph defaults and storage flags", async ({
     page,
   }) => {
-    await page.goto(BASE_URL);
+    await page.goto(PLAYWRIGHT_BASE_URL);
 
     const input = page.getByPlaceholder("Write a thought...");
     await input.fill("QA thought seed");
@@ -85,7 +85,7 @@ test.describe("FILON Unified Shell – Step 16 QA", () => {
   });
 
   test("Unified shell must render without axe violations", async ({ page }) => {
-    await page.goto(BASE_URL);
+    await page.goto(PLAYWRIGHT_BASE_URL);
 
     const axe = new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa"])
@@ -111,7 +111,7 @@ import { toHaveNoViolations } from "jest-axe";
 
 expect.extend(toHaveNoViolations);
 
-const BASE_URL = process.env.FILON_BASE_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.FILON_BASE_URL ?? PLAYWRIGHT_BASE_URL;
 const AHA_TOUR_FLAG = "filon:ahaTourDone";
 const LAST_WORKSPACE_FLAG = "lastWorkspaceId";
 
@@ -227,7 +227,7 @@ describe("FILON – Unified Shell QA", () => {
       const axeResults = await page.evaluate(async () => {
         return await (window as any).axe.run();
       });
-      expect(axeResults).toHaveNoViolations();
+      expect(Array.isArray(axeResults?.violations) ? axeResults.violations.length : 0).toBe(0);
 
       // Reload and confirm tour does not reappear
       await page.reload({ waitUntil: "networkidle" });

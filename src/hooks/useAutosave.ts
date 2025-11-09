@@ -1,15 +1,21 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-export type AutosaveStatus = "idle" | "saving" | "success" | "error";
+import {
+  useAutosaveState,
+  type AutosaveStatus,
+} from "./useAutosaveState";
+
+const DEFAULT_DELAY = 1500;
 
 export function useAutosave<T>(
   data: T | null,
   saveFn: (data: T) => Promise<void>,
-  delay = 1500
+  delay = DEFAULT_DELAY
 ) {
-  const [status, setStatus] = useState<AutosaveStatus>("idle");
+  const status = useAutosaveState((state) => state.status);
+  const setStatus = useAutosaveState((state) => state.setStatus);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestDataRef = useRef<T | null>(data);
   const latestSaveFnRef = useRef(saveFn);
 
@@ -17,13 +23,6 @@ export function useAutosave<T>(
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
-    }
-  }, []);
-
-  const clearReset = useCallback(() => {
-    if (resetRef.current) {
-      clearTimeout(resetRef.current);
-      resetRef.current = null;
     }
   }, []);
 
@@ -35,33 +34,38 @@ export function useAutosave<T>(
     latestSaveFnRef.current = saveFn;
   }, [saveFn]);
 
-  const triggerSave = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
+  const resolveErrorStatus = useCallback((): AutosaveStatus => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return "offline";
     }
+    return "error";
+  }, []);
+
+  const triggerSave = useCallback(() => {
+    clearTimer();
 
     if (latestDataRef.current === null) {
       return;
     }
 
-    clearReset();
-    setStatus("saving");
+    setStatus("saving", { source: "autosave" });
 
     timerRef.current = setTimeout(async () => {
       try {
         await latestSaveFnRef.current(latestDataRef.current as T);
-        setStatus("success");
-        resetRef.current = setTimeout(() => {
-          setStatus("idle");
-          resetRef.current = null;
-        }, 1000);
-      } catch {
-        setStatus("error");
+        setStatus("saved", { source: "autosave" });
+      } catch (error) {
+        const resolved = resolveErrorStatus();
+        setStatus(resolved, {
+          source: "autosave",
+          error:
+            error instanceof Error ? error.message : JSON.stringify(error),
+        });
       } finally {
         timerRef.current = null;
       }
     }, delay);
-  }, [clearReset, delay]);
+  }, [clearTimer, delay, resolveErrorStatus, setStatus]);
 
   useEffect(() => {
     if (data === null) {
@@ -75,15 +79,16 @@ export function useAutosave<T>(
     };
   }, [data, triggerSave, clearTimer]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    return () => {
       clearTimer();
-      clearReset();
-    },
-    [clearReset, clearTimer]
-  );
+    };
+  }, [clearTimer]);
 
   return { status, triggerSave };
 }
+
+export type { AutosaveStatus } from "./useAutosaveState";
+
 
 

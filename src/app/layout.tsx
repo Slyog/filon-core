@@ -4,12 +4,16 @@ import "./globals.css";
 
 import { HomePeekSidebar } from "@/components/HomePeekSidebar";
 import LayoutDebugOverlay from "@/components/dev/LayoutDebugOverlay";
+import { FeedbackToast } from "@/components/FeedbackToast";
+import { useAutosaveState } from "@/hooks/useAutosaveState";
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const autosaveStatus = useAutosaveState((state) => state.status);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-[#0A0F12] text-cyan-100" suppressHydrationWarning>
@@ -23,6 +27,10 @@ export default function RootLayout({
           <main className="layout-main relative z-20 flex-1 ml-[15rem] min-h-screen overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center">
             {children}
           </main>
+        </div>
+
+        <div className="pointer-events-none fixed top-6 right-6 z-[1200] flex flex-col items-end gap-3">
+          <FeedbackToast status={autosaveStatus} />
         </div>
 
         <LayoutDebugOverlay />

@@ -13,8 +13,17 @@ test.describe("FILON Layout Lock System", () => {
 
     const aside = await page.$(".layout-aside");
     const main = await page.$(".layout-main");
+
+    if (!aside || !main) {
+      throw new Error("Layout elements '.layout-aside' or '.layout-main' not found.");
+    }
+
     const asideBox = await aside.boundingBox();
     const mainBox = await main.boundingBox();
+
+    if (!asideBox || !mainBox) {
+      throw new Error("Unable to determine layout bounding boxes for aside/main elements.");
+    }
 
     const asideW = Math.round(asideBox?.width || 0);
     const mainX = Math.round(mainBox?.x || 0);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import clsx from "clsx";
 import { motion } from "framer-motion";
@@ -80,7 +80,7 @@ const StreamRow = React.memo(
     };
 
     return (
-      <div
+      <motion.div
         ref={ref}
         role="listitem"
         tabIndex={0}
@@ -91,6 +91,10 @@ const StreamRow = React.memo(
           highlighted && "border-cyan-400/50 bg-cyan-500/10",
           active && "ring-1 ring-cyan-300/60"
         )}
+        initial={{ opacity: 0, y: 6, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.18, ease: [0.25, 0.8, 0.4, 1] }}
+        layout
         onFocus={() => onFocus(index)}
         onMouseEnter={() => onHover?.(item.id)}
         onMouseLeave={() => onHover?.(null)}
@@ -125,7 +129,7 @@ const StreamRow = React.memo(
           <span>{relativeTime(item.ts)}</span>
           <span>{t.selectWithEnter}</span>
         </div>
-      </div>
+      </motion.div>
     );
   }
 );
@@ -143,20 +147,38 @@ const ContextStream = ({
   const [activeIndex, setActiveIndex] = useState(0);
   const [announcement, setAnnouncement] = useState("");
 
-      const announceSelection = useCallback(
-        (id: string) => {
-          const item = items.find((entry) => entry.id === id);
-          if (!item) return;
-          setAnnouncement(t.selected.replace("{title}", item.title));
-          onSelect(id);
-        },
-        [items, onSelect]
-      );
+  const announceSelection = useCallback(
+    (id: string) => {
+      const item = items.find((entry) => entry.id === id);
+      if (!item) return;
+      setAnnouncement(t.selected.replace("{title}", item.title));
+      onSelect(id);
+    },
+    [items, onSelect]
+  );
 
   const data = useMemo(() => items, [items]);
   const throttledHover = useThrottledCallback((id: string | null) => {
     onHover?.(id ?? null);
   });
+
+  useEffect(() => {
+    if (!hoveredId) return;
+    const idx = items.findIndex((item) => item.id === hoveredId);
+    if (idx >= 0 && idx !== activeIndex) {
+      setActiveIndex(idx);
+    }
+  }, [hoveredId, items, activeIndex]);
+
+  useEffect(() => {
+    if (items.length === 0) {
+      setActiveIndex(0);
+      return;
+    }
+    if (activeIndex >= items.length) {
+      setActiveIndex(items.length - 1);
+    }
+  }, [items, activeIndex]);
 
   const containerClass = clsx(
     "transition-colors",
@@ -183,30 +205,46 @@ const ContextStream = ({
           {items.length} {t.entries}
         </span>
       </div>
-      <Virtuoso
-        ref={virtuosoRef}
-        data={data}
-        className={clsx(position === "bottom" ? "max-h-[260px]" : "max-h-[360px]")}
-        style={{ height: position === "bottom" ? 260 : 360 }}
-        components={{ List }}
-        defaultItemHeight={96}
-        overscan={6}
-        increaseViewportBy={{ top: 120, bottom: 240 }}
-        itemContent={(index, item) => (
-          <div className="mb-2">
-            <StreamRow
-              item={item}
-              index={index}
-              total={data.length}
-              active={index === activeIndex}
-              highlighted={hoveredId === item.id}
-              onHover={throttledHover}
-              onPress={announceSelection}
-              onFocus={setActiveIndex}
-            />
-          </div>
-        )}
-      />
+      {items.length > 0 ? (
+        <Virtuoso
+          ref={virtuosoRef}
+          data={data}
+          className={clsx(position === "bottom" ? "max-h-[260px]" : "max-h-[360px]")}
+          style={{ height: position === "bottom" ? 260 : 360 }}
+          components={{ List }}
+          defaultItemHeight={96}
+          overscan={6}
+          increaseViewportBy={{ top: 120, bottom: 240 }}
+          itemContent={(index, item) => (
+            <div className="mb-2">
+              <StreamRow
+                item={item}
+                index={index}
+                total={data.length}
+                active={index === activeIndex}
+                highlighted={hoveredId === item.id}
+                onHover={throttledHover}
+                onPress={announceSelection}
+                onFocus={setActiveIndex}
+              />
+            </div>
+          )}
+        />
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, ease: [0.25, 0.8, 0.4, 1] }}
+          className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-cyan-400/20 bg-surface-hover/30 text-center text-xs text-text-secondary/70"
+        >
+          <span className="font-medium text-text-secondary/80">
+            {t.noContextEntries}
+          </span>
+          <span className="mt-1 text-text-secondary/60">
+            {t.captureThoughtHint}
+          </span>
+        </motion.div>
+      )}
       <div aria-live="polite" aria-atomic="true" className="sr-only">
         {announcement}
       </div>

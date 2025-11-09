@@ -13,16 +13,18 @@ type ReviewOverlayProps = {
 };
 
 function getStatusLabel(status: AutosaveStatus) {
-  if (status === "saving") {
-    return "Speichert Änderungen…";
+  switch (status) {
+    case "saving":
+      return "Speichert Änderungen…";
+    case "saved":
+      return "Änderungen gespeichert ✓";
+    case "error":
+      return "Speichern fehlgeschlagen – bitte prüfen";
+    case "offline":
+      return "Offline – Änderungen werden lokal gehalten";
+    default:
+      return "Änderungen prüfen";
   }
-  if (status === "success") {
-    return "Änderungen gespeichert ✓";
-  }
-  if (status === "error") {
-    return "Speichern fehlgeschlagen";
-  }
-  return "Änderungen prüfen";
 }
 
 export function ReviewOverlay({
@@ -41,7 +43,7 @@ export function ReviewOverlay({
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
           data-testid="review-overlay"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 rounded-2xl bg-black/60 backdrop-blur-md px-5 py-3 text-sm text-cyan-200 shadow-xl z-50"
+          className="ReviewOverlay fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-3 rounded-2xl bg-black/60 backdrop-blur-md px-5 py-3 text-sm text-cyan-200 shadow-xl z-50"
         >
           <span className="mr-2">{getStatusLabel(status)}</span>
           <button

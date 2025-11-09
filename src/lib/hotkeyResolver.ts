@@ -117,7 +117,7 @@ function setupGlobalHandler(): void {
  * Register a hotkey
  */
 export function registerHotkey(
-  descriptor: Omit<HotkeyDescriptor, "id">,
+  descriptor: Omit<HotkeyDescriptor, "id" | "handler">,
   handler: HotkeyHandler
 ): string {
   const id = getHotkeyId(descriptor);

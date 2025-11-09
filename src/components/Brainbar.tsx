@@ -10,13 +10,15 @@ import React, {
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { t } from "@/config/strings";
+import { useBrainState } from "@/hooks/useBrainState";
+import { useShallow } from "zustand/react/shallow";
+import type {
+  BrainCommand,
+  BrainCommandType,
+} from "@/types/brain";
 
-export type BrainbarCommandType = "add" | "link" | "goal" | "due";
-
-export interface BrainbarCommand {
-  type: BrainbarCommandType;
-  text: string;
-}
+export type BrainbarCommandType = BrainCommandType;
+export interface BrainbarCommand extends BrainCommand {}
 
 export interface BrainbarHandle {
   focus: () => void;
@@ -25,7 +27,7 @@ export interface BrainbarHandle {
 }
 
 interface BrainbarProps {
-  onSubmit: (command: BrainbarCommand) => void;
+  onSubmit?: (command: BrainbarCommand) => void | Promise<void>;
   autoFocus?: boolean;
 }
 
@@ -47,8 +49,16 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
     const [focused, setFocused] = useState(false);
     const [pulse, setPulse] = useState(false);
     const [announcement, setAnnouncement] = useState("");
+    const [submitting, setSubmitting] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { addNode, lastError, clearError } = useBrainState(
+      useShallow((state) => ({
+        addNode: state.addNode,
+        lastError: state.lastError,
+        clearError: state.clearError,
+      }))
+    );
 
     const hasCommand = value.trimStart().startsWith("/");
 
@@ -79,16 +89,73 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
       setTimeout(() => setAnnouncement(""), 1800);
     }, []);
 
-    const handleSubmit = useCallback(() => {
+    const resolvedErrorMessage = useMemo(() => {
+      if (!lastError) {
+        return null;
+      }
+
+      if (lastError.code === "empty_input") {
+        return t.enterThoughtFirst;
+      }
+
+      if (lastError.code === "duplicate") {
+        return t.thoughtAlreadyExists.replace(
+          "{text}",
+          clampText(lastError.value ?? "")
+        );
+      }
+
+      return lastError.message;
+    }, [lastError]);
+
+    const handleSubmit = useCallback(async () => {
+      if (submitting) {
+        return;
+      }
+
       if (!parsed.text.trim()) {
         announce(t.enterThoughtFirst);
         return;
       }
-      onSubmit(parsed);
-      triggerPulse();
-      announce(t.thoughtAdded.replace("{text}", clampText(parsed.text)));
-      setValue("");
-    }, [announce, onSubmit, parsed, triggerPulse]);
+
+      if (onSubmit) {
+        await Promise.resolve(onSubmit(parsed));
+        triggerPulse();
+        announce(t.thoughtAdded.replace("{text}", clampText(parsed.text)));
+        setValue("");
+        return;
+      }
+
+      try {
+        setSubmitting(true);
+        const result = await addNode(parsed.text, parsed.type);
+        if (!result.ok) {
+          const message =
+            result.error.code === "duplicate"
+              ? t.thoughtAlreadyExists.replace(
+                  "{text}",
+                  clampText(result.error.value ?? "")
+                )
+              : result.error.code === "empty_input"
+              ? t.enterThoughtFirst
+              : result.error.message;
+          announce(message);
+          return;
+        }
+        triggerPulse();
+        announce(t.thoughtAdded.replace("{text}", clampText(parsed.text)));
+        setValue("");
+      } finally {
+        setSubmitting(false);
+      }
+    }, [
+      addNode,
+      announce,
+      onSubmit,
+      parsed,
+      submitting,
+      triggerPulse,
+    ]);
 
     const handleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (
       event
@@ -113,6 +180,12 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
         }
       };
     }, []);
+
+    React.useEffect(() => {
+      if (resolvedErrorMessage) {
+        announce(resolvedErrorMessage);
+      }
+    }, [announce, resolvedErrorMessage]);
 
     useImperativeHandle(
       ref,
@@ -168,13 +241,24 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
               value={value}
               autoFocus={autoFocus}
               spellCheck={false}
-              onChange={(event) => setValue(event.target.value)}
+              onChange={(event) => {
+                if (lastError) {
+                  clearError();
+                }
+                setValue(event.target.value);
+              }}
               onKeyDown={handleKeyDown}
-              onFocus={() => setFocused(true)}
+              onFocus={() => {
+                if (lastError) {
+                  clearError();
+                }
+                setFocused(true);
+              }}
               onBlur={() => setFocused(false)}
               placeholder={t.writeThought}
               aria-label={t.enterThought}
               aria-describedby="brainbar-description"
+              aria-invalid={lastError ? "true" : undefined}
               className="w-full bg-transparent text-base text-text-primary placeholder:text-text-secondary/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base rounded-md"
             />
             <div
@@ -198,7 +282,30 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
               </motion.span>
             )}
           </AnimatePresence>
+          <motion.button
+            type="submit"
+            whileTap={{ scale: 0.96 }}
+            disabled={submitting}
+            className="ml-2 inline-flex items-center justify-center rounded-xl bg-brand/20 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-brand transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/60 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label={t.enterThought}
+          >
+            {submitting ? "…" : t.addThought}
+          </motion.button>
         </motion.div>
+
+        <AnimatePresence>
+          {(resolvedErrorMessage || value.trim().length > 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.16, ease: [0.25, 0.8, 0.4, 1] }}
+              className="text-xs text-rose-300/90"
+            >
+              {resolvedErrorMessage ?? "\u00A0"}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div aria-live="polite" aria-atomic="true" className="sr-only">
           {announcement}
