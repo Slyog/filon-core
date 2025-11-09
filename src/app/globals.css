@@ -6,8 +6,10 @@
   :root {
     --sidebar-w: 15rem; /* 240px */
     --filon-primary: 180 100% 50%;
-    --filon-accent: 47 243 255;
+    --filon-accent: 180 100% 60%;
     --filon-bg: 210 15% 8%;
+    --filon-text: 0 0% 90%;
+    --filon-text-dim: 0 0% 60%;
     --filon-glow: 180 100% 60%;
   }
 
@@ -19,9 +21,9 @@
   }
 
   body {
-    @apply bg-[hsl(var(--filon-bg))] text-[hsl(var(--filon-primary))] antialiased;
+    @apply bg-[hsl(var(--filon-bg))] text-[hsl(var(--filon-text))] antialiased;
     background-color: hsl(var(--filon-bg));
-    color: hsl(var(--filon-primary));
+    color: hsl(var(--filon-text));
   }
 
   a {
@@ -150,6 +152,18 @@ a:hover {
 button {
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
+  color: hsl(var(--filon-text));
+}
+button:hover {
+  box-shadow: 0 0 12px rgba(47, 243, 255, 0.5);
+  filter: brightness(1.1);
+}
+
+input {
+  color: hsl(var(--filon-text));
+}
+input::placeholder {
+  color: hsl(var(--filon-text-dim));
 }
 /* Global focus-visible styles for accessibility */
 *:focus-visible {
