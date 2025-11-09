@@ -103,24 +103,39 @@ export default function QADashboard() {
   const [error, setError] = useState<string | null>(null);
   const [insights, setInsights] = useState<InsightsState>(null);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<QASummary | null>(null);
+  const passRate =
+    summary && summary.total && summary.total > 0
+      ? Math.round(((summary.passed ?? 0) / summary.total) * 100)
+      : summary
+      ? 0
+      : null;
+  const lastRunDisplay = summary?.timestamp
+    ? new Date(summary.timestamp).toLocaleString()
+    : null;
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadReports = async () => {
       try {
         const response = await fetch("/api/qa", { cache: "no-store" });
         if (!response.ok) {
           throw new Error(`Failed to load QA summary (${response.status})`);
         }
-        const payload = (await response.json()) as QASummary | { error?: string };
+        const payload = (await response.json()) as
+          | QASummary
+          | { error?: string };
 
         if ("error" in payload) {
           throw new Error(payload.error ?? "Unknown QA summary error");
         }
 
-        const total = payload.total ?? payload.specs?.length ?? 0;
-        const passed = payload.passed ?? total;
-        const failed = payload.failed ?? Math.max(total - passed, 0);
-        const timestamp = payload.timestamp ?? new Date().toISOString();
+        const summaryPayload = payload as QASummary;
+        const total = summaryPayload.total ?? summaryPayload.specs?.length ?? 0;
+        const passed = summaryPayload.passed ?? total;
+        const failed = summaryPayload.failed ?? Math.max(total - passed, 0);
+        const timestamp = summaryPayload.timestamp ?? new Date().toISOString();
 
         const record: QAReport = {
           file: `qa-summary-${timestamp}.json`,
@@ -137,7 +152,7 @@ export default function QADashboard() {
             suites: [
               {
                 title: "Latest Run",
-                specs: (payload.specs ?? []).map((spec) => ({
+                specs: (summaryPayload.specs ?? []).map((spec: string) => ({
                   title: spec,
                   ok: true,
                 })),
@@ -146,17 +161,32 @@ export default function QADashboard() {
           },
         };
 
+        if (!isMounted) return;
+
+        setSummary({
+          ...summaryPayload,
+          total,
+          passed,
+          failed,
+          timestamp,
+        });
         setReports([record]);
         setSelectedReport(record);
+        setError(null);
       } catch (err) {
+        if (!isMounted) return;
         console.error("[qa:dashboard] load error", err);
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     void loadReports();
+    const refresh = setInterval(loadReports, 30000);
+
     const loadInsights = async () => {
       try {
         const response = await fetch("/api/qa/insights", { cache: "no-store" });
@@ -171,6 +201,11 @@ export default function QADashboard() {
       }
     };
     void loadInsights();
+
+    return () => {
+      isMounted = false;
+      clearInterval(refresh);
+    };
   }, []);
 
   const filteredReports = useMemo(() => {
@@ -237,15 +272,54 @@ export default function QADashboard() {
 
   return (
     <div className="relative z-20 flex min-h-screen w-full flex-col gap-6 bg-[#05090d] p-8 text-neutral-100">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold text-cyan-200">
-          FILON QA Dashboard
-        </h1>
+      <header className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-3xl font-semibold text-cyan-200">
+            FILON QA Dashboard
+          </h1>
+          <span
+            className={clsx(
+              "rounded-2xl border px-3 py-1 text-sm font-medium transition-colors",
+              passRate === null
+                ? "border-neutral-700/60 bg-neutral-900/60 text-neutral-400"
+                : passRate === 100
+                ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                : "border-amber-500/40 bg-amber-500/20 text-amber-200"
+            )}
+          >
+            {passRate !== null ? `${passRate}% Pass Rate` : "Loading QA data…"}
+          </span>
+        </div>
         <p className="max-w-3xl text-sm text-neutral-400">
           Monitor automation health at a glance. Use the filters to explore pass
           rates, inspect individual runs, and track trends across report
           history.
         </p>
+        <div className="rounded-2xl border border-cyan-300/20 bg-neutral-900/40 p-4">
+          {summary ? (
+            <>
+              <p className="text-sm text-neutral-300">
+                Last Run:{" "}
+                <span className="font-mono text-xs text-cyan-200">
+                  {lastRunDisplay ?? "Unknown"}
+                </span>
+              </p>
+              {summary.specs?.length ? (
+                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-neutral-300">
+                  {summary.specs.map((spec: string) => (
+                    <li key={spec}>{spec}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-neutral-500">
+                  No specs recorded for the latest run.
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-neutral-500">Loading QA data…</p>
+          )}
+        </div>
       </header>
 
       <div className="flex flex-wrap gap-2">
@@ -268,7 +342,9 @@ export default function QADashboard() {
 
       <section className="grid gap-4 rounded-2xl border border-cyan-300/20 bg-neutral-900/30 p-6 shadow-lg">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-cyan-100">Pass rate trend</h2>
+          <h2 className="text-lg font-semibold text-cyan-100">
+            Pass rate trend
+          </h2>
           <span className="text-xs text-neutral-500">
             Showing {timeline.length} day{timeline.length === 1 ? "" : "s"}
           </span>
@@ -277,7 +353,10 @@ export default function QADashboard() {
           {timeline.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={timeline}>
-                <CartesianGrid stroke="rgba(79, 213, 218, 0.15)" strokeDasharray="5 8" />
+                <CartesianGrid
+                  stroke="rgba(79, 213, 218, 0.15)"
+                  strokeDasharray="5 8"
+                />
                 <XAxis
                   dataKey="label"
                   stroke="#63727e"
@@ -319,7 +398,12 @@ export default function QADashboard() {
                   dataKey="passRate"
                   stroke="#2FF3FF"
                   strokeWidth={3}
-                  dot={{ stroke: "#2FF3FF", strokeWidth: 2, r: 4, fill: "#0A121C" }}
+                  dot={{
+                    stroke: "#2FF3FF",
+                    strokeWidth: 2,
+                    r: 4,
+                    fill: "#0A121C",
+                  }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -468,7 +552,8 @@ export default function QADashboard() {
                   <div className="flex items-center justify-between text-xs text-neutral-400">
                     <span>Commit: {report.meta?.commit ?? "unknown"}</span>
                     <span>
-                      {report.meta?.passed ?? 0} / {report.meta?.total ?? 0} tests
+                      {report.meta?.passed ?? 0} / {report.meta?.total ?? 0}{" "}
+                      tests
                     </span>
                   </div>
                   <div className="text-xs text-cyan-200">
@@ -481,7 +566,9 @@ export default function QADashboard() {
         </section>
 
         <section className="flex flex-col gap-4 rounded-2xl border border-cyan-300/20 bg-neutral-900/40 p-6 shadow-lg">
-          <h2 className="text-lg font-semibold text-cyan-100">Report details</h2>
+          <h2 className="text-lg font-semibold text-cyan-100">
+            Report details
+          </h2>
           {selectedDetail ? (
             <>
               <div className="grid gap-2 text-sm text-neutral-300">
@@ -565,4 +652,3 @@ export default function QADashboard() {
     </div>
   );
 }
-
