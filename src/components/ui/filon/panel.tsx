@@ -73,7 +73,7 @@ function FilonPanel({
   );
 }
 
-function PanelHeader({ className, ...props }: HTMLMotionProps<"div">) {
+function PanelHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-panel-header"
@@ -86,7 +86,7 @@ function PanelHeader({ className, ...props }: HTMLMotionProps<"div">) {
   );
 }
 
-function PanelTitle({ className, ...props }: HTMLMotionProps<"h3">) {
+function PanelTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
       data-slot="filon-panel-title"
@@ -96,7 +96,7 @@ function PanelTitle({ className, ...props }: HTMLMotionProps<"h3">) {
   );
 }
 
-function PanelContent({ className, ...props }: HTMLMotionProps<"div">) {
+function PanelContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-panel-content"
@@ -106,7 +106,7 @@ function PanelContent({ className, ...props }: HTMLMotionProps<"div">) {
   );
 }
 
-function PanelFooter({ className, ...props }: HTMLMotionProps<"div">) {
+function PanelFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-panel-footer"

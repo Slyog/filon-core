@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 export function BrainbarTabs() {
   const tabs = ["Idea", "Knowledge", "Guide", "Reflection"];

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 
 export function Motion() {
   const [hoveredShadow, setHoveredShadow] = useState(false);

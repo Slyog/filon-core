@@ -4,8 +4,17 @@ import latestReport from "@/../qa/reports/latest.json";
 
 type Report = typeof latestReport;
 
-const suites = Array.isArray(latestReport.data?.suites)
-  ? (latestReport.data.suites as Report["data"]["suites"])
+type Suite = {
+  title: string;
+  specs?: Array<{
+    title: string;
+    ok: boolean;
+    outcome?: string;
+  }>;
+};
+
+const suites: Suite[] = Array.isArray(latestReport.data?.suites)
+  ? (latestReport.data.suites as Suite[])
   : [];
 
 export default function QAReportPage() {

@@ -16,10 +16,7 @@ const config: Config = {
         // FILON Design Tokens - Synchronized from filonTokens
         // Direct color mappings for backward compatibility
         background: filonTokens.colors.background,
-        surface: filonTokens.colors.surface,
         glow: filonTokens.colors.glow,
-        accent: filonTokens.colors.accent,
-        text: filonTokens.colors.text.primary,
         // Phase 2: Design Tokens (backward compatibility)
         filament: filonTokens.colors.brand.DEFAULT,
         base: filonTokens.colors.surfaceVariants.base,
@@ -35,11 +32,13 @@ const config: Config = {
         // FILON Step 16.9 - Unified Design Tokens (synced from filonTokens)
         brand: filonTokens.colors.brand,
         surface: {
+          DEFAULT: filonTokens.colors.surface,
           base: filonTokens.colors.surfaceVariants.base,
           hover: filonTokens.colors.surfaceVariants.hover,
           active: filonTokens.colors.surfaceVariants.active,
         },
         accent: {
+          DEFAULT: filonTokens.colors.accent,
           glow: filonTokens.colors.accentVariants.glow,
           warning: filonTokens.colors.accentVariants.warning,
           error: filonTokens.colors.accentVariants.error,
@@ -53,6 +52,9 @@ const config: Config = {
         surface: "0 0 8px 0 hsl(var(--filon-glow)/0.15)",
         raised: "0 0 16px 0 hsl(var(--filon-glow)/0.25)",
         overlay: "0 0 24px 0 hsl(var(--filon-accent)/0.35)",
+        "glow-low": filonTokens.glowLevels.low,
+        "glow-mid": filonTokens.glowLevels.mid,
+        "glow-high": filonTokens.glowLevels.high,
       },
       backdropBlur: {
         xs: "2px",
@@ -63,16 +65,6 @@ const config: Config = {
       spacing: filonTokens.spacing,
       borderRadius: filonTokens.radius,
       zIndex: filonTokens.zIndex,
-      boxShadow: {
-        ...filonTokens.shadows,
-        glow: "0 0 12px 0 hsl(var(--filon-glow)/0.5)",
-        surface: "0 0 8px 0 hsl(var(--filon-glow)/0.15)",
-        raised: "0 0 16px 0 hsl(var(--filon-glow)/0.25)",
-        overlay: "0 0 24px 0 hsl(var(--filon-accent)/0.35)",
-        "glow-low": filonTokens.glowLevels.low,
-        "glow-mid": filonTokens.glowLevels.mid,
-        "glow-high": filonTokens.glowLevels.high,
-      },
       transitionTimingFunction: {
         filon: filonTokens.motion.easingString.smooth,
         out: filonTokens.motion.easingString.default,

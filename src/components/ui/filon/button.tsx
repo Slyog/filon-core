@@ -55,21 +55,36 @@ export interface FilonButtonProps
 
 const FilonButtonBase = React.forwardRef<HTMLButtonElement, FilonButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : motion.button;
+    const motionProps = {
+      variants: buttonMotionVariants,
+      initial: "initial" as const,
+      whileHover: "hover" as const,
+      whileTap: "tap" as const,
+      transition: {
+        duration: parseFloat(filonTokens.motion.duration.fast) / 1000,
+        ease: filonTokens.motion.easing.smooth,
+      },
+    };
+
+    if (asChild) {
+      // Filter out motion-specific props for Slot
+      const { variants, initial, whileHover, whileTap, transition, ...slotProps } = props as any;
+      return (
+        <Slot
+          ref={ref}
+          data-slot="filon-button"
+          className={cn(buttonVariants({ variant, size, className }))}
+          {...slotProps}
+        />
+      );
+    }
 
     return (
-      <Comp
+      <motion.button
         ref={ref}
         data-slot="filon-button"
         className={cn(buttonVariants({ variant, size, className }))}
-        variants={buttonMotionVariants}
-        initial="initial"
-        whileHover="hover"
-        whileTap="tap"
-        transition={{
-          duration: parseFloat(filonTokens.motion.duration.fast) / 1000,
-          ease: filonTokens.motion.easing.smooth,
-        }}
+        {...motionProps}
         {...props}
       />
     );

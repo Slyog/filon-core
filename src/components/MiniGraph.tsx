@@ -45,7 +45,7 @@ const useIsCompact = () => {
   return isCompact;
 };
 
-const useIsVisible = (ref: React.RefObject<HTMLDivElement>) => {
+const useIsVisible = (ref: React.RefObject<HTMLDivElement | null>) => {
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     if (!ref.current || typeof IntersectionObserver === "undefined") return;
@@ -94,7 +94,6 @@ const filterEdges = (
       id: edge.id,
       source: edge.source,
       target: edge.target,
-      animated: true,
       animated: false,
       style: {
         stroke: GraphDefaults.colorTokens.edge,

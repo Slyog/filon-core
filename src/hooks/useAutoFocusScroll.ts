@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 export const useAutoFocusScroll = (
-  ref: React.RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement | null>,
   isActive: boolean,
   duration = 800
 ) => {

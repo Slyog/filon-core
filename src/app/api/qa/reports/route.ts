@@ -37,7 +37,7 @@ export async function GET() {
   for (const file of reportFiles) {
     try {
       const raw = await fs.readFile(path.join(REPORTS_DIR, file), "utf-8");
-      const parsed = JSON.parse(raw) as { meta?: ReportMeta; data?: unknown };
+      const parsed = JSON.parse(raw) as { meta?: ReportMeta; data?: Record<string, unknown> };
       const meta = parsed.meta ?? {
         commit: "unknown",
         date: file.replace("report-", "").replace(".json", ""),
@@ -53,7 +53,7 @@ export async function GET() {
       reports.push({
         file,
         meta,
-        data: parsed.data ?? {},
+        data: parsed.data ?? ({} as Record<string, unknown>),
         status,
         passRate,
       });

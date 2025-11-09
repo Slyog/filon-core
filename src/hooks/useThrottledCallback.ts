@@ -8,7 +8,7 @@ export function useThrottledCallback<T extends AnyFunction>(
 ): T {
   const callbackRef = useRef(callback);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestArgsRef = useRef<Parameters<T>>();
+  const latestArgsRef = useRef<Parameters<T> | undefined>(undefined);
 
   callbackRef.current = callback;
 

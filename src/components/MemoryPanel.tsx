@@ -4,7 +4,7 @@ import { Panel } from "@/components/Panel";
 import { t } from "@/config/strings";
 
 export default function MemoryPanel() {
-  const history = useMemoryStore((s) => s.memoryHistory);
+  const history = useMemoryStore((s) => s.history);
   const getTrend = useMemoryStore((s) => s.getTrend);
 
   const safeHistory = history || [];

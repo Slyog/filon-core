@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Check, Eye, Keyboard } from "lucide-react";
 
 export function AccessibilityDemo() {

@@ -42,7 +42,7 @@ function Card({
   );
 }
 
-function CardHeader({ className, ...props }: HTMLMotionProps<"div">) {
+function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-card-header"
@@ -55,7 +55,7 @@ function CardHeader({ className, ...props }: HTMLMotionProps<"div">) {
   );
 }
 
-function CardTitle({ className, ...props }: HTMLMotionProps<"h4">) {
+function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h4
       data-slot="filon-card-title"
@@ -65,7 +65,7 @@ function CardTitle({ className, ...props }: HTMLMotionProps<"h4">) {
   );
 }
 
-function CardDescription({ className, ...props }: HTMLMotionProps<"p">) {
+function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
       data-slot="filon-card-description"
@@ -75,7 +75,7 @@ function CardDescription({ className, ...props }: HTMLMotionProps<"p">) {
   );
 }
 
-function CardAction({ className, ...props }: HTMLMotionProps<"div">) {
+function CardAction({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-card-action"
@@ -88,7 +88,7 @@ function CardAction({ className, ...props }: HTMLMotionProps<"div">) {
   );
 }
 
-function CardContent({ className, ...props }: HTMLMotionProps<"div">) {
+function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-card-content"
@@ -98,7 +98,7 @@ function CardContent({ className, ...props }: HTMLMotionProps<"div">) {
   );
 }
 
-function CardFooter({ className, ...props }: HTMLMotionProps<"div">) {
+function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       data-slot="filon-card-footer"

@@ -134,7 +134,7 @@ export default function GraphContextStream({
   
   const events = useFeedbackStore((state) => state.events);
   const { activeNodeId: contextNodeId } = useActiveNode();
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotion() ?? false;
   const [showExplainOverlay, setShowExplainOverlay] = useState(false);
   const [explainNodeId, setExplainNodeId] = useState<string | null>(null);
 
@@ -287,9 +287,9 @@ export default function GraphContextStream({
   }, []);
 
   // Helper: Check if event is focused
-  const isFocused = useCallback((event: StreamEvent) => {
+  const isFocused = useCallback((event: StreamEvent): boolean => {
     return focusedId === event.id || 
-           (activeNodeId && event.nodeId === activeNodeId && focusedId === null);
+           (activeNodeId !== null && event.nodeId === activeNodeId && focusedId === null);
   }, [focusedId, activeNodeId]);
 
   // Handle keyboard navigation for event items
@@ -661,7 +661,7 @@ const ContextStreamItem = memo(({
   onNodeSelect?: (nodeId: string) => void;
   onPinToggle: (eventId: string) => void;
   onItemKeyDown: (e: React.KeyboardEvent, event: StreamEvent) => void;
-  setFocusedId: (id: string) => void;
+  setFocusedId: (id: string | null) => void;
   itemRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   focusedItemRef: React.MutableRefObject<HTMLDivElement | null>;
   nodeSummaries: Map<string, { text: string; confidence: number; eventId: string }>;

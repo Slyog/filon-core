@@ -94,7 +94,7 @@ export default function WorkspacePage() {
 
   return (
     <WorkspaceLayout>
-      <GraphCanvas sessionId={id} initialThought={initialThought} />
+      <GraphCanvas sessionId={id} initialThought={initialThought ?? undefined} />
     </WorkspaceLayout>
   );
 }

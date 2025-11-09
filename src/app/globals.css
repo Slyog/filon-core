@@ -1,13 +1,21 @@
-@import "tailwindcss";
-@import "tailwindcss/preflight";
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    --sidebar-w: 15rem; /* 240px */
     --filon-primary: 180 100% 50%;
     --filon-accent: 47 243 255;
     --filon-bg: 210 15% 8%;
     --filon-glow: 180 100% 60%;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
   }
 
   body {
@@ -18,6 +26,24 @@
 
   a {
     @apply text-[hsl(var(--filon-accent))] hover:underline;
+  }
+
+  .layout-aside {
+    width: var(--sidebar-w);
+  }
+
+  .layout-main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .layout-root {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
   }
 }
 

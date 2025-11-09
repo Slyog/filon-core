@@ -69,11 +69,15 @@ const nodeTypes = {
   default: CanvasNode,
 };
 
+type NodeData = {
+  label: string;
+};
+
 export default function GraphCanvas({
   sessionId,
   initialThought,
 }: GraphCanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node[]>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, _setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
   const initialized = useRef(false);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
@@ -361,8 +365,8 @@ export default function GraphCanvas({
         id: "seed-1",
         type: "default",
         position: { x: 0, y: 0 },
-        data: { label },
-      },
+        data: { label } satisfies NodeData,
+      } satisfies Node<NodeData>,
     ]);
 
     const timeout = window.setTimeout(() => {
