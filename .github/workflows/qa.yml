@@ -1,39 +1,20 @@
-name: QA Reporting
+name: QA Layout Check
 
 on:
   push:
+    branches: [main, develop]
   pull_request:
 
 jobs:
-  qa:
+  layout-lock:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run QA report workflow
-        run: npm run qa:report
-
-      - name: Generate QA metrics badge
-        run: npm run qa:metrics
-
-      - name: Upload QA reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-report
-          path: qa/reports
-
-      - name: Upload QA badges
-        uses: actions/upload-artifact@v4
-        with:
-          name: qa-badges
-          path: qa/badges
-
+      - run: npm ci
+      - run: npm run build
+      - run: npm run dev &
+      - run: sleep 5
+      - run: npm run qa:layout:lock
