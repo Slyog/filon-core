@@ -4,6 +4,20 @@ import type { Node, Edge } from "reactflow";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { Prisma } from "@prisma/client";
 
+type DbNode = {
+  id: string;
+  label: string;
+  note: string | null;
+  x: number;
+  y: number;
+};
+
+type DbEdge = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+};
+
 type NormalizedNode = {
   id: string;
   label: string;
@@ -116,23 +130,23 @@ function toAutomergeBuffer(payload: unknown) {
 
 export async function GET() {
   try {
-    const dbNodes = await prisma.node.findMany({
+    const dbNodes: DbNode[] = await prisma.node.findMany({
       orderBy: { createdAt: "asc" },
     });
-    const dbEdges = await prisma.edge.findMany({
+    const dbEdges: DbEdge[] = await prisma.edge.findMany({
       orderBy: { createdAt: "asc" },
     });
     const meta = await prisma.meta.findUnique({ where: { id: 1 } });
 
     // Konvertiere DB-Format zu ReactFlow-Format
-    const nodes: Node[] = dbNodes.map((n) => ({
+    const nodes: Node[] = dbNodes.map((n: DbNode) => ({
       id: n.id,
       position: { x: n.x, y: n.y },
       data: { label: n.label, note: n.note || "" },
       type: "default",
     }));
 
-    const edges: Edge[] = dbEdges.map((e) => ({
+    const edges: Edge[] = dbEdges.map((e: DbEdge) => ({
       id: e.id,
       source: e.sourceId,
       target: e.targetId,

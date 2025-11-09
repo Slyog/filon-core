@@ -1,24 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+type NodeSummary = {
+  id: string;
+  label: string | null;
+};
+
+type EdgeSummary = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+};
+
 export async function GET() {
   try {
-    const nodes = await prisma.node.findMany({
+    const nodes = (await prisma.node.findMany({
       select: { id: true, label: true },
-    });
-    const edges = await prisma.edge.findMany({
+    })) as NodeSummary[];
+    const edges = (await prisma.edge.findMany({
       select: { id: true, sourceId: true, targetId: true },
-    });
+    })) as EdgeSummary[];
 
     return NextResponse.json({
       nodes: {
         count: nodes.length,
-        ids: nodes.map((n) => n.id),
-        labels: nodes.map((n) => n.label),
+        ids: nodes.map((n: NodeSummary) => n.id),
+        labels: nodes.map((n: NodeSummary) => n.label),
       },
       edges: {
         count: edges.length,
-        ids: edges.map((e) => e.id),
+        ids: edges.map((e: EdgeSummary) => e.id),
       },
     });
   } catch (error: any) {

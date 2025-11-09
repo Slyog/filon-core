@@ -44,7 +44,7 @@ import BranchPanel from "@/components/BranchPanel";
 import TimelinePlayer from "@/components/TimelinePlayer";
 import InsightsPanel from "@/components/InsightsPanel";
 import ContextMenu from "@/components/ContextMenu";
-import FeedbackToast from "@/components/FeedbackToast";
+import { FeedbackToast } from "@/components/FeedbackToast";
 import SaveStatusBar from "@/components/SaveStatusBar";
 import MemoryPanel from "@/components/MemoryPanel";
 import { attachRFDebug } from "@/utils/rfDebug";
@@ -3132,7 +3132,7 @@ function GraphFlowWithHotkeys({
           <ContextMenu node={contextNode} closeMenu={closeContextMenu} />
         </div>
       )}
-      <FeedbackToast />
+      <FeedbackToast status="idle" />
       <SaveStatusBar />
       <MemoryPanel />
     </div>

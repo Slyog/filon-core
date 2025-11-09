@@ -97,7 +97,7 @@ export default function GraphCanvas({
   sessionId,
   initialThought,
 }: GraphCanvasProps) {
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node<NodeData>>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
   const initialized = useRef(false);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
