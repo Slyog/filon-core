@@ -1,6 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, cubicBezier } from "framer-motion";
+import type { TargetAndTransition, Transition } from "framer-motion";
 
 import type { AutosaveStatus } from "@/hooks/useAutosaveState";
 
@@ -12,14 +13,17 @@ type StatusDescriptor = {
   label: string;
   toneClass: string;
   icon: string;
-  animate: Record<string, unknown>;
-  transition: Record<string, unknown>;
-  exit: Record<string, unknown>;
+  animate: TargetAndTransition;
+  transition: Transition;
+  exit: TargetAndTransition;
   enterMs: number;
   exitMs: number;
 };
 
-const baseTransition = { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] };
+const baseTransition: Transition = {
+  duration: 0.35,
+  ease: cubicBezier(0.22, 0.61, 0.36, 1),
+};
 
 const STATUS_VARIANTS: Record<
   Exclude<AutosaveStatus, "idle">,
@@ -42,7 +46,7 @@ const STATUS_VARIANTS: Record<
     transition: {
       duration: 0.9,
       repeat: Infinity,
-      ease: [0.33, 0.66, 0.41, 0.99],
+      ease: cubicBezier(0.33, 0.66, 0.41, 0.99),
     },
     exit: { opacity: 0, y: -12 },
     enterMs: 900,
@@ -99,8 +103,7 @@ const STATUS_VARIANTS: Record<
 };
 
 export function FeedbackToast({ status }: FeedbackToastProps) {
-  const descriptor =
-    status === "idle" ? null : STATUS_VARIANTS[status];
+  const descriptor = status === "idle" ? null : STATUS_VARIANTS[status];
 
   return (
     <AnimatePresence>
@@ -128,4 +131,3 @@ export function FeedbackToast({ status }: FeedbackToastProps) {
     </AnimatePresence>
   );
 }
-

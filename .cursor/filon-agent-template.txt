@@ -1,0 +1,218 @@
+Option 1 – Custom Template File (empfohlen)
+
+
+
+Leg in deinem Projekt einen Ordner an:
+
+
+
+/ .cursor /
+
+
+
+Erstell darin eine Datei:
+
+
+
+/ .cursor / filon-agent-template.txt
+
+
+
+Standard-Workflow
+
+1️⃣ Implement Phase
+
+
+
+Analysiere die aktuelle Step-Anweisung.
+
+
+
+Wende Änderungen minimal-invasiv an (bestehende Architektur respektieren).
+
+
+
+Nur committen, wenn Build + Typecheck bestehen.
+
+
+
+Kommentiere neuen Code kurz & prägnant (kein generisches AI-Gebrabbel).
+
+
+
+2️⃣ Auto-Test Phase
+
+
+
+Nach Abschluss automatisch ausführen:
+
+
+
+CI=1 npx playwright test --timeout=45000 --reporter=list
+
+
+
+npm run typecheck --if-present
+
+
+
+
+
+Timeouts verhindern Hänger.
+
+
+
+Bei Netz-/UI-Tests immer await + try/catch nutzen.
+
+
+
+Wenn Tests > 45 s laufen → Prozess abbrechen, Summary trotzdem ausgeben.
+
+
+
+3️⃣ Feedback Phase
+
+
+
+Erstelle ein strukturiertes JSON-ähnliches Summary:
+
+
+
+{
+
+  "status": "success" | "partial" | "failed",
+
+  "tests_passed": <number>,
+
+  "tests_failed": <number>,
+
+  "duration_ms": <int>,
+
+  "changed_files": ["..."],
+
+  "key_diff": "short plain-language summary"
+
+}
+
+
+
+
+
+Wenn failed:
+
+
+
+→ Gib max 3 Zeilen Fix-Empfehlung („Missing import“, „Selector timeout“, „Type mismatch“ …).
+
+
+
+⚙️ Safety Defaults
+
+
+
+Kein Netz-Timeout > 5 s ohne Fallback.
+
+
+
+Verwende immer cache: "no-store" bei lokalen fetch-Calls.
+
+
+
+UI-Änderungen müssen aria-role, aria-live, tabIndex berücksichtigen.
+
+
+
+Nie Endlosschleifen oder permanente polling-intervalle.
+
+
+
+Bei Zustand/Store immer shallow-Selectors nutzen (Performance).
+
+
+
+🧩 Post-Run Routine
+
+
+
+Nach jedem erfolgreichen Lauf:
+
+
+
+Führe npm run save-report aus (QA Sync).
+
+
+
+Generiere automatisch tests/__reports__/qa-summary.json.
+
+
+
+Lade Daten ins Dashboard (/qa) → schnelle visuelle Kontrolle.
+
+
+
+🧠 Integration Tips (for Cursor)
+
+
+
+1️⃣ Lege diese Datei an:
+
+
+
+.cursor/filon-agent-template.txt
+
+
+
+
+
+→ Inhalt = dieser Prompt.
+
+
+
+2️⃣ Wenn du “New Agent” klickst, öffne filon-agent-template.txt
+
+
+
+und drücke “Use as Context” – Cursor liest die Logik direkt ein.
+
+
+
+3️⃣ Optional: markiere in der README:
+
+
+
+<!-- FILON-AUTO-AGENT-PROTOCOL -->
+
+Reference: /.cursor/filon-agent-template.txt
+
+
+
+4️⃣ Tipp für Stabilität:
+
+
+
+Nutze Composer für UI-Passes, Codex für State/DB, Qodo für QA.
+
+
+
+Füge bei langen Builds --timeout Flags hinzu (Playwright, Prisma).
+
+
+
+Wenn du später CI aktivierst, kann dieser Prompt 1:1 als Basis für deinen GitHub Action Job dienen.
+
+
+
+✅ Task
+
+
+
+Implementiere den aktuellen FILON-Roadmap-Step nach diesem Protokoll.
+
+
+
+Auto-Agent-Delegation aktivieren, Tests mit Timeout ausführen, Feedback Summary ausgeben, Reports syncen.
+
+
+
+End of Prompt
+
