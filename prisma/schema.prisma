@@ -4,34 +4,34 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url     = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model Node {
-  id           String      @id @default(cuid())
-  label        String
-  note         String?
-  x            Float
-  y            Float
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  edgesOut     Edge[] @relation("OutEdges")
-  edgesIn      Edge[] @relation("InEdges")
+  id        String   @id @default(cuid())
+  label     String
+  note      String?
+  x         Float
+  y         Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  edgesIn   Edge[]   @relation("InEdges")
+  edgesOut  Edge[]   @relation("OutEdges")
 }
 
 model Edge {
-  id           String      @id @default(cuid())
-  sourceId     String
-  targetId     String
-  createdAt    DateTime @default(now())
-  source       Node       @relation("OutEdges", fields: [sourceId], references: [id])
-  target       Node       @relation("InEdges", fields: [targetId], references: [id])
+  id        String   @id @default(cuid())
+  sourceId  String
+  targetId  String
+  createdAt DateTime @default(now())
+  target    Node     @relation("InEdges", fields: [targetId], references: [id])
+  source    Node     @relation("OutEdges", fields: [sourceId], references: [id])
 }
 
 model Meta {
-  id           Int        @id @default(1)
-  lastSavedAt  DateTime?
-  nodeCount    Int?
-  edgeCount    Int?
-  automerge    Bytes?
+  id          Int       @id @default(autoincrement())
+  lastSavedAt DateTime?
+  nodeCount   Int?
+  edgeCount   Int?
+  automerge   Bytes?
 }
