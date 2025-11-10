@@ -1,0 +1,3 @@
+[submodule "proprietary"]
+	path = proprietary
+	url = https://github.com/Slyog/filon-proprietary

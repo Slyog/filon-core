@@ -9,3 +9,8 @@ prisma/dev.db
 coverage/
 test-results/
 tmp/
+
+# Proprietary layer exclusions
+/proprietary/*
+!/proprietary/README.md
+!/proprietary/package.json
