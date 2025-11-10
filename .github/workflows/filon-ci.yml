@@ -21,6 +21,16 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
+      - name: ⚡ Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -48,6 +58,11 @@ jobs:
         run: |
           pnpm store prune
 
+      - name: 🧹 Prune and save cache
+        if: always()
+        run: |
+          pnpm store prune
+
   build-and-test:
     runs-on: ubuntu-latest
     needs: [health-check]
@@ -61,6 +76,16 @@ jobs:
         with:
           node-version: 20
           cache: "pnpm"
+
+      - name: ⚡ Restore pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - name: 📦 Setup pnpm
         uses: pnpm/action-setup@v3
@@ -81,3 +106,49 @@ jobs:
         run: |
           echo "Build finished at $(date)"
           du -sh .next || true
+
+      - name: 🧹 Prune and save cache
+        if: always()
+        run: |
+          pnpm store prune
+
+      # === QA Auto-Reporting ===
+      - name: 🧾 Generate QA Report (JSON + Markdown)
+        if: success()
+        run: |
+          mkdir -p qa/reports
+          REPORT_PATH="qa/reports/latest.json"
+          REPORT_MD="qa/reports/latest.md"
+
+          echo "{\n            \"build\": \"$(date -u)\",\n            \"branch\": \"${{ github.ref_name }}\",\n            \"commit\": \"${{ github.sha }}\",\n            \"status\": \"success\"\n          }" > $REPORT_PATH
+
+          echo "## ✅ FILON CI Build Summary\n          - **Branch:** ${{ github.ref_name }}\n          - **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\n          - **Status:** ✅ Success\n          - **Build Time (UTC):** $(date -u)\n          " > $REPORT_MD
+
+          echo "QA reports written to $REPORT_PATH and $REPORT_MD"
+
+      - name: 📤 Commit & Push QA Reports
+        if: success()
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git add qa/reports/
+          git commit -m "ci(report): update QA build summary" || echo "No changes to commit"
+          git push origin dev || echo "⚠️ Skipped push (no permissions or no changes)"
+
+      - name: 📡 Send Discord Notification
+        if: success()
+        uses: tsickert/discord-webhook@v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
+          payload-json: |
+            {
+              "embeds": [
+                {
+                  "title": "🚀 FILON CI Build Passed",
+                  "description": "**Branch:** ${{ github.ref_name }}\n**Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\n**Status:** ✅ Success\n**Author:** ${{ github.actor }}",
+                  "color": 3145775,
+                  "footer": { "text": "FILON CI Auto-Reporter" },
+                  "timestamp": "${{ github.event.head_commit.timestamp }}"
+                }
+              ]
+            }
