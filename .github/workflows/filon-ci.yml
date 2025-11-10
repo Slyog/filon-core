@@ -15,27 +15,17 @@ jobs:
       - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js
+      # === Setup Node Environment ===
+      - name: 🧩 Setup Node.js (No Lockfile Cache)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
+          cache: 'false'   # Prevents error if package-lock.json or yarn.lock is missing
 
-      - name: ⚡ Restore pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-          run_install: false
+      - name: 📦 Install Dependencies
+        run: |
+          npm install
+          echo "✅ Dependencies installed successfully (no lockfile cache)."
 
       - name: 🧰 Verify pnpm environment
         run: |
@@ -71,30 +61,17 @@ jobs:
       - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js
+      # === Setup Node Environment ===
+      - name: 🧩 Setup Node.js (No Lockfile Cache)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: 'false'   # Prevents error if package-lock.json or yarn.lock is missing
 
-      - name: ⚡ Restore pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.pnpm-store
-            node_modules
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
-          run_install: false
-
-      - name: 🔧 Install dependencies (workspace aware)
-        run: pnpm install --frozen-lockfile
+      - name: 📦 Install Dependencies
+        run: |
+          npm install
+          echo "✅ Dependencies installed successfully (no lockfile cache)."
 
       - name: 🧪 Run QA & Tests
         run: pnpm run qa:all
