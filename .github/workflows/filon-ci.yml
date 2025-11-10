@@ -89,7 +89,7 @@ jobs:
         if: success()
         uses: tsickert/discord-webhook@v7.0.0
         with:
-          url: ${{ secrets.DISCORD_WEBHOOK }}
+          url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           embed-title: "🚀 FILON CI Passed"
           embed-description: |
             **Branch:** ${{ github.ref_name }}
@@ -105,7 +105,7 @@ jobs:
         if: failure()
         uses: tsickert/discord-webhook@v7.0.0
         with:
-          url: ${{ secrets.DISCORD_WEBHOOK }}
+          url: ${{ secrets.DISCORD_WEBHOOK_URL }}
           embed-title: "❌ FILON CI Failed"
           embed-description: |
             **Branch:** ${{ github.ref_name }}
