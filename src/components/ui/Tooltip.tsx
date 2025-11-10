@@ -24,7 +24,7 @@ export default function Tooltip({ label, children }: TooltipProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: 0.15 }}
-            className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[hsl(var(--filon-bg))] px-2 py-1 text-xs text-[hsl(var(--filon-primary))] shadow-glow border border-brand/40 hover:shadow-glow transition-all duration-300 ease-filon"
+            className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-[hsl(var(--filon-bg-hsl))] px-2 py-1 text-xs text-[hsl(var(--filon-primary))] shadow-glow border border-brand/40 hover:shadow-glow transition-all duration-300 ease-filon"
             role="tooltip"
           >
             {label}

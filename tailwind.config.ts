@@ -25,9 +25,8 @@ const config: Config = {
         filon: {
           bg: "var(--filon-bg)",
           surface: "var(--filon-surface)",
-          glow: "var(--filon-glow)",
-          accent: "var(--filon-accent)",
-          text: "var(--filon-text)",
+          accent: "var(--filon-accent, #2FF3FF)",
+          text: "var(--filon-text, #EAFDFF)",
         },
         // FILON Step 16.9 - Unified Design Tokens (synced from filonTokens)
         brand: filonTokens.colors.brand,
@@ -48,10 +47,11 @@ const config: Config = {
       fontFamily: filonTokens.typography.fontFamily,
       boxShadow: {
         ...filonTokens.shadows,
-        glow: "0 0 12px 0 hsl(var(--filon-glow)/0.5)",
-        surface: "0 0 8px 0 hsl(var(--filon-glow)/0.15)",
-        raised: "0 0 16px 0 hsl(var(--filon-glow)/0.25)",
-        overlay: "0 0 24px 0 hsl(var(--filon-accent)/0.35)",
+        glow: "0 0 10px rgba(47, 243, 255, 0.4)",
+        "glow-strong": "0 0 25px rgba(47, 243, 255, 0.6)",
+        surface: "0 0 8px 0 hsl(var(--filon-glow-hsl, 180 100% 60%)/0.15)",
+        raised: "0 0 16px 0 hsl(var(--filon-glow-hsl, 180 100% 60%)/0.25)",
+        overlay: "0 0 24px 0 hsl(var(--filon-accent-hsl, 180 100% 60%)/0.35)",
         "glow-low": filonTokens.glowLevels.low,
         "glow-mid": filonTokens.glowLevels.mid,
         "glow-high": filonTokens.glowLevels.high,

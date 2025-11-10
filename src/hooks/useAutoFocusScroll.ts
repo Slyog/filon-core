@@ -23,9 +23,9 @@ export const useAutoFocusScroll = (
       // kurzzeitiger Glow-Puls als visuelles Feedback
       el.animate(
         [
-          { boxShadow: "0 0 0px hsl(var(--filon-accent)/0.0)" },
-          { boxShadow: "0 0 20px hsl(var(--filon-accent)/0.6)" },
-          { boxShadow: "0 0 0px hsl(var(--filon-accent)/0.0)" },
+          { boxShadow: "0 0 0px hsl(var(--filon-accent-hsl)/0.0)" },
+          { boxShadow: "0 0 20px hsl(var(--filon-accent-hsl)/0.6)" },
+          { boxShadow: "0 0 0px hsl(var(--filon-accent-hsl)/0.0)" },
         ],
         { duration: duration, easing: "ease-in-out" }
       );

@@ -33,9 +33,9 @@ export const filonTokens = {
   colors: {
     // Primary colors mapped to CSS variables
     primary: "hsl(var(--filon-primary))",
-    accent: "hsl(var(--filon-accent))",
-    background: "hsl(var(--filon-bg))",
-    surface: "hsl(var(--filon-surface))",
+    accent: "var(--filon-accent)",
+    background: "var(--filon-bg)",
+    surface: "var(--filon-surface)",
     glow: "rgba(47, 243, 255, 0.8)", // Direct RGBA for glow effects
     text: {
       primary: extractColorValue(figmaTokens.colors.text.primary),
@@ -117,9 +117,9 @@ export const filonTokens = {
     inner: figmaTokens.shadows.inner.value,
   },
   depth: {
-    surface: "0 0 8px hsl(var(--filon-glow)/0.15)",
-    raised: "0 0 16px hsl(var(--filon-glow)/0.25)",
-    overlay: "0 0 24px hsl(var(--filon-accent)/0.35)",
+    surface: "0 0 8px hsl(var(--filon-glow-hsl)/0.15)",
+    raised: "0 0 16px hsl(var(--filon-glow-hsl)/0.25)",
+    overlay: "0 0 24px hsl(var(--filon-accent-hsl)/0.35)",
   },
   motionPresets: {
     softPulse: { scale: [1, 1.02, 1], opacity: [0.95, 1, 0.95] },
@@ -127,9 +127,9 @@ export const filonTokens = {
     parallax: { y: [-4, 4], transition: { repeat: Infinity, repeatType: "reverse" as const, duration: 6 } },
   },
   glowLevels: {
-    low: "0 0 8px hsl(var(--filon-glow)/0.2)",
-    mid: "0 0 16px hsl(var(--filon-glow)/0.35)",
-    high: "0 0 24px hsl(var(--filon-accent)/0.55)",
+    low: "0 0 8px hsl(var(--filon-glow-hsl)/0.2)",
+    mid: "0 0 16px hsl(var(--filon-glow-hsl)/0.35)",
+    high: "0 0 24px hsl(var(--filon-accent-hsl)/0.55)",
   },
   zIndex: { base: 0, raised: 5, overlay: 10, focus: 20 },
 } as const;

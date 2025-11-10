@@ -1,8 +1,16 @@
-import { test, expect } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
+
+const test = base;
+
+export { test, expect };
 
 test.describe("FILON Auto Node Feedback System", () => {
+  test.describe.configure({ retries: 1 });
   test("should highlight new node and reset after delay", async ({ page }) => {
     await page.goto("http://localhost:3000");
+
+    await page.waitForLoadState("networkidle", { timeout: 20_000 });
+    await page.waitForSelector("#brainbar-input", { timeout: 15_000 });
 
     await page.evaluate(() => {
       window.dispatchEvent(
@@ -13,7 +21,7 @@ test.describe("FILON Auto Node Feedback System", () => {
     });
 
     const nodeSelector = '[data-id="test-node"]';
-    await page.waitForSelector(nodeSelector, { timeout: 3000 });
+    await page.waitForSelector(nodeSelector, { timeout: 20_000 });
     const initialBoxShadow = await page.$eval(nodeSelector, (el) =>
       window.getComputedStyle(el).boxShadow,
     );

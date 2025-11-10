@@ -54,7 +54,7 @@ function FilonPanel({
         <motion.div
           data-slot="filon-panel"
           className={cn(
-            "relative flex flex-col shadow-surface hover:shadow-raised focus-visible:shadow-overlay focus:outline-none ring-1 ring-transparent focus:ring-[hsl(var(--filon-accent)/0.6)] transition-all duration-300 ease-filon",
+            "relative flex flex-col shadow-surface hover:shadow-raised focus-visible:shadow-overlay focus:outline-none ring-1 ring-transparent focus:ring-[hsl(var(--filon-accent-hsl)/0.6)] transition-all duration-300 ease-filon",
             sizeClasses[size],
             variantClasses[variant],
             className,

@@ -34,7 +34,7 @@ export const InteractiveLight = () => {
       style={{
         background: `radial-gradient(
           600px circle at ${sx}px ${sy}px,
-          hsl(var(--filon-glow)/${inactive ? 0.1 : 0.25 + energy * 0.35}),
+          hsl(var(--filon-glow-hsl)/${inactive ? 0.1 : 0.25 + energy * 0.35}),
           transparent 80%
         )`,
         mixBlendMode: "screen",

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { log } from "@/utils/logger";
 
 type Agent = { name: string };
 
@@ -26,14 +27,14 @@ export async function createNode(data: CreateNodeInput) {
       y: Math.random() * 300,
     },
   });
-  console.info("[FILON AI] Created Node:", node.id);
+  log.info("[GraphActions] Created node", node.id);
   return node;
 }
 
 export async function linkNodes(sourceId: string, targetId: string) {
   await prisma.edge.create({
-    data: { sourceId, targetId, type: "summary-link" },
+    data: { sourceId, targetId },
   });
-  console.info(`[FILON AI] Linked ${sourceId} → ${targetId}`);
+  log.info("[GraphActions] Linked", sourceId, "->", targetId);
 }
 

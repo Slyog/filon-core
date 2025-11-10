@@ -2,9 +2,12 @@
 import { useState, useMemo } from "react";
 import { useSessionStore, type Session } from "@/store/SessionStore";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import GraphPreview from "./GraphPreview";
 import QAPanel from "./QAPanel";
 import { useUIShellStore } from "@/store/UIShellStore";
+import FilonLogo from "@/app/filon-logo/filon-logo-transparent.png";
 
 export default function Sidebar() {
   const {
@@ -69,6 +72,18 @@ export default function Sidebar() {
       className="fixed left-0 top-0 z-30 flex h-full flex-col border-r border-cyan-400/10 bg-[#0A0F12]/95 p-4 transition-all duration-300 scrollbar text-[var(--foreground)]"
       style={{ width: sidebarOpen ? "256px" : "80px" }}
     >
+      <Link href="/" aria-label="FILON Home" className="mx-auto mb-6">
+        <div className="filon-logo relative h-14 w-14">
+          <Image
+            src={FilonLogo}
+            alt="FILON Logo"
+            fill
+            priority
+            className="object-contain"
+          />
+        </div>
+      </Link>
+
       <h2 className="text-[var(--accent)] font-semibold mb-3">Workspaces</h2>
 
       <button

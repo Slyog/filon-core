@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { log } from "@/utils/logger";
 
 const META_PATH = path.resolve("public/qa/reports/meta.json");
 
@@ -32,6 +33,6 @@ export async function recordMetaRun(entry: Omit<MetaRun, "timestamp">) {
   records.push(full);
   fs.mkdirSync(path.dirname(META_PATH), { recursive: true });
   fs.writeFileSync(META_PATH, JSON.stringify(records, null, 2));
-  console.info(`[FILON META] Logged step ${full.step} (${full.status})`);
+  log.info(`[Meta] Logged step ${full.step} (${full.status})`);
 }
 

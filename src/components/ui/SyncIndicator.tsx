@@ -24,7 +24,7 @@ export default function SyncIndicator({
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className={`fixed bottom-4 right-4 z-50 rounded-lg border border-surface-active/50 bg-[hsl(var(--filon-bg))]/95 px-3 py-2 shadow-glow backdrop-blur-sm hover:shadow-glow transition-all duration-300 ease-filon ${className}`}
+        className={`fixed bottom-4 right-4 z-50 rounded-lg border border-surface-active/50 bg-[hsl(var(--filon-bg-hsl))]/95 px-3 py-2 shadow-glow backdrop-blur-sm hover:shadow-glow transition-all duration-300 ease-filon ${className}`}
       >
         <div className="flex items-center gap-2">
           {isSyncing ? (

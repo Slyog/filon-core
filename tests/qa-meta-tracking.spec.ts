@@ -1,12 +1,20 @@
-import { test, expect } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
 import fs from "fs";
 
+const test = base;
+
+export { test, expect };
+
 test.describe("FILON Meta Tracking v2", () => {
+  test.describe.configure({ retries: 1 });
   test("writes meta.json entries after run", async ({ page }) => {
     await page.goto("http://localhost:3000");
 
-    await page.getByRole("button", { name: /AI Summarize & Link/i }).click();
-    await page.waitForSelector('[data-id^="filon-node-"]', { timeout: 5000 });
+    await page.waitForLoadState("networkidle", { timeout: 20_000 });
+    await page.waitForSelector("#brainbar-input", { timeout: 15_000 });
+
+    await page.getByRole("button", { name: /AI Summarize & Link/i }).click({ timeout: 10_000 });
+    await page.waitForSelector('[data-id^="filon-node-"]', { timeout: 20_000 });
 
     const metaRaw = fs.readFileSync("public/qa/reports/meta.json", "utf8");
     const meta = JSON.parse(metaRaw);

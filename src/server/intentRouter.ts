@@ -1,5 +1,6 @@
 import { graphToolchain } from "@/lib/graphToolchain";
 import { getActiveAgent } from "@/server/agentRouter";
+import { log } from "@/utils/logger";
 
 export type FILONIntent =
   | "create"
@@ -41,7 +42,7 @@ export async function routeIntent(
   const intent = await detectIntent(prompt);
   const agent = await getActiveAgent();
 
-  console.info(`[FILON INTENT] ${intent.toUpperCase()} via ${agent.name}`);
+  log.info(`[Intent] ${intent.toUpperCase()} via ${agent.name}`);
 
   let result: unknown;
   let message: string | undefined;

@@ -47,6 +47,14 @@ declare global {
   }
 }
 
+export default function GraphCanvas(props: GraphCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <GraphCanvasInner {...props} />
+    </ReactFlowProvider>
+  );
+}
+
 type GraphCanvasProps = {
   sessionId?: string;
   initialThought?: string;
@@ -159,7 +167,7 @@ const gridPositionForIndex = (index: number) => {
   };
 };
 
-export default function GraphCanvas({
+function GraphCanvasInner({
   sessionId,
   initialThought,
 }: GraphCanvasProps) {
@@ -566,72 +574,70 @@ export default function GraphCanvas({
       data-session-id={sessionId ?? undefined}
     >
       <GraphContext.Provider value={graphApi}>
-        <ReactFlowProvider>
-          <div className="flex h-full flex-col">
-            <div className="px-6 pt-6 pb-4">
-              <Brainbar autoFocus />
-            </div>
-            <div className="relative flex-1 min-h-[320px] px-4 pb-4">
-              <ReactFlow
-                nodes={styledNodes}
-                edges={edges}
-                nodeTypes={nodeTypesMemo}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onInit={(instance) => {
-                  reactFlowRef.current = instance;
-                }}
-                minZoom={0.4}
-                maxZoom={2}
-                fitView
-                fitViewOptions={{ padding: 0.2, duration: 400 }}
-                panOnScroll
-                panOnDrag
-                zoomOnScroll
-                className="h-full rounded-3xl border border-cyan-400/10 bg-[#050708]/80 shadow-inner"
-                style={{
-                  background:
-                    "radial-gradient(circle at 50% 50%, #0A0F12 0%, #050708 100%)",
-                }}
-                data-testid="graph-flow-root"
-              >
-                <Background
-                  id="filon-bg"
-                  variant={BackgroundVariant.Dots}
-                  gap={22}
-                  size={1}
-                  color="rgba(47,243,255,0.05)"
-                />
-                <MiniMap
-                  className="z-20"
-                  position="bottom-left"
-                  maskColor="rgba(0, 0, 0, 0.2)"
-                  pannable
-                  zoomable
-                  style={{
-                    backgroundColor: "rgba(10, 15, 18, 0.65)",
-                    border: "1px solid rgba(47, 243, 255, 0.3)",
-                    borderRadius: "8px",
-                    margin: "1rem",
-                    width: 140,
-                    height: 90,
-                    boxShadow: "0 0 10px rgba(47,243,255,0.2)",
-                  }}
-                />
-                <Controls className="z-20" position="bottom-left" />
-              </ReactFlow>
-            </div>
-            <div className="px-6 pb-6">
-              <ContextStream
-                items={streamItems}
-                onSelect={handleStreamSelect}
-                hoveredId={hoveredNodeId ?? activeNodeId ?? undefined}
-                onHover={handleStreamHover}
-                position="bottom"
-              />
-            </div>
+        <div className="flex h-full flex-col">
+          <div className="px-6 pt-6 pb-4">
+            <Brainbar autoFocus />
           </div>
-        </ReactFlowProvider>
+          <div className="relative flex-1 min-h-[320px] px-4 pb-4">
+            <ReactFlow
+              nodes={styledNodes}
+              edges={edges}
+              nodeTypes={nodeTypesMemo}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onInit={(instance) => {
+                reactFlowRef.current = instance;
+              }}
+              minZoom={0.4}
+              maxZoom={2}
+              fitView
+              fitViewOptions={{ padding: 0.2, duration: 400 }}
+              panOnScroll
+              panOnDrag
+              zoomOnScroll
+              className="h-full rounded-3xl border border-cyan-400/10 bg-[#050708]/80 shadow-inner"
+              style={{
+                background:
+                  "radial-gradient(circle at 50% 50%, #0A0F12 0%, #050708 100%)",
+              }}
+              data-testid="graph-flow-root"
+            >
+              <Background
+                id="filon-bg"
+                variant={BackgroundVariant.Dots}
+                gap={22}
+                size={1}
+                color="rgba(47,243,255,0.05)"
+              />
+              <MiniMap
+                className="z-20"
+                position="bottom-left"
+                maskColor="rgba(0, 0, 0, 0.2)"
+                pannable
+                zoomable
+                style={{
+                  backgroundColor: "rgba(10, 15, 18, 0.65)",
+                  border: "1px solid rgba(47, 243, 255, 0.3)",
+                  borderRadius: "8px",
+                  margin: "1rem",
+                  width: 140,
+                  height: 90,
+                  boxShadow: "0 0 10px rgba(47,243,255,0.2)",
+                }}
+              />
+              <Controls className="z-20" position="bottom-left" />
+            </ReactFlow>
+          </div>
+          <div className="px-6 pb-6">
+            <ContextStream
+              items={streamItems}
+              onSelect={handleStreamSelect}
+              hoveredId={hoveredNodeId ?? activeNodeId ?? undefined}
+              onHover={handleStreamHover}
+              position="bottom"
+            />
+          </div>
+        </div>
       </GraphContext.Provider>
       <OfflineIndicator />
       <MicroCoach message={coachMessage} />

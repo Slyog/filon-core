@@ -5,12 +5,18 @@
 @layer base {
   :root {
     --sidebar-w: 15rem; /* 240px */
-    --filon-primary: 180 100% 50%;
-    --filon-accent: 180 100% 60%;
-    --filon-bg: 210 15% 8%;
-    --filon-text: 0 0% 90%;
+    --filon-bg: #0a0f12;
+    --filon-bg-hsl: 210 15% 8%;
+    --filon-surface: #11161b;
+    --filon-surface-hsl: 210 15% 11%;
+    --filon-accent: #2ff3ff;
+    --filon-accent-hsl: 180 100% 60%;
+    --filon-text: #eafcff;
+    --filon-text-hsl: 0 0% 92%;
     --filon-text-dim: 0 0% 60%;
-    --filon-glow: 180 100% 60%;
+    --filon-primary: 180 100% 50%;
+    --filon-glow: rgba(47, 243, 255, 0.6);
+    --filon-glow-hsl: 180 100% 60%;
   }
 
   html,
@@ -21,13 +27,13 @@
   }
 
   body {
-    @apply bg-[hsl(var(--filon-bg))] text-[hsl(var(--filon-text))] antialiased;
-    background-color: hsl(var(--filon-bg));
-    color: hsl(var(--filon-text));
+    @apply bg-[var(--filon-bg)] text-[var(--filon-text)] antialiased;
+    background-color: var(--filon-bg);
+    color: var(--filon-text);
   }
 
   a {
-    @apply text-[hsl(var(--filon-accent))] hover:underline;
+    color: var(--filon-accent);
   }
 
   .layout-aside {
@@ -47,6 +53,43 @@
     width: 100vw;
     overflow: hidden;
   }
+
+  .sidebar-logo,
+  .filon-logo {
+    color: var(--filon-accent);
+    filter: drop-shadow(0 0 12px rgba(47, 243, 255, 0.7));
+    transition: filter 0.4s ease;
+  }
+
+  .sidebar-logo:hover,
+  .filon-logo:hover {
+    filter: drop-shadow(0 0 20px rgba(47, 243, 255, 1));
+  }
+}
+
+@keyframes filonPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 6px var(--filon-glow));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px var(--filon-glow));
+  }
+}
+
+.filon-logo {
+  color: var(--filon-accent);
+  filter: drop-shadow(0 0 12px rgba(47, 243, 255, 0.7));
+  transition: filter 0.4s ease;
+}
+
+.filon-logo:hover {
+  filter: drop-shadow(0 0 20px rgba(47, 243, 255, 1));
+}
+
+.filon-accent {
+  color: var(--filon-accent);
+  text-shadow: 0 0 8px var(--filon-glow);
 }
 
 /* FILON Theme System */
@@ -179,7 +222,7 @@ input::placeholder {
 input:focus,
 input:focus-visible {
   animation: filonFocusFade 0.6s ease-in-out;
-  border-color: hsl(var(--filon-accent));
+  border-color: hsl(var(--filon-accent-hsl));
   box-shadow: 0 2px 8px rgba(47, 243, 255, 0.4);
   outline: none;
 }

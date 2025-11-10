@@ -23,6 +23,7 @@ model Edge {
   id        String   @id @default(cuid())
   sourceId  String
   targetId  String
+  type      String?
   createdAt DateTime @default(now())
   target    Node     @relation("InEdges", fields: [targetId], references: [id])
   source    Node     @relation("OutEdges", fields: [sourceId], references: [id])

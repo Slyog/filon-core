@@ -25,7 +25,7 @@ export const SettingsDrawer = () => {
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button className="absolute top-3 right-3 px-3 py-2 rounded-md bg-[hsl(var(--filon-bg)/0.8)] hover:bg-[hsl(var(--filon-bg)/0.6)] text-[hsl(var(--filon-accent))] text-sm border border-[hsl(var(--filon-accent)/0.2)] transition-colors">
+        <button className="absolute top-3 right-3 px-3 py-2 rounded-md bg-[hsl(var(--filon-bg-hsl)/0.8)] hover:bg-[hsl(var(--filon-bg-hsl)/0.6)] text-[hsl(var(--filon-accent-hsl))] text-sm border border-[hsl(var(--filon-accent-hsl)/0.2)] transition-colors">
           ⚙️ Settings
         </button>
       </Dialog.Trigger>
@@ -42,7 +42,7 @@ export const SettingsDrawer = () => {
                   transition={{
                     duration: motionSpeed > 0 ? 0.2 * motionSpeed : 0,
                   }}
-                  className="fixed inset-0 z-[100] bg-[hsl(var(--filon-bg)/0.8)] backdrop-blur-md"
+                  className="fixed inset-0 z-[100] bg-[hsl(var(--filon-bg-hsl)/0.8)] backdrop-blur-md"
                 />
               </Dialog.Overlay>
               <Dialog.Content asChild>
@@ -55,9 +55,9 @@ export const SettingsDrawer = () => {
                       ? { type: "spring", stiffness: 80, damping: 22 }
                       : { duration: 0 }
                   }
-                  className="fixed top-0 right-0 h-full w-80 z-[200] bg-[hsl(var(--filon-bg)/0.98)] border-l border-[hsl(var(--filon-accent)/0.2)] text-[hsl(var(--filon-primary))] shadow-2xl p-6 flex flex-col gap-6"
+                  className="fixed top-0 right-0 h-full w-80 z-[200] bg-[hsl(var(--filon-bg-hsl)/0.98)] border-l border-[hsl(var(--filon-accent-hsl)/0.2)] text-[hsl(var(--filon-primary))] shadow-2xl p-6 flex flex-col gap-6"
                 >
-                  <Dialog.Title className="text-lg font-medium text-[hsl(var(--filon-accent))] mb-2">
+                  <Dialog.Title className="text-lg font-medium text-[hsl(var(--filon-accent-hsl))] mb-2">
                     FILON Settings
                   </Dialog.Title>
 
@@ -69,7 +69,7 @@ export const SettingsDrawer = () => {
                         type="checkbox"
                         checked={audioEnabled}
                         onChange={(e) => setAudio(e.target.checked)}
-                        className="w-4 h-4 rounded border-[hsl(var(--filon-accent)/0.4)] bg-transparent accent-[hsl(var(--filon-accent))] cursor-pointer"
+                        className="w-4 h-4 rounded border-[hsl(var(--filon-accent-hsl)/0.4)] bg-transparent accent-[hsl(var(--filon-accent-hsl))] cursor-pointer"
                       />
                     </label>
 
@@ -88,7 +88,7 @@ export const SettingsDrawer = () => {
                         onChange={(e) =>
                           setAnimationSpeed(Number(e.target.value))
                         }
-                        className="w-full h-2 bg-[hsl(var(--filon-bg))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent))]"
+                        className="w-full h-2 bg-[hsl(var(--filon-bg-hsl))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent-hsl))]"
                       />
                       <span className="text-xs text-[hsl(var(--filon-primary)/0.6)]">
                         0 = Off
@@ -110,7 +110,7 @@ export const SettingsDrawer = () => {
                         onChange={(e) =>
                           setGlowIntensity(Number(e.target.value))
                         }
-                        className="w-full h-2 bg-[hsl(var(--filon-bg))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent))]"
+                        className="w-full h-2 bg-[hsl(var(--filon-bg-hsl))] rounded-lg appearance-none cursor-pointer accent-[hsl(var(--filon-accent-hsl))]"
                       />
                       <span className="text-xs text-[hsl(var(--filon-primary)/0.6)]">
                         0 = Off
@@ -119,8 +119,8 @@ export const SettingsDrawer = () => {
 
                     {/* Full Silent Mode Tooltip */}
                     {animationSpeed <= 0.05 && glowIntensity <= 0.05 && (
-                      <div className="mt-2 p-3 rounded-lg bg-[hsl(var(--filon-accent)/0.1)] border border-[hsl(var(--filon-accent)/0.3)]">
-                        <p className="text-xs text-[hsl(var(--filon-accent))]">
+                      <div className="mt-2 p-3 rounded-lg bg-[hsl(var(--filon-accent-hsl)/0.1)] border border-[hsl(var(--filon-accent-hsl)/0.3)]">
+                        <p className="text-xs text-[hsl(var(--filon-accent-hsl))]">
                           ✨ Full Silent Mode active — all animations and glow
                           effects disabled.
                         </p>
@@ -133,7 +133,7 @@ export const SettingsDrawer = () => {
                       <select
                         value={theme}
                         onChange={(e) => setTheme(e.target.value)}
-                        className="bg-[hsl(var(--filon-bg))] border border-[hsl(var(--filon-accent)/0.4)] rounded-md p-2 text-sm text-[hsl(var(--filon-primary))] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[hsl(var(--filon-accent)/0.5)]"
+                        className="bg-[hsl(var(--filon-bg-hsl))] border border-[hsl(var(--filon-accent-hsl)/0.4)] rounded-md p-2 text-sm text-[hsl(var(--filon-primary))] cursor-pointer focus:outline-none focus:ring-2 focus:ring-[hsl(var(--filon-accent-hsl)/0.5)]"
                       >
                         <option value="dark">Dark</option>
                         <option value="focus">Focus</option>
@@ -148,13 +148,13 @@ export const SettingsDrawer = () => {
                         type="checkbox"
                         checked={rememberSpatial}
                         onChange={(e) => setRememberSpatial(e.target.checked)}
-                        className="w-4 h-4 rounded border-[hsl(var(--filon-accent)/0.4)] bg-transparent accent-[hsl(var(--filon-accent))] cursor-pointer"
+                        className="w-4 h-4 rounded border-[hsl(var(--filon-accent-hsl)/0.4)] bg-transparent accent-[hsl(var(--filon-accent-hsl))] cursor-pointer"
                       />
                     </label>
                   </div>
 
                   <Dialog.Close asChild>
-                    <button className="mt-auto py-2 px-3 bg-[hsl(var(--filon-accent)/0.2)] hover:bg-[hsl(var(--filon-accent)/0.4)] rounded-md text-sm transition-colors">
+                    <button className="mt-auto py-2 px-3 bg-[hsl(var(--filon-accent-hsl)/0.2)] hover:bg-[hsl(var(--filon-accent-hsl)/0.4)] rounded-md text-sm transition-colors">
                       Close
                     </button>
                   </Dialog.Close>

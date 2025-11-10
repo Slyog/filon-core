@@ -12,7 +12,7 @@ export const LoadingOverlay = () => {
 
   return (
     <motion.div
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-[hsl(var(--filon-bg)/0.9)] backdrop-blur-sm text-[hsl(var(--filon-accent))]"
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-[hsl(var(--filon-bg-hsl)/0.9)] backdrop-blur-sm text-[hsl(var(--filon-accent-hsl))]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

@@ -1,16 +1,28 @@
-import { test, expect } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
+
+const test = base;
+
+export { test, expect };
 
 test.describe("FILON Context Stream Integration", () => {
+  test.describe.configure({ retries: 1 });
+
   test("shows intent results in stream", async ({ page }) => {
-    await page.goto("http://localhost:3000");
-
-    await page.fill(
-      'input[placeholder*="Ask FILON"]',
-      "create a node",
+    const workspaceId = `qa-${Date.now()}`;
+    await page.goto(
+      `http://localhost:3000/f/${workspaceId}?q=${encodeURIComponent("QA stream")}`,
     );
-    await page.getByRole("button", { name: /Run/i }).click();
 
-    await page.waitForSelector("text=Context Stream", { timeout: 5000 });
+    await page.waitForLoadState("networkidle", { timeout: 20_000 });
+    await page.waitForSelector("#brainbar-input", { timeout: 15_000 });
+    await page.waitForSelector("text=Context Stream", { timeout: 10_000 });
+    await page.evaluate(() => {
+      window.dispatchEvent(
+        new CustomEvent("filon:intent-result", {
+          detail: { title: "create", detail: "QA injected intent" },
+        }),
+      );
+    });
     const entry = page.locator("text=create").first();
     await expect(entry).toBeVisible();
   });

@@ -422,5 +422,53 @@
     "route": "http://localhost:3000/graph/playwright-qa?q=Playwright",
     "status": "failed",
     "title": "axe-core accessibility audit"
+  },
+  {
+    "date": "2025-11-10T12:41:04.731Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "about:blank",
+    "status": "failed",
+    "title": "renders visible node & layers"
+  },
+  {
+    "date": "2025-11-10T12:41:06.122Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "about:blank",
+    "status": "failed",
+    "title": "canvas interactions and zoom"
+  },
+  {
+    "date": "2025-11-10T12:41:07.530Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "about:blank",
+    "status": "failed",
+    "title": "axe-core accessibility audit"
+  },
+  {
+    "date": "2025-11-10T13:24:18.754Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "http://localhost:3000/graph/playwright-qa?q=Playwright",
+    "status": "passed",
+    "title": "renders visible node & layers"
+  },
+  {
+    "date": "2025-11-10T13:24:21.566Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "http://localhost:3000/graph/playwright-qa?q=Playwright",
+    "status": "passed",
+    "title": "canvas interactions and zoom"
+  },
+  {
+    "date": "2025-11-10T13:24:24.887Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "http://localhost:3000/graph/playwright-qa?q=Playwright",
+    "status": "passed",
+    "title": "axe-core accessibility audit"
   }
 ]

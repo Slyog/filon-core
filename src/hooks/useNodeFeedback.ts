@@ -8,6 +8,9 @@ export function useNodeFeedback(nodes: Node[]) {
     if (!nodes?.length) return;
     const latest = nodes.at(-1);
     if (!latest) return;
+    if (latest.data?.isNew) {
+      return;
+    }
 
     // Apply highlight
     setNodes((nds) =>

@@ -27,10 +27,10 @@ export const Panel = ({ id, children }: { id: string; children: React.ReactNode 
         y: isActive ? -10 : 0,
         zIndex: isActive ? 30 : 5,
         boxShadow: isActive
-          ? `0 0 ${14 * glowIntensity}px hsl(var(--filon-accent)/0.9)`
-          : `0 0 ${6 * glowIntensity}px hsl(var(--filon-glow)/0.4)`,
+          ? `0 0 ${14 * glowIntensity}px hsl(var(--filon-accent-hsl)/0.9)`
+          : `0 0 ${6 * glowIntensity}px hsl(var(--filon-glow-hsl)/0.4)`,
       }}
-      className="relative rounded-xl bg-[hsl(var(--filon-bg)/0.9)] backdrop-blur-sm p-4 transition-colors"
+      className="relative rounded-xl bg-[hsl(var(--filon-bg-hsl)/0.9)] backdrop-blur-sm p-4 transition-colors"
     >
       {children}
     </motion.div>

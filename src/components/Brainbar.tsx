@@ -19,6 +19,7 @@ import { useAIFeedback } from "@/hooks/useAIFeedback";
 import type { BrainCommand, BrainCommandType } from "@/types/brain";
 import { graphToolchain } from "@/lib/graphToolchain";
 import { routeIntent } from "@/server/intentRouter";
+import { log } from "@/utils/logger";
 import { ContextStreamPanel } from "@/components/ContextStream";
 
 export type BrainbarCommandType = BrainCommandType;
@@ -227,7 +228,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
               }
             : undefined
         );
-        console.info("[FILON AI] Toolchain result:", result);
+        log.info("[Toolchain] result", result);
 
         if (typeof window !== "undefined") {
           const actualId = result.node?.id;
@@ -248,7 +249,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
           );
         }
       } catch (error) {
-        console.error("[FILON AI] Toolchain failed:", error);
+        log.error("[Toolchain] failed", error);
       } finally {
         setToolchainLoading(false);
       }
@@ -261,8 +262,8 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
 
       setToolchainLoading(true);
       try {
-        const result = await routeIntent(prompt, { selection: ["node-a"] });
-        console.info("[FILON INTENT RESULT]", result);
+      const result = await routeIntent(prompt, { selection: ["node-a"] });
+      log.info("[Intent] result", result);
 
         if (typeof window !== "undefined") {
           const detailText =
@@ -280,7 +281,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
           );
         }
       } catch (error) {
-        console.error("[FILON INTENT] failed:", error);
+        log.error("[Intent] failed", error);
       } finally {
         setToolchainLoading(false);
         setPrompt("");
