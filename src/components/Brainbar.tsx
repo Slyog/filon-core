@@ -2,6 +2,7 @@
 
 import React, {
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -17,6 +18,8 @@ import { useAINodeLogger } from "@/hooks/useAINodeLogger";
 import { useAIFeedback } from "@/hooks/useAIFeedback";
 import type { BrainCommand, BrainCommandType } from "@/types/brain";
 import { graphToolchain } from "@/lib/graphToolchain";
+import { routeIntent } from "@/server/intentRouter";
+import { ContextStreamPanel } from "@/components/ContextStream";
 
 export type BrainbarCommandType = BrainCommandType;
 export type BrainbarCommand = BrainCommand;
@@ -52,6 +55,10 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
     const [announcement, setAnnouncement] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [toolchainLoading, setToolchainLoading] = useState(false);
+    const [prompt, setPrompt] = useState("");
+    const [simulateFailureStep, setSimulateFailureStep] = useState<
+      string | null
+    >(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { addNode, lastError, clearError } = useBrainState(
@@ -70,7 +77,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
     } = useAICoPilot();
 
     useAINodeLogger(aiMessages);
-  useAIFeedback(aiMessages);
+    useAIFeedback(aiMessages);
 
     const hasCommand = value.trimStart().startsWith("/");
 
@@ -208,7 +215,18 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
       setToolchainLoading(true);
       try {
         const selectedIds = ["node-a", "node-b"];
-        const result = await graphToolchain(selectedIds);
+        const failureStep = simulateFailureStep;
+        if (failureStep) {
+          setSimulateFailureStep(null);
+        }
+        const result = await graphToolchain(
+          selectedIds,
+          failureStep
+            ? {
+                simulateFailure: failureStep,
+              }
+            : undefined
+        );
         console.info("[FILON AI] Toolchain result:", result);
 
         if (typeof window !== "undefined") {
@@ -218,9 +236,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
               ? actualId
               : `filon-node-${Date.now()}`;
           const nodeLabel =
-            result.node?.label ??
-            result.summary?.title ??
-            "AI Summary Node";
+            result.node?.label ?? result.summary?.title ?? "AI Summary Node";
           window.dispatchEvent(
             new CustomEvent("filon:create-node", {
               detail: {
@@ -236,7 +252,74 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
       } finally {
         setToolchainLoading(false);
       }
-    }, [toolchainLoading]);
+    }, [simulateFailureStep, toolchainLoading]);
+
+    const handleIntent = useCallback(async () => {
+      if (!prompt.trim()) {
+        return;
+      }
+
+      setToolchainLoading(true);
+      try {
+        const result = await routeIntent(prompt, { selection: ["node-a"] });
+        console.info("[FILON INTENT RESULT]", result);
+
+        if (typeof window !== "undefined") {
+          const detailText =
+            result.message ??
+            (typeof result.result === "string"
+              ? result.result
+              : JSON.stringify(result.result ?? {}));
+          window.dispatchEvent(
+            new CustomEvent("filon:intent-result", {
+              detail: {
+                title: result.intent,
+                detail: detailText,
+              },
+            })
+          );
+        }
+      } catch (error) {
+        console.error("[FILON INTENT] failed:", error);
+      } finally {
+        setToolchainLoading(false);
+        setPrompt("");
+      }
+    }, [prompt]);
+
+    useEffect(() => {
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const handleSimulateFailure = (
+        event: Event | CustomEvent<string | { step?: string }>
+      ) => {
+        const detail =
+          (event as CustomEvent<string | { step?: string }>).detail ?? null;
+        const step =
+          typeof detail === "string"
+            ? detail
+            : typeof detail === "object"
+            ? detail.step
+            : null;
+        if (step) {
+          setSimulateFailureStep(step);
+        }
+      };
+
+      window.addEventListener(
+        "filon:simulate-failure",
+        handleSimulateFailure as EventListener
+      );
+
+      return () => {
+        window.removeEventListener(
+          "filon:simulate-failure",
+          handleSimulateFailure as EventListener
+        );
+      };
+    }, []);
 
     useImperativeHandle(
       ref,
@@ -409,6 +492,25 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
             {toolchainLoading ? "Thinking…" : "AI Summarize & Link"}
           </button>
         </div>
+
+        <div className="mt-4 flex gap-2 rounded-2xl border border-cyan-500/20 bg-surface-hover/70 px-4 py-3 backdrop-blur-xl">
+          <input
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder="Ask FILON (create, summarize, link, explain, reflect)…"
+            className="flex-1 bg-transparent text-sm text-cyan-100 placeholder:text-cyan-200/70 focus:outline-none"
+          />
+          <button
+            type="button"
+            disabled={toolchainLoading || !prompt.trim()}
+            onClick={handleIntent}
+            className="rounded-xl bg-cyan-600/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-100 transition hover:bg-cyan-500/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {toolchainLoading ? "Thinking..." : "Run"}
+          </button>
+        </div>
+
+        <ContextStreamPanel />
       </>
     );
   }

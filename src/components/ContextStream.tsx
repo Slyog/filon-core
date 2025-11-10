@@ -1,12 +1,19 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import clsx from "clsx";
 import { motion } from "framer-motion";
 import { useAutoFocusScroll } from "@/hooks/useAutoFocusScroll";
 import { useThrottledCallback } from "@/hooks/useThrottledCallback";
 import { t } from "@/config/strings";
+import { useContextStream } from "@/hooks/useContextStream";
 
 export interface ContextStreamItem {
   id: string;
@@ -24,9 +31,10 @@ interface ContextStreamProps {
   position?: "card" | "bottom";
 }
 
-const List = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  (props, ref) => <div ref={ref} role="list" {...props} />
-);
+const List = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>((props, ref) => <div ref={ref} role="list" {...props} />);
 List.displayName = "ContextStreamList";
 
 const relativeTime = (timestamp: number) => {
@@ -58,11 +66,22 @@ interface RowProps {
 }
 
 const StreamRow = React.memo(
-  ({ item, index, active, highlighted, onHover, onPress, onFocus, total }: RowProps) => {
+  ({
+    item,
+    index,
+    active,
+    highlighted,
+    onHover,
+    onPress,
+    onFocus,
+    total,
+  }: RowProps) => {
     const ref = useRef<HTMLDivElement>(null);
     useAutoFocusScroll(ref as React.RefObject<HTMLElement>, active);
 
-    const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (
+      event
+    ) => {
       if (event.key === "ArrowDown") {
         event.preventDefault();
         const next = Math.min(total - 1, index + 1);
@@ -166,17 +185,22 @@ const ContextStream = ({
     if (!hoveredId) return;
     const idx = items.findIndex((item) => item.id === hoveredId);
     if (idx >= 0 && idx !== activeIndex) {
-      setActiveIndex(idx);
+      const frame = requestAnimationFrame(() => setActiveIndex(idx));
+      return () => cancelAnimationFrame(frame);
     }
   }, [hoveredId, items, activeIndex]);
 
   useEffect(() => {
     if (items.length === 0) {
-      setActiveIndex(0);
+      const frame = requestAnimationFrame(() => setActiveIndex(0));
+      return () => cancelAnimationFrame(frame);
       return;
     }
     if (activeIndex >= items.length) {
-      setActiveIndex(items.length - 1);
+      const frame = requestAnimationFrame(() =>
+        setActiveIndex(items.length - 1)
+      );
+      return () => cancelAnimationFrame(frame);
     }
   }, [items, activeIndex]);
 
@@ -209,7 +233,9 @@ const ContextStream = ({
         <Virtuoso
           ref={virtuosoRef}
           data={data}
-          className={clsx(position === "bottom" ? "max-h-[260px]" : "max-h-[360px]")}
+          className={clsx(
+            position === "bottom" ? "max-h-[260px]" : "max-h-[360px]"
+          )}
           style={{ height: position === "bottom" ? 260 : 360 }}
           components={{ List }}
           defaultItemHeight={96}
@@ -253,3 +279,30 @@ const ContextStream = ({
 };
 
 export default React.memo(ContextStream);
+
+export function ContextStreamPanel() {
+  const entries = useContextStream();
+
+  return (
+    <div className="mt-4 max-h-80 overflow-y-auto rounded-xl border border-cyan-300/20 bg-neutral-900/40 p-4 text-sm">
+      <h2 className="mb-2 text-cyan-300 font-semibold">Context Stream</h2>
+      {entries.length === 0 && (
+        <p className="text-neutral-500 text-xs">No activity yet.</p>
+      )}
+      {entries.map((entry) => (
+        <div
+          key={entry.id}
+          className="mb-2 border-b border-neutral-800/40 pb-1 last:border-0"
+        >
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-neutral-100">{entry.title}</span>
+            <span className="text-xs text-neutral-500">{entry.time}</span>
+          </div>
+          {entry.detail && (
+            <p className="text-xs text-neutral-400">{entry.detail}</p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}

@@ -64,6 +64,10 @@ type MetaReport = {
   status: "pass" | "fail" | string;
   comment?: string;
   timestamp?: string;
+  agent?: string;
+  agentType?: string;
+  duration_ms?: number;
+  retries?: number;
 };
 
 const FILTERS: { id: FilterState; label: string }[] = [
@@ -434,6 +438,30 @@ export default function QADashboard() {
                     {report.comment}
                   </p>
                 ) : null}
+                {(report.agent ||
+                  report.agentType ||
+                  typeof report.duration_ms === "number" ||
+                  typeof report.retries === "number") && (
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-neutral-400">
+                    {report.agent ? (
+                      <span>
+                        Agent:{" "}
+                        <span className="font-medium text-neutral-100">
+                          {report.agent}
+                        </span>
+                      </span>
+                    ) : null}
+                    {report.agentType ? (
+                      <span>Type: {report.agentType}</span>
+                    ) : null}
+                    {typeof report.duration_ms === "number" ? (
+                      <span>⏱ {report.duration_ms} ms</span>
+                    ) : null}
+                    {typeof report.retries === "number" ? (
+                      <span>Retries: {report.retries}</span>
+                    ) : null}
+                  </div>
+                )}
               </div>
             );
           })}

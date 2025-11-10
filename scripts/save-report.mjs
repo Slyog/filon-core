@@ -20,6 +20,42 @@ fs.writeFileSync(SUMMARY_PATH, JSON.stringify(summary, null, 2));
 console.log("✅ QA summary written:", SUMMARY_PATH);
 
 const now = new Date().toISOString();
+let runStatus = "pass";
+let errorStack;
+
+for (const arg of process.argv.slice(2)) {
+  if (arg.startsWith("--status=")) {
+    runStatus = arg.split("=")[1] || runStatus;
+  } else if (arg.startsWith("--stack=")) {
+    const encoded = arg.slice("--stack=".length);
+    try {
+      errorStack = decodeURIComponent(encoded);
+    } catch {
+      errorStack = encoded;
+    }
+  }
+}
+
+const exitCodeEnv =
+  process.env.QA_LAST_EXIT_CODE ??
+  process.env.LAST_EXIT_CODE ??
+  process.env.npm_config_exit_code;
+if (exitCodeEnv && Number(exitCodeEnv) !== 0) {
+  runStatus = "fail";
+}
+
+if (process.env.QA_ERROR_STACK) {
+  errorStack = process.env.QA_ERROR_STACK;
+}
+
+const toolchainStatus = runStatus === "fail" ? "fail" : "pass";
+const toolchainComment =
+  toolchainStatus === "fail"
+    ? `Retries failed; ${
+        errorStack ? errorStack.split("\n")[0] : "see logs for details"
+      }`
+    : "Retries operational; no permanent failures detected";
+
 const metaEntries = [
   {
     step: "35.4",
@@ -34,6 +70,16 @@ const metaEntries = [
     status: "pass",
     comment: "summarize → create → link verified",
     timestamp: now,
+  },
+  {
+    step: "35.6",
+    name: "Toolchain Error Handling & Retries",
+    status: toolchainStatus,
+    comment: toolchainComment,
+    timestamp: now,
+    ...(toolchainStatus === "fail" && errorStack
+      ? { error: errorStack }
+      : null),
   },
 ];
 
