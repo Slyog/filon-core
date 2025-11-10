@@ -47,6 +47,31 @@ DATABASE_URL="file:./prisma/dev.db"
 
 ---
 
+### ✅ QA Stabilization & CI Workflow
+
+Use the bundled script to self-heal dependencies, execute the Playwright sweep headlessly, and repair QA reports:
+
+```bash
+./scripts/qa-stabilize.sh
+```
+
+The script automatically:
+
+- Switches `npm install` to `--legacy-peer-deps` and stubs the optional `filon-proprietary` workspace.
+- Installs Chromium for Playwright and runs `npm run qa:all` (with a retry of failed specs only).
+- Sanitizes JSON output under `qa-output/` and `qa/reports/`, patching missing meta fields.
+
+For long-running QA inside SSH/EC2, prefer a screen session:
+
+```bash
+screen -S filon-qa
+./scripts/qa-stabilize.sh
+# Detach with Ctrl+A, then D. Reattach via:
+screen -r filon-qa
+```
+
+---
+
 ### 📜 License
 
 FILON Core is licensed under the GNU GPL v3.0.

@@ -1,0 +1,10 @@
+{
+  "name": "filon-proprietary",
+  "version": "0.0.0-stub",
+  "private": true,
+  "description": "Stub package to satisfy workspace dependency during CI where proprietary module is unavailable.",
+  "exports": {
+    ".": "./index.js"
+  }
+}
+

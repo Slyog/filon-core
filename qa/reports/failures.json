@@ -1,0 +1,136 @@
+{
+  "failures": [
+    {
+      "file": "qa-autosave-snapshot.spec.ts",
+      "title": "captures before/during/after save states",
+      "workerIndex": 0,
+      "retry": 0,
+      "durationMs": 8988,
+      "error": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m",
+      "stack": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"captures before/during/after save states\""
+    },
+    {
+      "file": "qa-autosave-snapshot.spec.ts",
+      "title": "captures before/during/after save states",
+      "workerIndex": 1,
+      "retry": 1,
+      "durationMs": 5785,
+      "error": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m",
+      "stack": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"captures before/during/after save states\""
+    },
+    {
+      "file": "qa-autosave-snapshot.spec.ts",
+      "title": "captures before/during/after save states",
+      "workerIndex": 2,
+      "retry": 2,
+      "durationMs": 4788,
+      "error": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m",
+      "stack": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"captures before/during/after save states\""
+    },
+    {
+      "file": "qa-autosave.spec.ts",
+      "title": "shows saving -> success lifecycle",
+      "workerIndex": 3,
+      "retry": 0,
+      "durationMs": 3856,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"shows saving -> success lifecycle\""
+    },
+    {
+      "file": "qa-autosave.spec.ts",
+      "title": "shows saving -> success lifecycle",
+      "workerIndex": 4,
+      "retry": 1,
+      "durationMs": 4363,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"shows saving -> success lifecycle\""
+    },
+    {
+      "file": "qa-autosave.spec.ts",
+      "title": "shows saving -> success lifecycle",
+      "workerIndex": 5,
+      "retry": 2,
+      "durationMs": 3854,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"shows saving -> success lifecycle\""
+    },
+    {
+      "file": "qa-autosave.spec.ts",
+      "title": "offline path shows error toast",
+      "workerIndex": 6,
+      "retry": 0,
+      "durationMs": 5878,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"offline path shows error toast\""
+    },
+    {
+      "file": "qa-autosave.spec.ts",
+      "title": "offline path shows error toast",
+      "workerIndex": 7,
+      "retry": 1,
+      "durationMs": 4938,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"offline path shows error toast\""
+    },
+    {
+      "file": "qa-autosave.spec.ts",
+      "title": "offline path shows error toast",
+      "workerIndex": 8,
+      "retry": 2,
+      "durationMs": 4303,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"offline path shows error toast\""
+    },
+    {
+      "file": "qa-offline-indicator.spec.ts",
+      "title": "offline indicator appears when offline event fires",
+      "workerIndex": 9,
+      "retry": 0,
+      "durationMs": 10835,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"offline indicator appears when offline event fires\""
+    },
+    {
+      "file": "qa-offline-indicator.spec.ts",
+      "title": "offline indicator appears when offline event fires",
+      "workerIndex": 10,
+      "retry": 1,
+      "durationMs": 11386,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"offline indicator appears when offline event fires\""
+    },
+    {
+      "file": "qa-offline-indicator.spec.ts",
+      "title": "offline indicator appears when offline event fires",
+      "workerIndex": 11,
+      "retry": 2,
+      "durationMs": 10816,
+      "error": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m",
+      "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55",
+      "category": "Timing/Performance",
+      "retest": "PW_HEADLESS=1 npx playwright test --project=chromium --timeout=180000 --grep \"offline indicator appears when offline event fires\""
+    }
+  ]
+}

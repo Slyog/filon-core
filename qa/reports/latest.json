@@ -1,18 +1,2672 @@
 {
-  "meta": {
-    "commit": "uninitialized",
-    "date": "1970-01-01T00-00-00-000Z",
-    "total": 0,
-    "passed": 0,
-    "failed": 0
-  },
-  "data": {
-    "stats": {
-      "tests": 0,
-      "passed": 0,
-      "failed": 0
+  "config": {
+    "configFile": "/home/ec2-user/filon/playwright.config.ts",
+    "rootDir": "/home/ec2-user/filon/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
     },
-    "suites": []
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "qa/reports/latest.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/ec2-user/filon/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/home/ec2-user/filon/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "npm run dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true
+    }
+  },
+  "suites": [
+    {
+      "title": "__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+      "file": "__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Node Feedback Visual Snapshot",
+          "file": "__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should visually pulse on creation",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 3927,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-id=\"snap-node\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-id=\"snap-node\"]') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts:25:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+                          "column": 16,
+                          "line": 25
+                        },
+                        "snippet": "  23 |\n  24 |     const selector = '[data-id=\"snap-node\"]';\n> 25 |     await page.waitForSelector(selector, { timeout: 3000 });\n     |                ^\n  26 |\n  27 |     await page.screenshot({\n  28 |       path: path.join(SNAP_DIR, \"highlight-active.png\"),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+                            "column": 16,
+                            "line": 25
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-id=\"snap-node\"]') to be visible\u001b[22m\n\n\n  23 |\n  24 |     const selector = '[data-id=\"snap-node\"]';\n> 25 |     await page.waitForSelector(selector, { timeout: 3000 });\n     |                ^\n  26 |\n  27 |     await page.screenshot({\n  28 |       path: path.join(SNAP_DIR, \"highlight-active.png\"),\n    at /home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts:25:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:24:13.001Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/__snapshots__-node-feedbac-0b8b4--visually-pulse-on-creation-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/__snapshots__-node-feedbac-0b8b4--visually-pulse-on-creation-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+                        "column": 16,
+                        "line": 25
+                      }
+                    },
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4209,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-id=\"snap-node\"]') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-id=\"snap-node\"]') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts:25:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+                          "column": 16,
+                          "line": 25
+                        },
+                        "snippet": "  23 |\n  24 |     const selector = '[data-id=\"snap-node\"]';\n> 25 |     await page.waitForSelector(selector, { timeout: 3000 });\n     |                ^\n  26 |\n  27 |     await page.screenshot({\n  28 |       path: path.join(SNAP_DIR, \"highlight-active.png\"),"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+                            "column": 16,
+                            "line": 25
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-id=\"snap-node\"]') to be visible\u001b[22m\n\n\n  23 |\n  24 |     const selector = '[data-id=\"snap-node\"]';\n> 25 |     await page.waitForSelector(selector, { timeout: 3000 });\n     |                ^\n  26 |\n  27 |     await page.screenshot({\n  28 |       path: path.join(SNAP_DIR, \"highlight-active.png\"),\n    at /home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts:25:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:24:18.171Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/__snapshots__-node-feedbac-0b8b4--visually-pulse-on-creation-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/__snapshots__-node-feedbac-0b8b4--visually-pulse-on-creation-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/__snapshots__-node-feedbac-0b8b4--visually-pulse-on-creation-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+                        "column": 16,
+                        "line": 25
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "dfaf706d512e588d03b3-f31c97c8a0a335143667",
+              "file": "__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+              "line": 14,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-ai-chat-stream.spec.ts",
+      "file": "qa-ai-chat-stream.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "AI chat endpoint streams response",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2301,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-10T18:24:23.764Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "3086c4e5380159284f38-96a22719bd83aa0f7eb7",
+          "file": "qa-ai-chat-stream.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "qa-ai-feedback.spec.ts",
+      "file": "qa-ai-feedback.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "AI feedback triggers after node creation",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 39,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-10T18:24:26.109Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "ee5b27862155b990bc48-9727d7c7b7d8120f6e05",
+          "file": "qa-ai-feedback.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "qa-ai-node-logger.spec.ts",
+      "file": "qa-ai-node-logger.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "AI node creation logger output",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 2,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 59,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-10T18:24:26.178Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "f82ee464faec992a9961-59b65efe1c4eaf1aae4d",
+          "file": "qa-ai-node-logger.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "qa-autosave-feedback.spec.ts",
+      "file": "qa-autosave-feedback.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Autosave feedback toast",
+          "file": "qa-autosave-feedback.spec.ts",
+          "line": 32,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows saving → saved lifecycle with accessible feedback",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3697,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:24:26.265Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b57e7274debf3a0a91c5-9ce2db8c72105a048c9d",
+              "file": "qa-autosave-feedback.spec.ts",
+              "line": 33,
+              "column": 7
+            },
+            {
+              "title": "renders offline warning toast",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 862,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:24:30.122Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b57e7274debf3a0a91c5-9b229a6cd791135ec038",
+              "file": "qa-autosave-feedback.spec.ts",
+              "line": 96,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-autosave-snapshot.spec.ts",
+      "file": "qa-autosave-snapshot.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Autosave Visual Snapshot",
+          "file": "qa-autosave-snapshot.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "captures before/during/after save states",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 8831,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts",
+                          "column": 16,
+                          "line": 37
+                        },
+                        "snippet": "  35 |     await page.mouse.up();\n  36 |\n> 37 |     await page.waitForSelector(\n     |                ^\n  38 |       \".ReviewOverlay:has-text('Speichert Änderungen…')\",\n  39 |       {\n  40 |         timeout: 2000,"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts",
+                            "column": 16,
+                            "line": 37
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n\n  35 |     await page.mouse.up();\n  36 |\n> 37 |     await page.waitForSelector(\n     |                ^\n  38 |       \".ReviewOverlay:has-text('Speichert Änderungen…')\",\n  39 |       {\n  40 |         timeout: 2000,\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:24:31.022Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-snapshot-FILON-46960-re-during-after-save-states-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-snapshot-FILON-46960-re-during-after-save-states-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts",
+                        "column": 16,
+                        "line": 37
+                      }
+                    },
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5879,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts",
+                          "column": 16,
+                          "line": 37
+                        },
+                        "snippet": "  35 |     await page.mouse.up();\n  36 |\n> 37 |     await page.waitForSelector(\n     |                ^\n  38 |       \".ReviewOverlay:has-text('Speichert Änderungen…')\",\n  39 |       {\n  40 |         timeout: 2000,"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts",
+                            "column": 16,
+                            "line": 37
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 2000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.ReviewOverlay:has-text(\\'Speichert Änderungen…\\')') to be visible\u001b[22m\n\n\n  35 |     await page.mouse.up();\n  36 |\n> 37 |     await page.waitForSelector(\n     |                ^\n  38 |       \".ReviewOverlay:has-text('Speichert Änderungen…')\",\n  39 |       {\n  40 |         timeout: 2000,\n    at /home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts:37:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:24:40.869Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-snapshot-FILON-46960-re-during-after-save-states-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-snapshot-FILON-46960-re-during-after-save-states-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-snapshot-FILON-46960-re-during-after-save-states-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-autosave-snapshot.spec.ts",
+                        "column": 16,
+                        "line": 37
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "28c016770b0f08e0917b-6fb41d18b244b69223b4",
+              "file": "qa-autosave-snapshot.spec.ts",
+              "line": 15,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-autosave.spec.ts",
+      "file": "qa-autosave.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Autosave Feedback",
+          "file": "qa-autosave.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows saving -> success lifecycle",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 3922,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                          "column": 25,
+                          "line": 15
+                        },
+                        "snippet": "  13 |\n  14 |     const toast = page.getByTestId(\"toast\");\n> 15 |     await expect(toast).toContainText(\"Speichert\", { timeout: 3_000 });\n     |                         ^\n  16 |     await expect(toast).toContainText(\"Gespeichert\", { timeout: 3_000 });\n  17 |   });\n  18 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                            "column": 25,
+                            "line": 15
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n\n  13 |\n  14 |     const toast = page.getByTestId(\"toast\");\n> 15 |     await expect(toast).toContainText(\"Speichert\", { timeout: 3_000 });\n     |                         ^\n  16 |     await expect(toast).toContainText(\"Gespeichert\", { timeout: 3_000 });\n  17 |   });\n  18 |\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:24:48.275Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-76dd5--saving---success-lifecycle-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-76dd5--saving---success-lifecycle-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                        "column": 25,
+                        "line": 15
+                      }
+                    },
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4219,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                          "column": 25,
+                          "line": 15
+                        },
+                        "snippet": "  13 |\n  14 |     const toast = page.getByTestId(\"toast\");\n> 15 |     await expect(toast).toContainText(\"Speichert\", { timeout: 3_000 });\n     |                         ^\n  16 |     await expect(toast).toContainText(\"Gespeichert\", { timeout: 3_000 });\n  17 |   });\n  18 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                            "column": 25,
+                            "line": 15
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Speichert\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n\n  13 |\n  14 |     const toast = page.getByTestId(\"toast\");\n> 15 |     await expect(toast).toContainText(\"Speichert\", { timeout: 3_000 });\n     |                         ^\n  16 |     await expect(toast).toContainText(\"Gespeichert\", { timeout: 3_000 });\n  17 |   });\n  18 |\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:15:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:24:53.434Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-76dd5--saving---success-lifecycle-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-76dd5--saving---success-lifecycle-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-76dd5--saving---success-lifecycle-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                        "column": 25,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56db4c7f7aeed1c4ab5f-d58325aec9fb3b50c4a3",
+              "file": "qa-autosave.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "offline path shows error toast",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 6,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 6049,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                          "column": 25,
+                          "line": 33
+                        },
+                        "snippet": "  31 |\n  32 |     const toast = page.getByTestId(\"toast\");\n> 33 |     await expect(toast).toContainText(\"Fehler beim Speichern\", {\n     |                         ^\n  34 |       timeout: 3_000,\n  35 |     });\n  36 |   });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                            "column": 25,
+                            "line": 33
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n\n  31 |\n  32 |     const toast = page.getByTestId(\"toast\");\n> 33 |     await expect(toast).toContainText(\"Fehler beim Speichern\", {\n     |                         ^\n  34 |       timeout: 3_000,\n  35 |     });\n  36 |   });\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:24:58.982Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-9d605-line-path-shows-error-toast-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-9d605-line-path-shows-error-toast-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                        "column": 25,
+                        "line": 33
+                      }
+                    },
+                    {
+                      "workerIndex": 7,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 5160,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                          "column": 25,
+                          "line": 33
+                        },
+                        "snippet": "  31 |\n  32 |     const toast = page.getByTestId(\"toast\");\n> 33 |     await expect(toast).toContainText(\"Fehler beim Speichern\", {\n     |                         ^\n  34 |       timeout: 3_000,\n  35 |     });\n  36 |   });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                            "column": 25,
+                            "line": 33
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('toast')\nExpected substring: \u001b[32m\"Fehler beim Speichern\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('toast')\u001b[22m\n\n\n  31 |\n  32 |     const toast = page.getByTestId(\"toast\");\n> 33 |     await expect(toast).toContainText(\"Fehler beim Speichern\", {\n     |                         ^\n  34 |       timeout: 3_000,\n  35 |     });\n  36 |   });\n    at /home/ec2-user/filon/tests/qa-autosave.spec.ts:33:25"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:25:06.296Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-9d605-line-path-shows-error-toast-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-9d605-line-path-shows-error-toast-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-autosave-FILON-Autosave-9d605-line-path-shows-error-toast-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-autosave.spec.ts",
+                        "column": 25,
+                        "line": 33
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "56db4c7f7aeed1c4ab5f-ba939d2bdb9f236c044d",
+              "file": "qa-autosave.spec.ts",
+              "line": 19,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-canvas.spec.ts",
+      "file": "qa-canvas.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Canvas QA Snapshot",
+          "file": "qa-canvas.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "renders visible node & layers",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2162,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:25:12.947Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51716f7ed0de020f0ce7-8efc9b7eff38a0a5c882",
+              "file": "qa-canvas.spec.ts",
+              "line": 9,
+              "column": 7
+            },
+            {
+              "title": "canvas interactions and zoom",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2438,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:25:15.322Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51716f7ed0de020f0ce7-7b35acc0cdd6026e7f29",
+              "file": "qa-canvas.spec.ts",
+              "line": 24,
+              "column": 7
+            },
+            {
+              "title": "axe-core accessibility audit",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2463,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:25:17.791Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "51716f7ed0de020f0ce7-4a753d5571e0b0e4614e",
+              "file": "qa-canvas.spec.ts",
+              "line": 35,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-chat-endpoint.spec.ts",
+      "file": "qa-chat-endpoint.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON AI Chat Endpoint",
+          "file": "qa-chat-endpoint.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "responds successfully to basic ping",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 8,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 61,
+                      "error": {
+                        "message": "SyntaxError: Unexpected token 'F', \"FILON AI f\"... is not valid JSON",
+                        "stack": "SyntaxError: Unexpected token 'F', \"FILON AI f\"... is not valid JSON\n    at /home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts:11:18",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts",
+                          "column": 18,
+                          "line": 11
+                        },
+                        "snippet": "   9 |     expect(res.status()).toBe(200);\n  10 |\n> 11 |     const json = await res.json();\n     |                  ^\n  12 |     expect(json).toHaveProperty(\"id\");\n  13 |   });\n  14 | });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts",
+                            "column": 18,
+                            "line": 11
+                          },
+                          "message": "SyntaxError: Unexpected token 'F', \"FILON AI f\"... is not valid JSON\n\n   9 |     expect(res.status()).toBe(200);\n  10 |\n> 11 |     const json = await res.json();\n     |                  ^\n  12 |     expect(json).toHaveProperty(\"id\");\n  13 |   });\n  14 | });\n    at /home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts:11:18"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:25:20.278Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts",
+                        "column": 18,
+                        "line": 11
+                      }
+                    },
+                    {
+                      "workerIndex": 9,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 104,
+                      "error": {
+                        "message": "SyntaxError: Unexpected token 'F', \"FILON AI f\"... is not valid JSON",
+                        "stack": "SyntaxError: Unexpected token 'F', \"FILON AI f\"... is not valid JSON\n    at /home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts:11:18",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts",
+                          "column": 18,
+                          "line": 11
+                        },
+                        "snippet": "   9 |     expect(res.status()).toBe(200);\n  10 |\n> 11 |     const json = await res.json();\n     |                  ^\n  12 |     expect(json).toHaveProperty(\"id\");\n  13 |   });\n  14 | });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts",
+                            "column": 18,
+                            "line": 11
+                          },
+                          "message": "SyntaxError: Unexpected token 'F', \"FILON AI f\"... is not valid JSON\n\n   9 |     expect(res.status()).toBe(200);\n  10 |\n> 11 |     const json = await res.json();\n     |                  ^\n  12 |     expect(json).toHaveProperty(\"id\");\n  13 |   });\n  14 | });\n    at /home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts:11:18"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:25:21.365Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-chat-endpoint-FILON-AI--1d299--successfully-to-basic-ping-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-chat-endpoint.spec.ts",
+                        "column": 18,
+                        "line": 11
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d4e098ad5750c5baab2f-4ac7c899b28e304fce85",
+              "file": "qa-chat-endpoint.spec.ts",
+              "line": 4,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-context-stream.spec.ts",
+      "file": "qa-context-stream.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Context Stream Integration",
+          "file": "qa-context-stream.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "shows intent results in stream",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 10,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2051,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:25:22.423Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "8540f4895ab9e0c7bd12-27e6d4891371d96e7ecd",
+              "file": "qa-context-stream.spec.ts",
+              "line": 10,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-graph-connectivity.spec.ts",
+      "file": "qa-graph-connectivity.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "Graph toolchain connectivity",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 10,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 60,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m500\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m500\u001b[39m\n    at /home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts:10:24",
+                    "location": {
+                      "file": "/home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts",
+                      "column": 24,
+                      "line": 10
+                    },
+                    "snippet": "   8 |   });\n   9 |\n> 10 |   expect(res.status()).toBe(200);\n     |                        ^\n  11 | });\n  12 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts",
+                        "column": 24,
+                        "line": 10
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m500\u001b[39m\n\n   8 |   });\n   9 |\n> 10 |   expect(res.status()).toBe(200);\n     |                        ^\n  11 | });\n  12 |\n    at /home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts:10:24"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-10T18:25:24.697Z",
+                  "annotations": [],
+                  "attachments": [],
+                  "errorLocation": {
+                    "file": "/home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts",
+                    "column": 24,
+                    "line": 10
+                  }
+                },
+                {
+                  "workerIndex": 11,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 108,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m500\u001b[39m",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m500\u001b[39m\n    at /home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts:10:24",
+                    "location": {
+                      "file": "/home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts",
+                      "column": 24,
+                      "line": 10
+                    },
+                    "snippet": "   8 |   });\n   9 |\n> 10 |   expect(res.status()).toBe(200);\n     |                        ^\n  11 | });\n  12 |"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts",
+                        "column": 24,
+                        "line": 10
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m500\u001b[39m\n\n   8 |   });\n   9 |\n> 10 |   expect(res.status()).toBe(200);\n     |                        ^\n  11 | });\n  12 |\n    at /home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts:10:24"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2025-11-10T18:25:25.777Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/home/ec2-user/filon/test-results/qa-graph-connectivity-Graph-toolchain-connectivity-chromium-retry1/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/home/ec2-user/filon/tests/qa-graph-connectivity.spec.ts",
+                    "column": 24,
+                    "line": 10
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "7c453882560028be4089-34f2839c76a53d7e5b6d",
+          "file": "qa-graph-connectivity.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "qa-graph-toolchain.spec.ts",
+      "file": "qa-graph-toolchain.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Graph Toolchain Minimal",
+          "file": "qa-graph-toolchain.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "runs summarize → createNode → linkNodes sequence",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 12,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16348,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts:13:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts",
+                          "column": 16,
+                          "line": 13
+                        },
+                        "snippet": "  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     const logs: string[] = [];\n  16 |     page.on(\"console\", (msg) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts",
+                            "column": 16,
+                            "line": 13
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     const logs: string[] = [];\n  16 |     page.on(\"console\", (msg) => {\n    at /home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts:13:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:25:26.858Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-graph-toolchain-FILON-G-de1cb-teNode-→-linkNodes-sequence-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-graph-toolchain-FILON-G-de1cb-teNode-→-linkNodes-sequence-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts",
+                        "column": 16,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 13,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16695,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts:13:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts",
+                          "column": 16,
+                          "line": 13
+                        },
+                        "snippet": "  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     const logs: string[] = [];\n  16 |     page.on(\"console\", (msg) => {"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts",
+                            "column": 16,
+                            "line": 13
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     const logs: string[] = [];\n  16 |     page.on(\"console\", (msg) => {\n    at /home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts:13:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:25:44.407Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-graph-toolchain-FILON-G-de1cb-teNode-→-linkNodes-sequence-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-graph-toolchain-FILON-G-de1cb-teNode-→-linkNodes-sequence-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-graph-toolchain-FILON-G-de1cb-teNode-→-linkNodes-sequence-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-graph-toolchain.spec.ts",
+                        "column": 16,
+                        "line": 13
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "6a45f7bd81cecb227352-ffdb55a86b69f4e50cd6",
+              "file": "qa-graph-toolchain.spec.ts",
+              "line": 9,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-intent-router.spec.ts",
+      "file": "qa-intent-router.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Intent Router v1",
+          "file": "qa-intent-router.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "detects intent: create",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 18,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:02.756Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27262d51b9baf8f5c2dc-6e224ac6c813ef7bb472",
+              "file": "qa-intent-router.spec.ts",
+              "line": 19,
+              "column": 5
+            },
+            {
+              "title": "detects intent: summarize",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:02.810Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27262d51b9baf8f5c2dc-07cfc612902d48a178c4",
+              "file": "qa-intent-router.spec.ts",
+              "line": 19,
+              "column": 5
+            },
+            {
+              "title": "detects intent: link",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:02.845Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27262d51b9baf8f5c2dc-17bcdc51f8a4c5a5d84d",
+              "file": "qa-intent-router.spec.ts",
+              "line": 19,
+              "column": 5
+            },
+            {
+              "title": "detects intent: explain",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:02.892Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27262d51b9baf8f5c2dc-f4f60f5a29a6722429b3",
+              "file": "qa-intent-router.spec.ts",
+              "line": 19,
+              "column": 5
+            },
+            {
+              "title": "detects intent: reflect",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:02.929Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "27262d51b9baf8f5c2dc-78a774b9a2fba7f038b9",
+              "file": "qa-intent-router.spec.ts",
+              "line": 19,
+              "column": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-layout-autofix.spec.ts",
+      "file": "qa-layout-autofix.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Layout Self-Healing",
+          "file": "qa-layout-autofix.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "detect and visualize sidebar/main overlap",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6517,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:02.955Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "a0f8e1b7ecaf3d735186-751b05ecbbb4a059d84c",
+              "file": "qa-layout-autofix.spec.ts",
+              "line": 9,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-layout-lock.spec.ts",
+      "file": "qa-layout-lock.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Layout Lock System",
+          "file": "qa-layout-lock.spec.ts",
+          "line": 9,
+          "column": 6,
+          "specs": [
+            {
+              "title": "enforces fixed sidebar and main positions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2455,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:09.685Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "45f0f6a9beb74d4b2983-fb0eff824a9343306806",
+              "file": "qa-layout-lock.spec.ts",
+              "line": 10,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-meta-tracking.spec.ts",
+      "file": "qa-meta-tracking.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Meta Tracking v2",
+          "file": "qa-meta-tracking.spec.ts",
+          "line": 8,
+          "column": 6,
+          "specs": [
+            {
+              "title": "writes meta.json entries after run",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 14,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16223,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-meta-tracking.spec.ts:14:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-meta-tracking.spec.ts",
+                          "column": 16,
+                          "line": 14
+                        },
+                        "snippet": "  12 |\n  13 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 14 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  15 |\n  16 |     await page.getByRole(\"button\", { name: /AI Summarize & Link/i }).click({ timeout: 10_000 });\n  17 |     await page.waitForSelector('[data-id^=\"filon-node-\"]', { timeout: 20_000 });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-meta-tracking.spec.ts",
+                            "column": 16,
+                            "line": 14
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  12 |\n  13 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 14 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  15 |\n  16 |     await page.getByRole(\"button\", { name: /AI Summarize & Link/i }).click({ timeout: 10_000 });\n  17 |     await page.waitForSelector('[data-id^=\"filon-node-\"]', { timeout: 20_000 });\n    at /home/ec2-user/filon/tests/qa-meta-tracking.spec.ts:14:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:12.166Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-meta-tracking-FILON-Met-89ae3-meta-json-entries-after-run-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-meta-tracking-FILON-Met-89ae3-meta-json-entries-after-run-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-meta-tracking.spec.ts",
+                        "column": 16,
+                        "line": 14
+                      }
+                    },
+                    {
+                      "workerIndex": 15,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16745,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-meta-tracking.spec.ts:14:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-meta-tracking.spec.ts",
+                          "column": 16,
+                          "line": 14
+                        },
+                        "snippet": "  12 |\n  13 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 14 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  15 |\n  16 |     await page.getByRole(\"button\", { name: /AI Summarize & Link/i }).click({ timeout: 10_000 });\n  17 |     await page.waitForSelector('[data-id^=\"filon-node-\"]', { timeout: 20_000 });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-meta-tracking.spec.ts",
+                            "column": 16,
+                            "line": 14
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  12 |\n  13 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 14 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  15 |\n  16 |     await page.getByRole(\"button\", { name: /AI Summarize & Link/i }).click({ timeout: 10_000 });\n  17 |     await page.waitForSelector('[data-id^=\"filon-node-\"]', { timeout: 20_000 });\n    at /home/ec2-user/filon/tests/qa-meta-tracking.spec.ts:14:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:26:29.460Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-meta-tracking-FILON-Met-89ae3-meta-json-entries-after-run-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-meta-tracking-FILON-Met-89ae3-meta-json-entries-after-run-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-meta-tracking-FILON-Met-89ae3-meta-json-entries-after-run-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-meta-tracking.spec.ts",
+                        "column": 16,
+                        "line": 14
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "63477dde57ce55c7ccbb-d515ec4dd4d3f687811d",
+              "file": "qa-meta-tracking.spec.ts",
+              "line": 10,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-micro-coach.spec.ts",
+      "file": "qa-micro-coach.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "micro-coach reacts to pending and success states",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 16,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 3826,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('micro-coach')\nExpected substring: \u001b[32m\"Tipp\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('micro-coach')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('micro-coach')\nExpected substring: \u001b[32m\"Tipp\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('micro-coach')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-micro-coach.spec.ts:14:23",
+                    "location": {
+                      "file": "/home/ec2-user/filon/tests/qa-micro-coach.spec.ts",
+                      "column": 23,
+                      "line": 14
+                    },
+                    "snippet": "  12 |\n  13 |   const coach = page.getByTestId(\"micro-coach\");\n> 14 |   await expect(coach).toContainText(\"Tipp\", { timeout: 3_000 });\n     |                       ^\n  15 |   await expect(page.getByTestId(\"toast\")).toContainText(\"Gespeichert\", {\n  16 |     timeout: 3_000,\n  17 |   });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ec2-user/filon/tests/qa-micro-coach.spec.ts",
+                        "column": 23,
+                        "line": 14
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('micro-coach')\nExpected substring: \u001b[32m\"Tipp\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('micro-coach')\u001b[22m\n\n\n  12 |\n  13 |   const coach = page.getByTestId(\"micro-coach\");\n> 14 |   await expect(coach).toContainText(\"Tipp\", { timeout: 3_000 });\n     |                       ^\n  15 |   await expect(page.getByTestId(\"toast\")).toContainText(\"Gespeichert\", {\n  16 |     timeout: 3_000,\n  17 |   });\n    at /home/ec2-user/filon/tests/qa-micro-coach.spec.ts:14:23"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-10T18:26:47.703Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/ec2-user/filon/test-results/qa-micro-coach-micro-coach-ee3a4--pending-and-success-states-chromium/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/home/ec2-user/filon/test-results/qa-micro-coach-micro-coach-ee3a4--pending-and-success-states-chromium/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/home/ec2-user/filon/tests/qa-micro-coach.spec.ts",
+                    "column": 23,
+                    "line": 14
+                  }
+                },
+                {
+                  "workerIndex": 17,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 4173,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('micro-coach')\nExpected substring: \u001b[32m\"Tipp\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('micro-coach')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('micro-coach')\nExpected substring: \u001b[32m\"Tipp\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('micro-coach')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-micro-coach.spec.ts:14:23",
+                    "location": {
+                      "file": "/home/ec2-user/filon/tests/qa-micro-coach.spec.ts",
+                      "column": 23,
+                      "line": 14
+                    },
+                    "snippet": "  12 |\n  13 |   const coach = page.getByTestId(\"micro-coach\");\n> 14 |   await expect(coach).toContainText(\"Tipp\", { timeout: 3_000 });\n     |                       ^\n  15 |   await expect(page.getByTestId(\"toast\")).toContainText(\"Gespeichert\", {\n  16 |     timeout: 3_000,\n  17 |   });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ec2-user/filon/tests/qa-micro-coach.spec.ts",
+                        "column": 23,
+                        "line": 14
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoContainText\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('micro-coach')\nExpected substring: \u001b[32m\"Tipp\"\u001b[39m\nTimeout: 3000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toContainText\" with timeout 3000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('micro-coach')\u001b[22m\n\n\n  12 |\n  13 |   const coach = page.getByTestId(\"micro-coach\");\n> 14 |   await expect(coach).toContainText(\"Tipp\", { timeout: 3_000 });\n     |                       ^\n  15 |   await expect(page.getByTestId(\"toast\")).toContainText(\"Gespeichert\", {\n  16 |     timeout: 3_000,\n  17 |   });\n    at /home/ec2-user/filon/tests/qa-micro-coach.spec.ts:14:23"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2025-11-10T18:26:52.782Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/ec2-user/filon/test-results/qa-micro-coach-micro-coach-ee3a4--pending-and-success-states-chromium-retry1/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/home/ec2-user/filon/test-results/qa-micro-coach-micro-coach-ee3a4--pending-and-success-states-chromium-retry1/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/home/ec2-user/filon/test-results/qa-micro-coach-micro-coach-ee3a4--pending-and-success-states-chromium-retry1/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/home/ec2-user/filon/tests/qa-micro-coach.spec.ts",
+                    "column": 23,
+                    "line": 14
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "c0226025fe138c921119-ad0d8841ceb6d5953e20",
+          "file": "qa-micro-coach.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "qa-node-feedback.spec.ts",
+      "file": "qa-node-feedback.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Auto Node Feedback System",
+          "file": "qa-node-feedback.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "should highlight new node and reset after delay",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 18,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16195,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-node-feedback.spec.ts:13:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-node-feedback.spec.ts",
+                          "column": 16,
+                          "line": 13
+                        },
+                        "snippet": "  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-node-feedback.spec.ts",
+                            "column": 16,
+                            "line": 13
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent(\n    at /home/ec2-user/filon/tests/qa-node-feedback.spec.ts:13:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:26:58.262Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-node-feedback-FILON-Aut-0430b--node-and-reset-after-delay-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-node-feedback-FILON-Aut-0430b--node-and-reset-after-delay-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-node-feedback.spec.ts",
+                        "column": 16,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 19,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16692,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-node-feedback.spec.ts:13:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-node-feedback.spec.ts",
+                          "column": 16,
+                          "line": 13
+                        },
+                        "snippet": "  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-node-feedback.spec.ts",
+                            "column": 16,
+                            "line": 13
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent(\n    at /home/ec2-user/filon/tests/qa-node-feedback.spec.ts:13:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:27:15.655Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-node-feedback-FILON-Aut-0430b--node-and-reset-after-delay-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-node-feedback-FILON-Aut-0430b--node-and-reset-after-delay-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-node-feedback-FILON-Aut-0430b--node-and-reset-after-delay-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-node-feedback.spec.ts",
+                        "column": 16,
+                        "line": 13
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "977e9bd144090952daf8-16cda79884ee5afb1a4f",
+              "file": "qa-node-feedback.spec.ts",
+              "line": 9,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-offline-indicator.spec.ts",
+      "file": "qa-offline-indicator.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "offline indicator appears when offline event fires",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "chromium",
+              "projectName": "chromium",
+              "results": [
+                {
+                  "workerIndex": 20,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 10880,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55",
+                    "location": {
+                      "file": "/home/ec2-user/filon/tests/qa-offline-indicator.spec.ts",
+                      "column": 55,
+                      "line": 6
+                    },
+                    "snippet": "  4 |   await page.goto(\"/\");\n  5 |   await page.evaluate(() => window.dispatchEvent(new Event(\"offline\")));\n> 6 |   await expect(page.getByTestId(\"offline-indicator\")).toBeVisible();\n    |                                                       ^\n  7 |   await page.evaluate(() => window.dispatchEvent(new Event(\"online\")));\n  8 |   await expect(page.getByTestId(\"offline-indicator\")).toHaveCount(0);\n  9 | });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ec2-user/filon/tests/qa-offline-indicator.spec.ts",
+                        "column": 55,
+                        "line": 6
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n\n  4 |   await page.goto(\"/\");\n  5 |   await page.evaluate(() => window.dispatchEvent(new Event(\"offline\")));\n> 6 |   await expect(page.getByTestId(\"offline-indicator\")).toBeVisible();\n    |                                                       ^\n  7 |   await page.evaluate(() => window.dispatchEvent(new Event(\"online\")));\n  8 |   await expect(page.getByTestId(\"offline-indicator\")).toHaveCount(0);\n  9 | });\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2025-11-10T18:27:33.827Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/ec2-user/filon/test-results/qa-offline-indicator-offli-981c8-rs-when-offline-event-fires-chromium/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/home/ec2-user/filon/test-results/qa-offline-indicator-offli-981c8-rs-when-offline-event-fires-chromium/error-context.md"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/home/ec2-user/filon/tests/qa-offline-indicator.spec.ts",
+                    "column": 55,
+                    "line": 6
+                  }
+                },
+                {
+                  "workerIndex": 21,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 11289,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55",
+                    "location": {
+                      "file": "/home/ec2-user/filon/tests/qa-offline-indicator.spec.ts",
+                      "column": 55,
+                      "line": 6
+                    },
+                    "snippet": "  4 |   await page.goto(\"/\");\n  5 |   await page.evaluate(() => window.dispatchEvent(new Event(\"offline\")));\n> 6 |   await expect(page.getByTestId(\"offline-indicator\")).toBeVisible();\n    |                                                       ^\n  7 |   await page.evaluate(() => window.dispatchEvent(new Event(\"online\")));\n  8 |   await expect(page.getByTestId(\"offline-indicator\")).toHaveCount(0);\n  9 | });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/home/ec2-user/filon/tests/qa-offline-indicator.spec.ts",
+                        "column": 55,
+                        "line": 6
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('offline-indicator')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('offline-indicator')\u001b[22m\n\n\n  4 |   await page.goto(\"/\");\n  5 |   await page.evaluate(() => window.dispatchEvent(new Event(\"offline\")));\n> 6 |   await expect(page.getByTestId(\"offline-indicator\")).toBeVisible();\n    |                                                       ^\n  7 |   await page.evaluate(() => window.dispatchEvent(new Event(\"online\")));\n  8 |   await expect(page.getByTestId(\"offline-indicator\")).toHaveCount(0);\n  9 | });\n    at /home/ec2-user/filon/tests/qa-offline-indicator.spec.ts:6:55"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 1,
+                  "startTime": "2025-11-10T18:27:45.958Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/home/ec2-user/filon/test-results/qa-offline-indicator-offli-981c8-rs-when-offline-event-fires-chromium-retry1/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/home/ec2-user/filon/test-results/qa-offline-indicator-offli-981c8-rs-when-offline-event-fires-chromium-retry1/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/home/ec2-user/filon/test-results/qa-offline-indicator-offli-981c8-rs-when-offline-event-fires-chromium-retry1/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/home/ec2-user/filon/tests/qa-offline-indicator.spec.ts",
+                    "column": 55,
+                    "line": 6
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "f3ccce4456fc48f7447a-827ef687abbfd0267f7c",
+          "file": "qa-offline-indicator.spec.ts",
+          "line": 3,
+          "column": 5
+        }
+      ]
+    },
+    {
+      "title": "qa-review-commit.spec.ts",
+      "file": "qa-review-commit.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Review & Commit Overlay",
+          "file": "qa-review-commit.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "appears on pending edit and commits",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 22,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 10828,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:15:27",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                          "column": 27,
+                          "line": 15
+                        },
+                        "snippet": "  13 |\n  14 |     const overlay = page.getByTestId(\"review-overlay\");\n> 15 |     await expect(overlay).toBeVisible();\n     |                           ^\n  16 |\n  17 |     await page.getByRole(\"button\", { name: \"Übernehmen\" }).click();\n  18 |     await expect(overlay).toBeHidden();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                            "column": 27,
+                            "line": 15
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n\n  13 |\n  14 |     const overlay = page.getByTestId(\"review-overlay\");\n> 15 |     await expect(overlay).toBeVisible();\n     |                           ^\n  16 |\n  17 |     await page.getByRole(\"button\", { name: \"Übernehmen\" }).click();\n  18 |     await expect(overlay).toBeHidden();\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:15:27"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:27:58.658Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-a52dd-on-pending-edit-and-commits-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-a52dd-on-pending-edit-and-commits-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                        "column": 27,
+                        "line": 15
+                      }
+                    },
+                    {
+                      "workerIndex": 23,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 11329,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:15:27",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                          "column": 27,
+                          "line": 15
+                        },
+                        "snippet": "  13 |\n  14 |     const overlay = page.getByTestId(\"review-overlay\");\n> 15 |     await expect(overlay).toBeVisible();\n     |                           ^\n  16 |\n  17 |     await page.getByRole(\"button\", { name: \"Übernehmen\" }).click();\n  18 |     await expect(overlay).toBeHidden();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                            "column": 27,
+                            "line": 15
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n\n  13 |\n  14 |     const overlay = page.getByTestId(\"review-overlay\");\n> 15 |     await expect(overlay).toBeVisible();\n     |                           ^\n  16 |\n  17 |     await page.getByRole(\"button\", { name: \"Übernehmen\" }).click();\n  18 |     await expect(overlay).toBeHidden();\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:15:27"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:28:10.677Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-a52dd-on-pending-edit-and-commits-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-a52dd-on-pending-edit-and-commits-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-a52dd-on-pending-edit-and-commits-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                        "column": 27,
+                        "line": 15
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "fce5bec92d695683f468-d45980154f2583ef1adc",
+              "file": "qa-review-commit.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "reject hides overlay without success toast",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 24,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 10932,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:33:27",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                          "column": 27,
+                          "line": 33
+                        },
+                        "snippet": "  31 |\n  32 |     const overlay = page.getByTestId(\"review-overlay\");\n> 33 |     await expect(overlay).toBeVisible();\n     |                           ^\n  34 |\n  35 |     await page.getByRole(\"button\", { name: \"Verwerfen\" }).click();\n  36 |     await expect(overlay).toBeHidden();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                            "column": 27,
+                            "line": 33
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n\n  31 |\n  32 |     const overlay = page.getByTestId(\"review-overlay\");\n> 33 |     await expect(overlay).toBeVisible();\n     |                           ^\n  34 |\n  35 |     await page.getByRole(\"button\", { name: \"Verwerfen\" }).click();\n  36 |     await expect(overlay).toBeHidden();\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:33:27"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:28:23.422Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-95598-erlay-without-success-toast-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-95598-erlay-without-success-toast-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                        "column": 27,
+                        "line": 33
+                      }
+                    },
+                    {
+                      "workerIndex": 25,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 11388,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:33:27",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                          "column": 27,
+                          "line": 33
+                        },
+                        "snippet": "  31 |\n  32 |     const overlay = page.getByTestId(\"review-overlay\");\n> 33 |     await expect(overlay).toBeVisible();\n     |                           ^\n  34 |\n  35 |     await page.getByRole(\"button\", { name: \"Verwerfen\" }).click();\n  36 |     await expect(overlay).toBeHidden();"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                            "column": 27,
+                            "line": 33
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByTestId('review-overlay')\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for getByTestId('review-overlay')\u001b[22m\n\n\n  31 |\n  32 |     const overlay = page.getByTestId(\"review-overlay\");\n> 33 |     await expect(overlay).toBeVisible();\n     |                           ^\n  34 |\n  35 |     await page.getByRole(\"button\", { name: \"Verwerfen\" }).click();\n  36 |     await expect(overlay).toBeHidden();\n    at /home/ec2-user/filon/tests/qa-review-commit.spec.ts:33:27"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:28:35.553Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-95598-erlay-without-success-toast-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-95598-erlay-without-success-toast-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-review-commit-Review-Co-95598-erlay-without-success-toast-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-review-commit.spec.ts",
+                        "column": 27,
+                        "line": 33
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "fce5bec92d695683f468-a7beca59f437bc5d3bff",
+              "file": "qa-review-commit.spec.ts",
+              "line": 22,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-sanity.spec.ts",
+      "file": "qa-sanity.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "QA baseline suite",
+          "file": "qa-sanity.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "always passes",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 12,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:28:48.335Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc8cbc2ab6f9a610ef06-8f6911729a9946deca38",
+              "file": "qa-sanity.spec.ts",
+              "line": 4,
+              "column": 7
+            },
+            {
+              "title": "sanity math",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:28:48.381Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "dc8cbc2ab6f9a610ef06-0ecc2a291941553f4d96",
+              "file": "qa-sanity.spec.ts",
+              "line": 8,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "qa-toolchain-retry.spec.ts",
+      "file": "qa-toolchain-retry.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "FILON Toolchain Retry Logic",
+          "file": "qa-toolchain-retry.spec.ts",
+          "line": 7,
+          "column": 6,
+          "specs": [
+            {
+              "title": "retries on temporary failure",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 26,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 16264,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts:13:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts",
+                          "column": 16,
+                          "line": 13
+                        },
+                        "snippet": "  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts",
+                            "column": 16,
+                            "line": 13
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent(\n    at /home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts:13:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-10T18:28:48.429Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-toolchain-retry-FILON-T-6720b-etries-on-temporary-failure-chromium/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-toolchain-retry-FILON-T-6720b-etries-on-temporary-failure-chromium/error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts",
+                        "column": 16,
+                        "line": 13
+                      }
+                    },
+                    {
+                      "workerIndex": 27,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 17678,
+                      "error": {
+                        "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n    at /home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts:13:16",
+                        "location": {
+                          "file": "/home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts",
+                          "column": 16,
+                          "line": 13
+                        },
+                        "snippet": "  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent("
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts",
+                            "column": 16,
+                            "line": 13
+                          },
+                          "message": "TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#brainbar-input') to be visible\u001b[22m\n\n\n  11 |\n  12 |     await page.waitForLoadState(\"networkidle\", { timeout: 20_000 });\n> 13 |     await page.waitForSelector(\"#brainbar-input\", { timeout: 15_000 });\n     |                ^\n  14 |\n  15 |     await page.evaluate(() => {\n  16 |       window.dispatchEvent(\n    at /home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts:13:16"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 1,
+                      "startTime": "2025-11-10T18:29:05.901Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/home/ec2-user/filon/test-results/qa-toolchain-retry-FILON-T-6720b-etries-on-temporary-failure-chromium-retry1/test-failed-1.png"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "/home/ec2-user/filon/test-results/qa-toolchain-retry-FILON-T-6720b-etries-on-temporary-failure-chromium-retry1/error-context.md"
+                        },
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/home/ec2-user/filon/test-results/qa-toolchain-retry-FILON-T-6720b-etries-on-temporary-failure-chromium-retry1/trace.zip"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/home/ec2-user/filon/tests/qa-toolchain-retry.spec.ts",
+                        "column": 16,
+                        "line": 13
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "1dee70a2c1e926c3903b-f39699af365d5e08e727",
+              "file": "qa-toolchain-retry.spec.ts",
+              "line": 9,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-10T18:24:00.720Z",
+    "duration": 324048.755,
+    "expected": 18,
+    "skipped": 0,
+    "unexpected": 14,
+    "flaky": 0
   }
 }
-

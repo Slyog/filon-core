@@ -6,6 +6,9 @@
     "violations": 0,
     "incomplete": 0
   },
-  "violations": []
+  "violations": [],
+  "step": "unknown",
+  "agent": "Cursor",
+  "status": "unknown",
+  "duration": 0
 }
-

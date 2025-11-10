@@ -8,13 +8,18 @@ export default defineConfig({
     baseURL: "http://localhost:3000",
     headless: true,
     screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    trace: "on-first-retry",
   },
+  retries: 1,
   projects: [
     {
       name: "chromium",
       use: { browserName: "chromium" },
     },
+  ],
+  reporter: [
+    ["list"],
+    ["json", { outputFile: "qa/reports/latest.json" }],
   ],
   webServer: {
     command: "npm run dev",

@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2025-11-10T18:22:03.899Z",
+  "status": "failed",
+  "durationMs": 313959.589,
+  "totals": {
+    "expected": 15,
+    "unexpected": 12,
+    "skipped": 0
+  },
+  "passRate": 20,
+  "command": "npm run qa:all"
+}
