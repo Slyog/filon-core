@@ -14,6 +14,7 @@ import { useBrainState } from "@/hooks/useBrainState";
 import { useShallow } from "zustand/react/shallow";
 import { useAICoPilot } from "@/hooks/useAICoPilot";
 import { useAINodeLogger } from "@/hooks/useAINodeLogger";
+import { useAIFeedback } from "@/hooks/useAIFeedback";
 import type { BrainCommand, BrainCommandType } from "@/types/brain";
 
 export type BrainbarCommandType = BrainCommandType;
@@ -67,6 +68,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
     } = useAICoPilot();
 
     useAINodeLogger(aiMessages);
+  useAIFeedback(aiMessages);
 
     const hasCommand = value.trimStart().startsWith("/");
 

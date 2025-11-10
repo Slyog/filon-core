@@ -1,21 +1,11 @@
-# Node / Next.js / Env
-node_modules
-.next
-.env
-dist
+node_modules/
+.next/
+out/
+dist/
+.env*
 *.log
-
-# OS
 .DS_Store
-Thumbs.db
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-
-# Build
-out
-build
-.vercel
+prisma/dev.db
+coverage/
+test-results/
+tmp/
