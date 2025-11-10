@@ -66,5 +66,3 @@ Core is open; advanced AI and collaboration layers will launch as proprietary ex
 
 Repo: github.com/Slyog/filon-core
 
-Website: filon.cloud  
-(coming soon)
