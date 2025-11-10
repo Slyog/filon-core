@@ -8,7 +8,7 @@ export default function LocalSearch() {
 
   useEffect(() => {
     async function searchNote() {
-      const content = await localforage.getItem<string>("noion-note");
+      const content = await localforage.getItem<string>("filon-note");
       if (content && query.trim().length > 0) {
         const lower = query.toLowerCase();
         const match = content
@@ -30,10 +30,10 @@ export default function LocalSearch() {
         placeholder="🔍 Suchbegriff eingeben..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full p-3 rounded-lg bg-noion-muted text-white outline-none"
+        className="w-full p-3 rounded-lg bg-filon-muted text-white outline-none"
       />
       {result && (
-        <pre className="mt-3 p-3 rounded-lg bg-noion-dark text-zinc-200 overflow-auto whitespace-pre-wrap">
+        <pre className="mt-3 p-3 rounded-lg bg-filon-dark text-zinc-200 overflow-auto whitespace-pre-wrap">
           {result}
         </pre>
       )}

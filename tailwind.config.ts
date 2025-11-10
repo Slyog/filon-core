@@ -7,12 +7,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Legacy Noion colors for backward compatibility
-        "noion-dark": "#0e0f12",
-        "noion-light": "#fafafa",
-        "noion-accent": "#00c2ff",
-        "noion-glow": "#38bdf8",
-        "noion-muted": "#1a1b1e",
+        // FILON legacy palette aliases
+        "filon-dark": "#0e0f12",
+        "filon-light": "#fafafa",
+        "filon-accent": "#00c2ff",
+        "filon-glow": "#38bdf8",
+        "filon-muted": "#1a1b1e",
         // FILON Design Tokens - Synchronized from filonTokens
         // Direct color mappings for backward compatibility
         background: filonTokens.colors.background,

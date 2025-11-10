@@ -55,7 +55,7 @@ export async function getAutomergeBinary(
     }
 
     // Try to load existing Automerge document
-    const saved = await localforage.getItem<Uint8Array>("noion-graph-doc");
+    const saved = await localforage.getItem<Uint8Array>("filon-graph-doc");
     if (saved) {
       return saved;
     }
@@ -72,7 +72,7 @@ export async function getAutomergeBinary(
         d.edges = sanitizedEdges;
       });
       const binary = Automerge.save(next);
-      await localforage.setItem("noion-graph-doc", binary);
+      await localforage.setItem("filon-graph-doc", binary);
       return binary;
     }
 
@@ -103,7 +103,7 @@ export async function updateAutomergeBinary(
     const sanitizedEdges = sanitizeForAutomerge(edges);
 
     // Load existing doc or create new one
-    let doc = await localforage.getItem<Uint8Array>("noion-graph-doc");
+    let doc = await localforage.getItem<Uint8Array>("filon-graph-doc");
     if (doc) {
       try {
         doc = Automerge.load(doc);
@@ -123,7 +123,7 @@ export async function updateAutomergeBinary(
 
     // Save and return binary
     const binary = Automerge.save(updated);
-    await localforage.setItem("noion-graph-doc", binary);
+    await localforage.setItem("filon-graph-doc", binary);
     return binary;
   } catch (err) {
     console.error("[AUTOSAVE] Failed to update Automerge binary:", err);

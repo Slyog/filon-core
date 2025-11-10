@@ -67,13 +67,13 @@ export async function saveGraphRemote(graph: GraphData) {
     
     throw new Error(errorMessage);
   }
-  await localforage.setItem("noion-graph", graph); // Cache speichern
+  await localforage.setItem("filon-graph", graph); // Cache speichern
 }
 
 export async function loadGraphSync(): Promise<GraphData> {
   try {
     const [local, remote] = await Promise.allSettled([
-      localforage.getItem<GraphData>("noion-graph"),
+      localforage.getItem<GraphData>("filon-graph"),
       fetch("/api/graph").then((r) => r.json()),
     ]);
 
@@ -89,12 +89,12 @@ export async function loadGraphSync(): Promise<GraphData> {
         ? remoteData
         : localData;
 
-    await localforage.setItem("noion-graph", newer);
+    await localforage.setItem("filon-graph", newer);
     return newer;
   } catch (err) {
     console.error("Sync error", err);
     return (
-      (await localforage.getItem("noion-graph")) ?? { nodes: [], edges: [] }
+      (await localforage.getItem("filon-graph")) ?? { nodes: [], edges: [] }
     );
   }
 }

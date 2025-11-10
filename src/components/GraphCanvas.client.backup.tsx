@@ -759,7 +759,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
             },
           });
 
-          await localforage.setItem("noion-graph", { nodes: n, edges: e });
+          await localforage.setItem("filon-graph", { nodes: n, edges: e });
           // Still save to session manager for recovery
           await saveGraphState({ nodes: n, edges: e });
           // Create snapshot even if remote save fails (same conditional logic)
@@ -1533,7 +1533,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
     setActiveNode(null); // ✅ clear active node state
     setActiveNodeId(null); // ✅ clear selection
     console.log("All nodes cleared and selection reset.");
-    await localforage.removeItem("noion-graph");
+    await localforage.removeItem("filon-graph");
     const keys = await localforage.keys();
     for (const key of keys)
       if (key.startsWith("note-")) await localforage.removeItem(key);
@@ -1747,7 +1747,7 @@ function GraphCanvasInner({ sessionId }: { sessionId: string }) {
 
   // 💬 Globales HUD-Badge (unten rechts) – zeigt Save-Status
   useEffect(() => {
-    const id = "noion-badge";
+    const id = "filon-badge";
     let badge = document.getElementById(id);
     if (!badge) {
       badge = document.createElement("div");

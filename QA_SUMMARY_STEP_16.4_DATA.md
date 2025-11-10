@@ -26,7 +26,7 @@
 
 **Log:**
 ```
-PS C:\Users\slyse\Documents\Noion\noion-core> npx tsc --noEmit --strict
+PS C:\Users\slyse\Documents\Filon\filon-core> npx tsc --noEmit --strict
 ✅ No TypeScript errors
 ```
 

@@ -355,7 +355,7 @@ select:focus-visible {
   isolation: isolate !important;
 }
 
-#noion-global-ui,
+#filon-global-ui,
 aside,
 [data-portal-root] {
   z-index: 2147483647 !important;

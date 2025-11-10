@@ -17,7 +17,7 @@ async function ensureAutomerge() {
   }
 }
 
-const GRAPH_DOC_STORAGE_KEY = "noion-graph-doc";
+const GRAPH_DOC_STORAGE_KEY = "filon-graph-doc";
 
 const randomId = (prefix: string) =>
   typeof crypto !== "undefined" && "randomUUID" in crypto

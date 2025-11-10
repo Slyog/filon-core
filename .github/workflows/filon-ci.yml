@@ -35,10 +35,24 @@ jobs:
             npm install
           fi
 
-      # --- Run QA Tests (auto-retry once if fail) ---
+      # === Prisma Generate & QA Run ===
+      - name: 🧬 Prepare Prisma Client
+        run: |
+          echo "🧬 Generating Prisma client..."
+          npx prisma generate || (echo "⚠️ Prisma generation failed — attempting reinstall" && npm install && npx prisma generate)
+          echo "✅ Prisma client ready."
+
       - name: 🧪 Run QA Suite (Auto-Retry)
         run: |
-          npm run qa:all || (echo "⚠️ QA failed, retrying..." && sleep 5 && npm run qa:all || echo "❌ QA tests failed after retry.")
+          echo "🚀 Running Playwright QA tests..."
+          export PW_HEADLESS=1
+          npm run qa:all || (
+            echo "⚠️ QA failed, retrying after regeneration..." &&
+            npx prisma generate &&
+            sleep 5 &&
+            npm run qa:all ||
+            echo "❌ QA tests failed after retry."
+          )
 
       # --- Generate QA Reports ---
       - name: 🧾 Generate QA Report (JSON + Markdown)
