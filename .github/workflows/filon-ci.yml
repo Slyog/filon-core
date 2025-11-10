@@ -89,35 +89,29 @@ jobs:
         if: success()
         uses: tsickert/discord-webhook@v7.0.0
         with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          payload-json: |
-            {
-              "embeds": [
-                {
-                  "title": "🚀 FILON CI Passed",
-                  "description": "**Branch:** ${{ github.ref_name }}\n**Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\n**Status:** ✅ Success\n**Author:** ${{ github.actor }}",
-                  "color": 3145775,
-                  "footer": { "text": "FILON Auto-Heal CI" },
-                  "timestamp": "${{ github.event.head_commit.timestamp }}"
-                }
-              ]
-            }
+          url: ${{ secrets.DISCORD_WEBHOOK }}
+          embed-title: "🚀 FILON CI Passed"
+          embed-description: |
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+            **Status:** ✅ Success
+            **Author:** ${{ github.actor }}
+          embed-color: 3145775
+          embed-footer-text: "FILON Auto-Heal CI"
+          embed-timestamp: ${{ github.event.head_commit.timestamp }}
 
       # --- Discord Failure ---
       - name: 🔴 Discord Notify (Failure)
         if: failure()
         uses: tsickert/discord-webhook@v7.0.0
         with:
-          webhook-url: ${{ secrets.DISCORD_WEBHOOK }}
-          payload-json: |
-            {
-              "embeds": [
-                {
-                  "title": "❌ FILON CI Failed",
-                  "description": "**Branch:** ${{ github.ref_name }}\n**Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\n**Status:** ❌ Failure\n**Action Required:** Check QA logs on GitHub.",
-                  "color": 16711680,
-                  "footer": { "text": "FILON Auto-Heal CI" },
-                  "timestamp": "${{ github.event.head_commit.timestamp }}"
-                }
-              ]
-            }
+          url: ${{ secrets.DISCORD_WEBHOOK }}
+          embed-title: "❌ FILON CI Failed"
+          embed-description: |
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+            **Status:** ❌ Failure
+            **Action Required:** Check QA logs on GitHub.
+          embed-color: 16711680
+          embed-footer-text: "FILON Auto-Heal CI"
+          embed-timestamp: ${{ github.event.head_commit.timestamp }}
