@@ -20,6 +20,7 @@
     "qa:test": "playwright test",
     "qa:all": "playwright test --project=chromium --reporter=list",
     "qa:glow": "playwright test tests/__snapshots__/node-feedback/qa-node-feedback-snapshot.spec.ts",
+    "qa:toolchain": "playwright test tests/qa-graph-toolchain.spec.ts",
     "qa:ui": "playwright test tests/*ui*.spec.ts",
     "qa:fast": "playwright test --reporter=list",
     "qa:save": "npm run save-report",

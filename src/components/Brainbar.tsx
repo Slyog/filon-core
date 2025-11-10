@@ -16,6 +16,7 @@ import { useAICoPilot } from "@/hooks/useAICoPilot";
 import { useAINodeLogger } from "@/hooks/useAINodeLogger";
 import { useAIFeedback } from "@/hooks/useAIFeedback";
 import type { BrainCommand, BrainCommandType } from "@/types/brain";
+import { graphToolchain } from "@/lib/graphToolchain";
 
 export type BrainbarCommandType = BrainCommandType;
 export type BrainbarCommand = BrainCommand;
@@ -50,6 +51,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
     const [pulse, setPulse] = useState(false);
     const [announcement, setAnnouncement] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [toolchainLoading, setToolchainLoading] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { addNode, lastError, clearError } = useBrainState(
@@ -197,6 +199,44 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
         announce(resolvedErrorMessage);
       }
     }, [announce, resolvedErrorMessage]);
+
+    const handleToolchain = useCallback(async () => {
+      if (toolchainLoading) {
+        return;
+      }
+
+      setToolchainLoading(true);
+      try {
+        const selectedIds = ["node-a", "node-b"];
+        const result = await graphToolchain(selectedIds);
+        console.info("[FILON AI] Toolchain result:", result);
+
+        if (typeof window !== "undefined") {
+          const actualId = result.node?.id;
+          const uiNodeId =
+            actualId && actualId.startsWith("filon-node-")
+              ? actualId
+              : `filon-node-${Date.now()}`;
+          const nodeLabel =
+            result.node?.label ??
+            result.summary?.title ??
+            "AI Summary Node";
+          window.dispatchEvent(
+            new CustomEvent("filon:create-node", {
+              detail: {
+                id: uiNodeId,
+                label: nodeLabel,
+                actualId: actualId ?? uiNodeId,
+              },
+            })
+          );
+        }
+      } catch (error) {
+        console.error("[FILON AI] Toolchain failed:", error);
+      } finally {
+        setToolchainLoading(false);
+      }
+    }, [toolchainLoading]);
 
     useImperativeHandle(
       ref,
@@ -358,6 +398,17 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
             {latestAssistantMessage}
           </p>
         )}
+
+        <div className="mt-4">
+          <button
+            type="button"
+            disabled={toolchainLoading}
+            onClick={handleToolchain}
+            className="rounded-xl bg-cyan-600/30 px-3 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-600/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-base disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {toolchainLoading ? "Thinking…" : "AI Summarize & Link"}
+          </button>
+        </div>
       </>
     );
   }

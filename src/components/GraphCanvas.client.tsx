@@ -130,6 +130,7 @@ type NodeData = {
   active?: boolean;
   highlight?: boolean;
   isNew?: boolean;
+  actualId?: string;
 };
 
 type GraphSnapshot = {
@@ -167,16 +168,21 @@ export default function GraphCanvas({
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const nodeTypesMemo = useMemo(() => nodeTypes, []);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-  const { nodes: brainNodes, activeNodeId, setActiveNode, addNode, hydrated } =
-    useBrainState(
-      useShallow((state) => ({
-        nodes: state.nodes,
-        activeNodeId: state.activeNodeId,
-        setActiveNode: state.setActiveNode,
-        addNode: state.addNode,
-        hydrated: state.hydrated,
-      }))
-    );
+  const {
+    nodes: brainNodes,
+    activeNodeId,
+    setActiveNode,
+    addNode,
+    hydrated,
+  } = useBrainState(
+    useShallow((state) => ({
+      nodes: state.nodes,
+      activeNodeId: state.activeNodeId,
+      setActiveNode: state.setActiveNode,
+      addNode: state.addNode,
+      hydrated: state.hydrated,
+    }))
+  );
   const streamEntries = useStreamState((state) => state.entries);
   const previousNodeCount = useRef(0);
   useNodeFeedback(nodes);
@@ -194,7 +200,7 @@ export default function GraphCanvas({
             }
           : node.style,
       })),
-    [nodes],
+    [nodes]
   );
   useEffect(() => {
     if (!reactFlowRef.current) return;
@@ -217,7 +223,6 @@ export default function GraphCanvas({
       });
     }
   }, [activeNodeId]);
-
 
   const streamItems = useMemo<ContextStreamItem[]>(
     () =>
@@ -283,7 +288,10 @@ export default function GraphCanvas({
   const saveGraph = useCallback(
     async (snapshot: GraphSnapshot) => {
       if (typeof window !== "undefined" && window.localStorage) {
-        window.localStorage.setItem(sessionStorageKey, JSON.stringify(snapshot));
+        window.localStorage.setItem(
+          sessionStorageKey,
+          JSON.stringify(snapshot)
+        );
         if (window.__forceOfflineTest) {
           throw new Error("Offline mode forced");
         }
@@ -380,17 +388,12 @@ export default function GraphCanvas({
             active: brainNode.id === activeNodeId,
             highlight: hoveredNodeId === brainNode.id,
             isNew: previousNode?.data?.isNew ?? false,
+            actualId: brainNode.id,
           },
         };
-      }),
+      })
     );
-  }, [
-    activeNodeId,
-    brainNodes,
-    hydrated,
-    hoveredNodeId,
-    setNodes,
-  ]);
+  }, [activeNodeId, brainNodes, hydrated, hoveredNodeId, setNodes]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -398,15 +401,45 @@ export default function GraphCanvas({
     }
 
     const handleCreateNode = (event: Event) => {
-      const detail = (event as CustomEvent<{ id?: string; label?: string }>).detail;
+      const detail = (
+        event as CustomEvent<{
+          id?: string;
+          label?: string;
+          actualId?: string;
+        }>
+      ).detail;
       if (!detail) {
         return;
       }
 
       setNodes((prev) => {
         const newId = detail.id ?? `filon-node-${Date.now()}`;
-        if (prev.some((node) => node.id === newId)) {
-          return prev;
+        const actualId = detail.actualId ?? newId;
+
+        const hasExisting = prev.some(
+          (node) =>
+            node.id === newId ||
+            node.id === actualId ||
+            node.data?.actualId === actualId
+        );
+
+        if (hasExisting) {
+          return prev.map((node) =>
+            node.id === newId || node.data?.actualId === actualId
+              ? {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    label:
+                      detail.label ??
+                      node.data?.label ??
+                      "🌐 FILON Visible Node",
+                    isNew: true,
+                    actualId,
+                  },
+                }
+              : node
+          );
         }
 
         return [
@@ -420,19 +453,23 @@ export default function GraphCanvas({
               intent: "add",
               active: false,
               highlight: false,
-              isNew: false,
+              isNew: true,
+              actualId,
             },
           },
         ];
       });
     };
 
-    window.addEventListener("filon:create-node", handleCreateNode as EventListener);
+    window.addEventListener(
+      "filon:create-node",
+      handleCreateNode as EventListener
+    );
 
     return () => {
       window.removeEventListener(
         "filon:create-node",
-        handleCreateNode as EventListener,
+        handleCreateNode as EventListener
       );
     };
   }, [setNodes]);

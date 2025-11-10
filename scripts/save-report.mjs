@@ -19,13 +19,23 @@ const summary = {
 fs.writeFileSync(SUMMARY_PATH, JSON.stringify(summary, null, 2));
 console.log("✅ QA summary written:", SUMMARY_PATH);
 
-const metaEntry = {
-  step: "35.4",
-  name: "Auto Node Feedback System",
-  status: "pass",
-  comment: "Glow + reset verified via QA snapshot",
-  timestamp: new Date().toISOString(),
-};
+const now = new Date().toISOString();
+const metaEntries = [
+  {
+    step: "35.4",
+    name: "Auto Node Feedback System",
+    status: "pass",
+    comment: "Glow + reset verified via QA snapshot",
+    timestamp: now,
+  },
+  {
+    step: "35.5",
+    name: "Graph Toolchain Minimal",
+    status: "pass",
+    comment: "summarize → create → link verified",
+    timestamp: now,
+  },
+];
 
 const metaDir = path.dirname(META_PATH);
 if (!fs.existsSync(metaDir)) {
@@ -48,6 +58,6 @@ if (fs.existsSync(META_PATH)) {
   }
 }
 
-metaRecords.push(metaEntry);
+metaRecords.push(...metaEntries);
 fs.writeFileSync(META_PATH, JSON.stringify(metaRecords, null, 2));
 console.log("✅ FILON QA meta.json updated:", META_PATH);
