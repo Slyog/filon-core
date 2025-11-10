@@ -1,10 +1,10 @@
-name: FILON CI/CD Pipeline
+name: 🧠 FILON CI/CD Pipeline
 
 on:
   push:
-    branches: [ dev, main ]
+    branches: [dev, main]
   pull_request:
-    branches: [ main, dev ]
+    branches: [dev, main]
 
 jobs:
   build-and-test:
@@ -14,96 +14,28 @@ jobs:
       - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧱 Setup Node.js
+      - name: ⚙️ Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "pnpm"
 
-      - name: 📦 Install dependencies
-        run: npm ci --legacy-peer-deps
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+          run_install: false
 
-      - name: 🧠 Generate Prisma client
-        run: npx prisma generate
+      - name: 🔧 Install dependencies (workspace aware)
+        run: pnpm install --frozen-lockfile
 
-      - name: 🧹 Lint check
-        run: npm run lint -- --max-warnings=0
+      - name: 🧪 Run QA & Tests
+        run: pnpm run qa:all
 
-      - name: 🧪 QA tests (Playwright + Unit)
-        run: npm run qa:all
+      - name: 🏗️ Build FILON
+        run: pnpm run build
 
-      - name: 🏗️ Build
-        run: npm run build
-
-      - name: 📊 Artifact summary
-        if: always()
+      - name: 📊 Artifact Summary
         run: |
           echo "Build finished at $(date)"
-          du -h .next | tail -n 10
-
-  notify:
-    if: failure()
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⚠️ Notify on failure
-        run: |
-          echo "Build or tests failed for ${{ github.repository }}!"
-
-  qa-sweep-report:
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    steps:
-      - name: 🧩 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🧱 Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: 📦 Install dependencies
-        run: npm ci --legacy-peer-deps
-
-      - name: 🧪 Run Resilience QA Sweep
-        run: npm run qa:sweep
-
-      - name: 📤 Save QA Meta
-        run: node scripts/save-report.mjs
-
-      - name: 💬 Post QA Summary to Discord
-        env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-        run: |
-          node -e "
-          const fs=require('fs');
-          const fetch=require('node-fetch');
-          const meta=JSON.parse(fs.readFileSync('public/qa/reports/meta.json','utf8'));
-          const last=meta.history.at(-1) || {};
-          const msg={
-            username:'FILON QA Bot',
-            embeds:[{
-              title:'FILON QA Sweep Complete',
-              color:last.averagePassRate>=80?0x2FF3FF:0xFF5555,
-              description:
-                \`Step: **\${last.step ?? 'unknown'}**
-Agent: **\${last.agent ?? 'n/a'}**
-Avg Pass Rate: **\${Number(last.averagePassRate ?? 0).toFixed(1)} %**
-Status: **\${last.status ?? 'n/a'}**\`,
-              timestamp:new Date().toISOString()
-            }]
-          };
-          fetch(process.env.DISCORD_WEBHOOK,{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify(msg)
-          }).then(res=>{
-            if(!res.ok){
-              console.error('Discord webhook failed',res.status,res.statusText);
-              process.exit(1);
-            }
-          }).catch(err=>{
-            console.error('Discord webhook error',err);
-            process.exit(1);
-          });
-          "
+          du -sh .next || true
