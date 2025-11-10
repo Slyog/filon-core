@@ -58,6 +58,14 @@ type TimelineDatum = {
   total: number;
 };
 
+type MetaReport = {
+  step: string;
+  name: string;
+  status: "pass" | "fail" | string;
+  comment?: string;
+  timestamp?: string;
+};
+
 const FILTERS: { id: FilterState; label: string }[] = [
   { id: "all", label: "All" },
   { id: "passed", label: "Passed" },
@@ -104,6 +112,9 @@ export default function QADashboard() {
   const [insights, setInsights] = useState<InsightsState>(null);
   const [insightsError, setInsightsError] = useState<string | null>(null);
   const [summary, setSummary] = useState<QASummary | null>(null);
+  const [metaReports, setMetaReports] = useState<MetaReport[]>([]);
+  const [metaUpdatedAt, setMetaUpdatedAt] = useState<number | null>(null);
+  const [metaError, setMetaError] = useState<string | null>(null);
   const passRate =
     summary && summary.total && summary.total > 0
       ? Math.round(((summary.passed ?? 0) / summary.total) * 100)
@@ -208,6 +219,44 @@ export default function QADashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchMeta = async () => {
+      try {
+        const response = await fetch("/qa/reports/meta.json", {
+          cache: "no-store",
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to load QA meta (${response.status})`);
+        }
+
+        const payload = await response.json();
+        if (!Array.isArray(payload)) {
+          throw new Error("QA meta response is not an array");
+        }
+
+        if (cancelled) return;
+
+        setMetaReports(payload as MetaReport[]);
+        setMetaUpdatedAt(Date.now());
+        setMetaError(null);
+      } catch (err) {
+        if (cancelled) return;
+        console.error("[qa:dashboard] meta load error", err);
+        setMetaError(err instanceof Error ? err.message : "Unknown error");
+      }
+    };
+
+    void fetchMeta();
+    const interval = setInterval(fetchMeta, 30000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   const filteredReports = useMemo(() => {
     if (filter === "all") return reports;
     return reports.filter((report) => report.status === filter);
@@ -270,6 +319,17 @@ export default function QADashboard() {
     };
   }, [selectedReport]);
 
+  const metaEntries = useMemo(() => {
+    return [...metaReports].sort((a, b) => {
+      const aTime = a.timestamp ? Date.parse(a.timestamp) : 0;
+      const bTime = b.timestamp ? Date.parse(b.timestamp) : 0;
+      if (Number.isNaN(aTime) && Number.isNaN(bTime)) return 0;
+      if (Number.isNaN(aTime)) return 1;
+      if (Number.isNaN(bTime)) return -1;
+      return bTime - aTime;
+    });
+  }, [metaReports]);
+
   return (
     <div className="relative z-20 flex min-h-screen w-full flex-col gap-6 bg-[#05090d] p-8 text-neutral-100">
       <header className="flex flex-col gap-4">
@@ -321,6 +381,64 @@ export default function QADashboard() {
           )}
         </div>
       </header>
+
+      <section className="space-y-3 rounded-2xl border border-cyan-300/20 bg-neutral-900/40 p-6 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold text-cyan-100">
+            Node Feedback QA Checks
+          </h2>
+          <span className="text-xs text-neutral-400">
+            Updated{" "}
+            {metaUpdatedAt ? new Date(metaUpdatedAt).toLocaleTimeString() : "—"}
+          </span>
+        </div>
+        {metaError && (
+          <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-200">
+            {metaError}
+          </div>
+        )}
+        {!metaError && metaEntries.length === 0 && (
+          <div className="rounded-lg border border-neutral-700/60 bg-neutral-900/60 p-4 text-sm text-neutral-400">
+            No node feedback reports yet. Run{" "}
+            <code className="mx-1 rounded bg-neutral-950 px-1.5 py-0.5 text-xs text-cyan-300">
+              npm run qa:glow
+            </code>{" "}
+            to generate snapshots.
+          </div>
+        )}
+        <div className="space-y-3">
+          {metaEntries.map((report, index) => {
+            const status = (report.status ?? "").toLowerCase();
+            const isPass = status === "pass" || status === "passed";
+            const badge = isPass ? "✅ PASS" : "❌ FAIL";
+            return (
+              <div
+                key={`${report.step}-${report.timestamp ?? index}`}
+                className={clsx(
+                  "rounded-xl border p-4 transition-all",
+                  isPass
+                    ? "border-emerald-500/40 bg-emerald-500/10"
+                    : "border-red-500/40 bg-red-500/10"
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium text-neutral-100">
+                    Step {report.step}: {report.name}
+                  </span>
+                  <span className="text-sm font-semibold text-neutral-50">
+                    {badge}
+                  </span>
+                </div>
+                {report.comment ? (
+                  <p className="mt-2 text-xs text-neutral-300">
+                    {report.comment}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <div className="flex flex-wrap gap-2">
         {FILTERS.map(({ id, label }) => (

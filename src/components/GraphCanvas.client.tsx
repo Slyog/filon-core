@@ -39,6 +39,7 @@ import { useStreamState } from "@/hooks/useStreamState";
 import type { BrainCommandType } from "@/types/brain";
 import { useAutosaveState } from "@/hooks/useAutosaveState";
 import { useShallow } from "zustand/react/shallow";
+import { useNodeFeedback } from "@/hooks/useNodeFeedback";
 
 declare global {
   interface Window {
@@ -95,7 +96,7 @@ const CanvasNode = ({ data }: NodeProps<NodeData>) => {
       className={clsx(
         "min-w-[220px] rounded-[14px] border text-left shadow-xl transition-colors",
         isActive
-          ? "border-brand/70 bg-gradient-to-br from-brand/25 via-brand/10 to-[#0A0F12]"
+          ? "border-brand/70 bg-linear-to-br from-brand/25 via-brand/10 to-[#0A0F12]"
           : isHighlighted
           ? "border-brand/40 bg-[#0A0F12]/85"
           : "border-cyan-400/15 bg-[#0A0F12]/70"
@@ -128,6 +129,7 @@ type NodeData = {
   intent: BrainCommandType;
   active?: boolean;
   highlight?: boolean;
+  isNew?: boolean;
 };
 
 type GraphSnapshot = {
@@ -162,10 +164,8 @@ export default function GraphCanvas({
 }: GraphCanvasProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<NodeData>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge[]>([]);
-  const initialized = useRef(false);
   const reactFlowRef = useRef<ReactFlowInstance | null>(null);
   const nodeTypesMemo = useMemo(() => nodeTypes, []);
-  const [coachMessage, setCoachMessage] = useState<string | null>(null);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const { nodes: brainNodes, activeNodeId, setActiveNode, addNode, hydrated } =
     useBrainState(
@@ -179,6 +179,23 @@ export default function GraphCanvas({
     );
   const streamEntries = useStreamState((state) => state.entries);
   const previousNodeCount = useRef(0);
+  useNodeFeedback(nodes);
+
+  const styledNodes = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        style: node.data?.isNew
+          ? {
+              ...node.style,
+              boxShadow: "0 0 14px rgba(47,243,255,0.8)",
+              transform: "scale(1.04)",
+              transition: "all 0.4s ease",
+            }
+          : node.style,
+      })),
+    [nodes],
+  );
   useEffect(() => {
     if (!reactFlowRef.current) return;
     if (brainNodes.length === 0) return;
@@ -237,6 +254,8 @@ export default function GraphCanvas({
   const graphApi = useMemo<GraphContextValue>(
     () => ({
       updateNodeNote: (_nodeId: string, _note: string) => {
+        void _nodeId;
+        void _note;
         // Step 21+ will attach autosave + feedback here.
       },
       createNode,
@@ -251,7 +270,7 @@ export default function GraphCanvas({
   );
 
   const graphSnapshot = useMemo<GraphSnapshot | null>(() => {
-    if (!initialized.current) {
+    if (!hydrated) {
       return null;
     }
 
@@ -259,7 +278,7 @@ export default function GraphCanvas({
       nodes,
       edges,
     };
-  }, [nodes, edges]);
+  }, [edges, hydrated, nodes]);
 
   const saveGraph = useCallback(
     async (snapshot: GraphSnapshot) => {
@@ -347,20 +366,23 @@ export default function GraphCanvas({
       return;
     }
 
-    initialized.current = true;
+    setNodes((prevNodes) =>
+      brainNodes.map((brainNode, index) => {
+        const previousNode = prevNodes.find((node) => node.id === brainNode.id);
 
-    setNodes(
-      brainNodes.map((brainNode, index) => ({
-        id: brainNode.id,
-        type: "default",
-        position: gridPositionForIndex(index),
-        data: {
-          label: brainNode.text,
-          intent: brainNode.intent,
-          active: brainNode.id === activeNodeId,
-          highlight: hoveredNodeId === brainNode.id,
-        },
-      }))
+        return {
+          id: brainNode.id,
+          type: "default",
+          position: gridPositionForIndex(index),
+          data: {
+            label: brainNode.text,
+            intent: brainNode.intent,
+            active: brainNode.id === activeNodeId,
+            highlight: hoveredNodeId === brainNode.id,
+            isNew: previousNode?.data?.isNew ?? false,
+          },
+        };
+      }),
     );
   }, [
     activeNodeId,
@@ -369,6 +391,51 @@ export default function GraphCanvas({
     hoveredNodeId,
     setNodes,
   ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleCreateNode = (event: Event) => {
+      const detail = (event as CustomEvent<{ id?: string; label?: string }>).detail;
+      if (!detail) {
+        return;
+      }
+
+      setNodes((prev) => {
+        const newId = detail.id ?? `filon-node-${Date.now()}`;
+        if (prev.some((node) => node.id === newId)) {
+          return prev;
+        }
+
+        return [
+          ...prev,
+          {
+            id: newId,
+            type: "default",
+            position: gridPositionForIndex(prev.length),
+            data: {
+              label: detail.label ?? "🌐 FILON Visible Node",
+              intent: "add",
+              active: false,
+              highlight: false,
+              isNew: false,
+            },
+          },
+        ];
+      });
+    };
+
+    window.addEventListener("filon:create-node", handleCreateNode as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "filon:create-node",
+        handleCreateNode as EventListener,
+      );
+    };
+  }, [setNodes]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -397,18 +464,20 @@ export default function GraphCanvas({
     };
   }, [normalizeGraphDetail, queue]);
 
-  useEffect(() => {
+  const coachMessage = useMemo(() => {
     if (pending) {
-      setCoachMessage("Tipp: Prüfe die Änderungen, bevor du sie übernimmst.");
-    } else if (status === "saved") {
-      setCoachMessage("Änderung gespeichert ✓");
-    } else if (status === "error") {
-      setCoachMessage("Speichern fehlgeschlagen – bitte erneut versuchen.");
-    } else if (status === "offline") {
-      setCoachMessage("Du bist offline. Änderungen werden lokal zwischengespeichert.");
-    } else {
-      setCoachMessage(null);
+      return "Tipp: Prüfe die Änderungen, bevor du sie übernimmst.";
     }
+    if (status === "saved") {
+      return "Änderung gespeichert ✓";
+    }
+    if (status === "error") {
+      return "Speichern fehlgeschlagen – bitte erneut versuchen.";
+    }
+    if (status === "offline") {
+      return "Du bist offline. Änderungen werden lokal zwischengespeichert.";
+    }
+    return null;
   }, [pending, status]);
 
   useEffect(() => {
@@ -467,7 +536,7 @@ export default function GraphCanvas({
             </div>
             <div className="relative flex-1 min-h-[320px] px-4 pb-4">
               <ReactFlow
-                nodes={nodes}
+                nodes={styledNodes}
                 edges={edges}
                 nodeTypes={nodeTypesMemo}
                 onNodesChange={onNodesChange}
