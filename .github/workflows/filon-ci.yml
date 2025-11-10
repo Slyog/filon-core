@@ -95,6 +95,21 @@ jobs:
           echo "{ \"build\": \"$(date -u)\", \"branch\": \"${{ github.ref_name }}\", \"status\": \"success\" }" > qa/reports/latest.json
           echo "✅ QA report generated."
 
+      - name: 📦 Discord Commit Tracker
+        if: always()
+        uses: tsickert/discord-webhook@v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          embed-title: "📦 New Commit on ${{ github.repository }}"
+          embed-description: |
+            **Message:** ${{ github.event.head_commit.message }}
+            **Author:** ${{ github.actor }}
+            **Branch:** ${{ github.ref_name }}
+          embed-url: "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          embed-color: 3145775
+          embed-footer-text: "FILON Commit Tracker"
+          embed-timestamp: ${{ github.event.head_commit.timestamp }}
+
       # 📡 Discord Notifications
       - name: 📡 Discord Notify (Success)
         if: success()
