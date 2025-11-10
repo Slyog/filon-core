@@ -614,5 +614,53 @@
     "route": "http://localhost:3000/graph/playwright-qa?q=Playwright",
     "status": "passed",
     "title": "axe-core accessibility audit"
+  },
+  {
+    "date": "2025-11-10T23:24:59.926Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "chrome-error://chromewebdata/",
+    "status": "failed",
+    "title": "renders visible node & layers"
+  },
+  {
+    "date": "2025-11-10T23:25:01.561Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "chrome-error://chromewebdata/",
+    "status": "failed",
+    "title": "renders visible node & layers"
+  },
+  {
+    "date": "2025-11-10T23:25:03.331Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "chrome-error://chromewebdata/",
+    "status": "failed",
+    "title": "canvas interactions and zoom"
+  },
+  {
+    "date": "2025-11-10T23:25:04.986Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "chrome-error://chromewebdata/",
+    "status": "failed",
+    "title": "canvas interactions and zoom"
+  },
+  {
+    "date": "2025-11-10T23:25:06.620Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "chrome-error://chromewebdata/",
+    "status": "failed",
+    "title": "axe-core accessibility audit"
+  },
+  {
+    "date": "2025-11-10T23:25:08.180Z",
+    "report": "playwright-report/index.html",
+    "screenshot": "tests/__snapshots__/canvas-visible.png",
+    "route": "chrome-error://chromewebdata/",
+    "status": "failed",
+    "title": "axe-core accessibility audit"
   }
 ]

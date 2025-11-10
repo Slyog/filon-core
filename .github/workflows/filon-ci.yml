@@ -21,6 +21,11 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
+      - name: 🧩 Install pnpm (Global)
+        run: |
+          npm install -g pnpm
+          pnpm --version
+
       # 🧹 Clean old caches / lockfiles
       - name: 🧹 Clean lockfiles & reset cache
         run: |
