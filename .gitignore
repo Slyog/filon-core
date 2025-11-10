@@ -18,3 +18,4 @@ Thumbs.db
 # Build
 out
 build
+.vercel
