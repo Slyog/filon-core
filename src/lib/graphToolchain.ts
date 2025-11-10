@@ -7,6 +7,7 @@ import {
 } from "@/server/graphActions";
 import { getActiveAgent } from "@/server/agentRouter";
 import { recordMetaRun } from "@/lib/metaTracker";
+import { log } from "@/utils/logger";
 
 type SimulateFailureConfig =
   | string
@@ -37,14 +38,11 @@ async function retry<T>(
 
       const result = await fn();
       if (attempt > 1) {
-        console.info(`[FILON Retry] ${label} succeeded on attempt ${attempt}`);
+        log.info(`[Retry] ${label} succeeded on attempt ${attempt}`);
       }
       return result;
     } catch (err) {
-      console.warn(
-        `[FILON Retry] ${label} failed (attempt ${attempt}/${max})`,
-        err
-      );
+      log.warn(`[Retry] ${label} failed (attempt ${attempt}/${max})`, err);
       onRetry?.(attempt, err, max);
       if (attempt < max) {
         await new Promise((resolve) => setTimeout(resolve, delay * attempt));
@@ -102,7 +100,7 @@ export async function graphToolchain(
   options?: GraphToolchainOptions
 ) {
   const agent = await getActiveAgent();
-  console.info(`[FILON AI] Active agent: ${agent.name}`);
+  log.info(`[Toolchain] Active agent ${agent.name}`);
 
   const shouldSimulate = createFailureController(options?.simulateFailure);
   let retries = 0;
@@ -119,7 +117,7 @@ export async function graphToolchain(
         }
       }
     );
-    console.info("[FILON AI] Summary created:", summary);
+    log.info("[Toolchain] Summary created", summary);
 
     const node = await retry(
       () =>
@@ -161,7 +159,7 @@ export async function graphToolchain(
       status: "pass",
     });
 
-    console.info("[FILON AI] Toolchain complete:", node.id);
+    log.info("[Toolchain] complete", node.id);
     return { summary, node, retries };
   } catch (error) {
     const duration = Date.now() - start;

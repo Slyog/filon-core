@@ -1,7 +1,0 @@
-{
-  "spec": "tests/qa-chat-endpoint.spec.ts",
-  "status": "passed",
-  "timestamp": "2025-11-09T23:23:14+00:00",
-  "duration_ms": 101
-}
-

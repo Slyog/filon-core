@@ -10,6 +10,12 @@ coverage/
 test-results/
 tmp/
 
+# QA / Playwright artefacts
+/tests/__snapshots__/
+/tests/__reports__/
+/playwright-report/
+/public/qa/reports/last-run.json
+
 # Proprietary layer exclusions
 /proprietary/*
 !/proprietary/README.md
