@@ -11,6 +11,12 @@
     "agent": "Cursor",
     "duration": 89,
     "status": "passed"
+  },
+  {
+    "step": 35.3,
+    "agent": "Cursor",
+    "duration": 97,
+    "status": "passed"
   }
 ]
 

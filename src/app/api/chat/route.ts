@@ -6,7 +6,7 @@ import {
 import OpenAI from "openai";
 import { z } from "zod";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
-import { summarizeSelection, createNode, linkNodes } from "@/lib/graphTools";
+import { runGraphToolchain } from "@/ai/toolchain/graphToolchain";
 
 const chatMessageSchema = z.discriminatedUnion("role", [
   z.object({
@@ -52,23 +52,25 @@ function registerTool(name: string, handler: ToolHandler) {
   toolHandlers.set(name, handler);
 }
 
+function ensureDefaultTools() {
+  if (!toolHandlers.has("graphToolchain")) {
+    registerTool("graphToolchain", runGraphToolchain);
+  }
+}
+
 async function invokeTool(name: string, input: string) {
+  if (!toolHandlers.has(name)) {
+    ensureDefaultTools();
+  }
   const handler = toolHandlers.get(name);
   if (!handler) {
-    throw new Error(`Tool "${name}" is not registered`);
+    const available = Array.from(toolHandlers.keys()).join(", ") || "none";
+    throw new Error(
+      `Tool "${name}" is not registered (available: ${available})`
+    );
   }
   return handler(input);
 }
-
-registerTool("testGraph", async (input: string) => {
-  const summary = await summarizeSelection(input);
-  const node = await createNode({
-    title: summary.title,
-    content: summary.text,
-  });
-  const link = await linkNodes(summary.parentId, node.id);
-  return { summary, node, link };
-});
 
 function toTextStream(chunks: string[]) {
   return new ReadableStream<Uint8Array>({
@@ -97,6 +99,8 @@ export async function POST(req: Request) {
   }
 
   const { messages } = parsed.data;
+
+  ensureDefaultTools();
 
   const lastUserMessage = [...messages]
     .reverse()
