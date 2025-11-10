@@ -7,8 +7,50 @@ on:
     branches: [dev, main]
 
 jobs:
+  health-check:
+    name: 🔍 QA Health Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧩 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: 📦 Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+          run_install: false
+
+      - name: 🧰 Verify pnpm environment
+        run: |
+          pnpm --version
+          pnpm store path
+
+      - name: 🔒 Verify lockfile integrity
+        run: |
+          echo "Checking pnpm-lock.yaml consistency..."
+          pnpm install --frozen-lockfile --ignore-scripts
+          echo "✅ Lockfile verification complete."
+
+      - name: 🧱 Verify workspace links
+        run: |
+          echo "Checking workspace links..."
+          pnpm recursive exec echo "Workspace OK"
+          echo "✅ Workspace integrity OK."
+
+      - name: 🧹 Cleanup cache
+        run: |
+          pnpm store prune
+
   build-and-test:
     runs-on: ubuntu-latest
+    needs: [health-check]
 
     steps:
       - name: 🧩 Checkout repository
