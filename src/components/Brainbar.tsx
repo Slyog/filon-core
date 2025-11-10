@@ -13,10 +13,11 @@ import { t } from "@/config/strings";
 import { useBrainState } from "@/hooks/useBrainState";
 import { useShallow } from "zustand/react/shallow";
 import { useAICoPilot } from "@/hooks/useAICoPilot";
+import { useAINodeLogger } from "@/hooks/useAINodeLogger";
 import type { BrainCommand, BrainCommandType } from "@/types/brain";
 
 export type BrainbarCommandType = BrainCommandType;
-export interface BrainbarCommand extends BrainCommand {}
+export type BrainbarCommand = BrainCommand;
 
 export interface BrainbarHandle {
   focus: () => void;
@@ -64,6 +65,8 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
       messages: aiMessages,
       isLoading: aiLoading,
     } = useAICoPilot();
+
+    useAINodeLogger(aiMessages);
 
     const hasCommand = value.trimStart().startsWith("/");
 
@@ -331,7 +334,7 @@ const Brainbar = React.forwardRef<BrainbarHandle, BrainbarProps>(
             id="brainbar-ai-input"
             value={aiInput}
             onChange={handleAiInputChange}
-            placeholder="Ask FILON AI..."
+            placeholder="Ask FILON or call graphToolchain(...)"
             className="flex-1 bg-transparent text-sm text-cyan-100 placeholder:text-cyan-200/70 focus:outline-none"
             autoComplete="off"
           />
