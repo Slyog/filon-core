@@ -14,17 +14,22 @@ jobs:
       - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧩 Setup Node.js (Auto-Detect Manager)
+      - name: 🧩 Setup Node.js (LTS)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: 🧩 Install pnpm (Global)
         run: |
           npm install -g pnpm
           pnpm --version
+
+      - name: 🧩 Enable pnpm Cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
 
       # 🧹 Clean old caches / lockfiles
       - name: 🧹 Clean lockfiles & reset cache
