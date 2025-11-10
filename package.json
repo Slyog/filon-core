@@ -25,6 +25,10 @@
     "qa:meta-tracking": "PW_HEADLESS=1 playwright test tests/qa-meta-tracking.spec.ts --project=chromium",
     "qa:node-feedback": "PW_HEADLESS=1 playwright test tests/qa-node-feedback.spec.ts --project=chromium",
     "qa:all": "PW_HEADLESS=1 playwright test --project=chromium",
+    "qa:mock": "cross-env NODE_ENV=test FILON_QA_MODE=mock PW_HEADLESS=1 npm run qa:all && cross-env NODE_ENV=test FILON_QA_MODE=mock node scripts/save-report.mjs --mode=mock",
+    "qa:real": "cross-env NODE_ENV=production FILON_QA_MODE=real PW_HEADLESS=1 npm run qa:all && cross-env NODE_ENV=production FILON_QA_MODE=real node scripts/save-report.mjs --mode=real",
+    "qa:mixed": "cross-env NODE_ENV=test FILON_QA_MODE=mixed PW_HEADLESS=1 npm run qa:all && cross-env NODE_ENV=test FILON_QA_MODE=mixed node scripts/save-report.mjs --mode=mixed",
+    "qa:sweep": "npm run qa:mock && npm run qa:real && npm run qa:mixed && npm run qa:save-report",
     "qa:save-report": "node scripts/save-report.mjs",
     "qa:heal": "PW_HEADLESS=1 node scripts/qa-heal.mjs",
     "qa:snap": "PW_HEADLESS=1 node scripts/regen-snapshots.mjs",
@@ -100,7 +104,8 @@
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5",
-    "wait-on": "^7.2.0"
+    "wait-on": "^7.2.0",
+    "cross-env": "^7.0.3"
   },
   "license": "GPL-3.0"
 }
