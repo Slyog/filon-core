@@ -1,6 +1,6 @@
 "use server"
 
-import { streamText, toAIStreamResponse } from "ai"
+import { streamText, streamToResponse } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { anthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
@@ -19,10 +19,9 @@ const chatMessageSchema = z.object({
 // 🧠 Model chooser (OpenAI <-> Anthropic)
 function selectModel() {
   const provider = process.env.AI_PROVIDER ?? "openai"
-  if (provider === "anthropic") {
-    return anthropic("claude-3-sonnet")
-  }
-  return openai("gpt-4o-mini")
+  return provider === "anthropic"
+    ? anthropic("claude-3-sonnet")
+    : openai("gpt-4o-mini")
 }
 
 // 🚀 Main POST handler (Edge-compatible)
@@ -41,12 +40,9 @@ export async function POST(req: Request) {
     const model = selectModel()
     const start = Date.now()
 
-    const result = await streamText({
-      model,
-      messages,
-    })
+    const result = await streamText({ model, messages })
+    const response = streamToResponse(result)
 
-    const response = toAIStreamResponse(result)
     console.info(`[FILON AI] Stream complete in ${Date.now() - start} ms`)
     return response
   } catch (err: any) {
