@@ -10,10 +10,10 @@ jobs:
   qa:
     runs-on: ubuntu-latest
     steps:
-      # === Setup ===
       - name: 🧩 Checkout Repository
         uses: actions/checkout@v4
 
+      # === Force pnpm-first setup ===
       - name: 🧩 Setup Node.js + pnpm
         uses: actions/setup-node@v4
         with:
@@ -21,15 +21,23 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: 📦 Install pnpm
-        run: npm install -g pnpm
+      - name: 📦 Install pnpm globally
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.12.0 --activate
+          pnpm --version
+
+      - name: 📦 Clean old lockfiles
+        run: |
+          rm -f package-lock.json yarn.lock npm-shrinkwrap.json
+          echo "✅ Removed npm/yarn lockfiles."
 
       - name: 📦 Install Dependencies (pnpm)
         run: |
-          echo "📦 Installing dependencies using pnpm..."
+          echo "📦 Installing dependencies via pnpm..."
           pnpm install --no-frozen-lockfile || pnpm install
 
-      # === Environment + Prisma ===
+      # === Prisma Env + Generate ===
       - name: 🧪 Setup SQLite fallback for Prisma
         run: |
           echo 'DATABASE_URL="file:./ci.db"' > .env
@@ -39,11 +47,12 @@ jobs:
         run: |
           npx prisma generate || (pnpm install && npx prisma generate)
 
-      # === QA ===
+      # === Run QA ===
       - name: 🚀 Run Playwright QA Tests
         run: |
-          mkdir -p tests/__snapshots__/autosave playwright-report
-          echo "🚀 Running Playwright QA tests..."
+          mkdir -p tests/__snapshots__/autosave
+          mkdir -p playwright-report
+          echo "🚀 Running Playwright tests..."
           pnpm run qa:all || (
             echo "⚠️ QA failed, retrying..." &&
             npx prisma generate &&
@@ -51,17 +60,19 @@ jobs:
             pnpm run qa:all || echo "❌ QA tests failed after retry."
           )
 
+      # === Upload QA Reports (no more warnings) ===
       - name: 📤 Upload QA Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: qa-dashboard
+          name: qa-artifacts
           path: |
             tests/__snapshots__/autosave
             playwright-report
             qa/reports
+          if-no-files-found: ignore
 
-      # === Discord Notifications ===
+      # === Discord Notify (Success/Failure) ===
       - name: ✅ Discord Notify (Success)
         if: success()
         uses: tsickert/discord-webhook@v7.0.0
