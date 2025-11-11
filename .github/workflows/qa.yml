@@ -24,10 +24,10 @@ jobs:
       - name: 📦 Install pnpm
         run: npm install -g pnpm
 
-      - name: 🧹 Clean workspace
+      - name: 📦 Install Dependencies (pnpm)
         run: |
-          rm -rf node_modules .next dist .turbo
-          pnpm store prune || true
+          echo "📦 Installing dependencies using pnpm..."
+          pnpm install --no-frozen-lockfile || pnpm install
 
       # === Environment + Prisma ===
       - name: 🧪 Setup SQLite fallback for Prisma
@@ -37,18 +37,29 @@ jobs:
 
       - name: 🧬 Generate Prisma Client
         run: |
-          pnpm install --no-frozen-lockfile
           npx prisma generate || (pnpm install && npx prisma generate)
 
       # === QA ===
       - name: 🚀 Run Playwright QA Tests
         run: |
+          mkdir -p tests/__snapshots__/autosave playwright-report
+          echo "🚀 Running Playwright QA tests..."
           pnpm run qa:all || (
             echo "⚠️ QA failed, retrying..." &&
             npx prisma generate &&
             sleep 5 &&
             pnpm run qa:all || echo "❌ QA tests failed after retry."
           )
+
+      - name: 📤 Upload QA Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-dashboard
+          path: |
+            tests/__snapshots__/autosave
+            playwright-report
+            qa/reports
 
       # === Discord Notifications ===
       - name: ✅ Discord Notify (Success)
