@@ -89,6 +89,10 @@ jobs:
       - name: 🏗️ Build Application
         run: pnpm run build
 
+      # Ensure TypeScript types stay correct (including AI SDK usage)
+      - name: 🧠 Type Check + AI SDK Validation
+        run: pnpm exec tsc --noEmit
+
       # Execute Playwright QA smoke suite with retry
       - name: 🚀 Run Playwright QA Tests
         env:
