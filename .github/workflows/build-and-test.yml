@@ -56,6 +56,14 @@ jobs:
           corepack prepare pnpm@9.12.0 --activate
           pnpm --version
 
+      - name: 🔁 Fallback: ensure pnpm available
+        shell: bash
+        run: |
+          if ! command -v pnpm &> /dev/null; then
+            echo "⚠️ Corepack failed, installing pnpm manually..."
+            npm install -g pnpm@9.12.0
+          fi
+
       # Remove foreign lockfiles to avoid conflicts
       - name: 🧹 Clean npm/yarn lockfiles
         run: |
