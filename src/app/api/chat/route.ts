@@ -6,7 +6,6 @@ import { anthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
 import { runGraphToolchain } from "@/ai/toolchain/graphToolchain"
 
-// 🧩 Message schema
 const chatMessageSchema = z.object({
   messages: z.array(
     z.object({
@@ -16,7 +15,6 @@ const chatMessageSchema = z.object({
   ),
 })
 
-// 🧠 Model chooser (OpenAI <-> Anthropic)
 function selectModel() {
   const provider = process.env.AI_PROVIDER ?? "openai"
   return provider === "anthropic"
@@ -24,16 +22,15 @@ function selectModel() {
     : openai("gpt-4o-mini")
 }
 
-// 🚀 Main POST handler (Edge-compatible)
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const { messages } = chatMessageSchema.parse(body)
 
-    // Tool short-circuit (FILON graph tools)
+    // ✅ Correct: pass content only
     const toolCall = messages.find((m) => m.role === "tool")
     if (toolCall) {
-      const result = await runGraphToolchain(toolCall)
+      const result = await runGraphToolchain(toolCall.content)
       return new Response(JSON.stringify(result), { status: 200 })
     }
 
