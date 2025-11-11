@@ -18,51 +18,45 @@ jobs:
       # Disable npm so installs must use pnpm
       - name: 🚫 Disable npm globally
         run: |
-          NPM_BIN="$(which npm)"
+          NPM_BIN="$(command -v npm || true)"
           if [ -n "$NPM_BIN" ] && [ -e "$NPM_BIN" ]; then
             sudo mv "$NPM_BIN" "${NPM_BIN}.bak"
+            echo "DISABLED_NPM_BIN=${NPM_BIN}.bak" >> $GITHUB_ENV
           fi
 
-      # Prepare Node runtime and pnpm cache
-      - name: 🧩 Setup Node.js
+      # Prepare Node runtime with pnpm support
+      - name: 🧩 Setup Node.js (20.x)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
-
-      # Restore pnpm store for faster installs
-      - name: 📦 Restore pnpm store cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-store-${{ runner.os }}-
-
-      # Restore Playwright browser binaries
-      - name: 🎭 Restore Playwright cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
+          check-latest: true
 
       # Turn on pnpm via corepack
-      - name: 📦 Activate pnpm
+      - name: ⚙️ Enable Corepack and install pnpm
+        shell: bash
         run: |
           corepack enable
           corepack prepare pnpm@9.12.0 --activate
-          pnpm --version
+          echo "✅ pnpm version: $(pnpm --version)"
 
-      - name: 🔁 Fallback: ensure pnpm available
-        shell: bash
+      # Restore pnpm and Playwright caches
+      - name: 💾 Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: 🔁 Verify pnpm availability
         run: |
           if ! command -v pnpm &> /dev/null; then
-            echo "⚠️ Corepack failed, installing pnpm manually..."
+            echo "⚠️ Corepack not applied properly, reinstalling pnpm..."
             npm install -g pnpm@9.12.0
           fi
+          pnpm --version
 
       # Remove foreign lockfiles to avoid conflicts
       - name: 🧹 Clean npm/yarn lockfiles

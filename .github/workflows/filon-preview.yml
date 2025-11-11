@@ -22,28 +22,38 @@ jobs:
             sudo mv "$NPM_BIN" "${NPM_BIN}.bak"
           fi
 
-      # Setup Node and enable pnpm caching
-      - name: 🧩 Setup Node.js
+      # Setup Node and prepare pnpm support
+      - name: 🧩 Setup Node.js (20.x)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          check-latest: true
 
-      # Restore pnpm store cache
-      - name: 📦 Restore pnpm store cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            pnpm-store-${{ runner.os }}-
-
-      # Activate pnpm through corepack
-      - name: 📦 Activate pnpm
+      # Enable Corepack-managed pnpm
+      - name: ⚙️ Enable Corepack and install pnpm
         run: |
           corepack enable
           corepack prepare pnpm@9.12.0 --activate
+          echo "✅ pnpm version: $(pnpm --version)"
+
+      # Restore pnpm and Playwright caches
+      - name: 💾 Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pnpm-store
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      # Ensure pnpm CLI is in PATH
+      - name: 🔁 Verify pnpm availability
+        run: |
+          if ! command -v pnpm &> /dev/null; then
+            echo "⚠️ Corepack not applied properly, reinstalling pnpm..."
+            npm install -g pnpm@9.12.0
+          fi
           pnpm --version
 
       # Remove conflicting lockfiles
