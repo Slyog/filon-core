@@ -55,6 +55,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.44",
+    "@ai-sdk/openai": "^2.0.65",
     "@automerge/automerge": "^3.2.0",
     "@emotion/is-prop-valid": "^1.4.0",
     "@prisma/client": "^6.18.0",
@@ -65,6 +67,7 @@
     "clsx": "^2.1.1",
     "dexie": "^4.2.1",
     "dotenv": "^17.2.3",
+    "filon-proprietary": "link:./stubs/filon-proprietary",
     "framer-motion": "^12.23.24",
     "localforage": "^1.10.0",
     "lucide-react": "^0.469.0",
@@ -81,8 +84,7 @@
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.3.1",
     "zod": "^3.25.76",
-    "zustand": "^5.0.8",
-    "filon-proprietary": "link:./stubs/filon-proprietary"
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

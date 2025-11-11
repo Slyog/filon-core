@@ -2,7 +2,7 @@ name: FILON CI/CD Pipeline
 
 on:
   push:
-    branches: [ dev, main ]
+    branches: [dev, main]
   pull_request:
 
 jobs:
@@ -11,69 +11,60 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # 🧩 Checkout
       - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧩 Setup Node.js (LTS)
+      # 🧩 Setup Node.js + pnpm cache
+      - name: 🧩 Setup Node.js (LTS + pnpm cache)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-
-      - name: 🧩 Install pnpm (Global)
-        run: |
-          npm install -g pnpm
-          pnpm --version
-
-      - name: 🧩 Enable pnpm Cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
+          cache: "pnpm"
           cache-dependency-path: pnpm-lock.yaml
 
-      # 🧹 Clean old caches / lockfiles
-      - name: 🧹 Clean lockfiles & reset cache
-        run: |
-          echo "🧹 Cleaning node_modules and lockfiles..."
-          rm -rf node_modules package-lock.json pnpm-lock.yaml
-          npm cache clean --force || true
-          echo "✅ Clean state ready."
+      # 🧩 Install pnpm (official action)
+      - name: 🧩 Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+          run_install: false
 
       # 🧪 Create fallback env for Prisma
       - name: 🧪 Setup SQLite fallback for Prisma
-        working-directory: ${{ github.workspace }}
         run: |
-          echo "DATABASE_URL=\"file:./ci.db\"" > .env
+          echo 'DATABASE_URL="file:./ci.db"' > .env
           echo "✅ Created fallback DATABASE_URL at $(pwd)/.env"
-          cat .env
 
-      # 📦 Install deps (pnpm preferred)
+      # 📦 Install dependencies (deterministic)
       - name: 📦 Install Dependencies
         run: |
-          if [ -f pnpm-lock.yaml ]; then
-            npm install -g pnpm
-            pnpm install
-          else
-            npm ci
+          echo "📦 Installing dependencies via pnpm..."
+          if [ ! -f pnpm-lock.yaml ]; then
+            echo "::warning::pnpm-lock.yaml missing — generating temporary lockfile"
+            pnpm install --lockfile-only
           fi
+          pnpm install --frozen-lockfile
+          pnpm store prune
+          echo "✅ Dependencies installed."
 
-      # 🛡️ Ensure prerequisites exist before build
+      # 🛡️ CI sanity check
       - name: 🛡️ CI Sanity Check
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           set -e
           echo "🔍 Verifying CI prerequisites..."
-          if [ ! -f .env ] || [ ! -s .env ]; then
+          if [ ! -s .env ]; then
             echo "::error ::Missing or empty .env file for Prisma."
             exit 1
           fi
           if [ ! -f prisma/schema.prisma ]; then
-            echo "::error ::Prisma schema not found at prisma/schema.prisma."
+            echo "::error ::Prisma schema not found."
             exit 1
           fi
           if [ -z "$DISCORD_WEBHOOK_URL" ]; then
-            echo "::error ::DISCORD_WEBHOOK_URL secret is empty or undefined."
+            echo "::error ::Missing Discord webhook secret."
             exit 1
           fi
           echo "✅ CI prerequisites look good."
@@ -82,18 +73,18 @@ jobs:
       - name: 🧬 Generate Prisma Client
         run: |
           echo "🧬 Generating Prisma client..."
-          npx prisma generate || (echo "⚠️ Prisma generation failed — retrying with npm reinstall" && npm install && npx prisma generate)
+          npx prisma generate || (echo "⚠️ Retry Prisma generation..." && pnpm install && npx prisma generate)
           echo "✅ Prisma client ready."
 
       # 🧪 Run Playwright QA suite
       - name: 🧪 Run QA Suite (Auto-Retry)
         run: |
           echo "🚀 Running Playwright QA tests..."
-          npm run qa:all || (
+          pnpm run qa:all || (
             echo "⚠️ QA failed, retrying..." &&
             npx prisma generate &&
             sleep 5 &&
-            npm run qa:all ||
+            pnpm run qa:all ||
             echo "❌ QA tests failed after retry."
           )
 
@@ -105,48 +96,54 @@ jobs:
           echo "{ \"build\": \"$(date -u)\", \"branch\": \"${{ github.ref_name }}\", \"status\": \"success\" }" > qa/reports/latest.json
           echo "✅ QA report generated."
 
+      # 📦 Discord Commit Tracker
       - name: 📦 Discord Commit Tracker
         if: always()
         uses: tsickert/discord-webhook@v7.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "📦 New Commit on ${{ github.repository }}"
-          embed-description: |
-            **Message:** ${{ github.event.head_commit.message }}
-            **Author:** ${{ github.actor }}
-            **Branch:** ${{ github.ref_name }}
-          embed-url: "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
-          embed-color: 3145775
-          embed-footer-text: "FILON Commit Tracker"
-          embed-timestamp: ${{ github.event.head_commit.timestamp }}
+          content: |
+            {
+              "embeds": [{
+                "title": "📦 New Commit on ${{ github.repository }}",
+                "description": "**Message:** ${{ github.event.head_commit.message }}\n**Author:** ${{ github.actor }}\n**Branch:** ${{ github.ref_name }}",
+                "url": "https://github.com/${{ github.repository }}/commit/${{ github.sha }}",
+                "color": 3145775,
+                "footer": { "text": "FILON Commit Tracker" },
+                "timestamp": "${{ github.event.head_commit.timestamp }}"
+              }]
+            }
 
-      # 📡 Discord Notifications
+      # 📡 Discord Notify (Success)
       - name: 📡 Discord Notify (Success)
         if: success()
         uses: tsickert/discord-webhook@v7.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "🚀 FILON CI Passed"
-          embed-description: |
-            **Branch:** ${{ github.ref_name }}
-            **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            **Status:** ✅ Success
-            **Author:** ${{ github.actor }}
-          embed-color: 3145775
-          embed-footer-text: "FILON Auto-Heal CI"
-          embed-timestamp: ${{ github.event.head_commit.timestamp }}
+          content: |
+            {
+              "embeds": [{
+                "title": "🚀 FILON CI Passed",
+                "description": "**Branch:** ${{ github.ref_name }}\n**Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\n**Status:** ✅ Success\n**Author:** ${{ github.actor }}",
+                "color": 3145775,
+                "footer": { "text": "FILON Auto-Heal CI" },
+                "timestamp": "${{ github.event.head_commit.timestamp }}"
+              }]
+            }
 
+      # 🔴 Discord Notify (Failure)
       - name: 🔴 Discord Notify (Failure)
         if: failure()
         uses: tsickert/discord-webhook@v7.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          embed-title: "❌ FILON CI Failed"
-          embed-description: |
-            **Branch:** ${{ github.ref_name }}
-            **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
-            **Status:** ❌ Failure
-            **Action Required:** Check QA logs on GitHub.
-          embed-color: 16711680
-          embed-footer-text: "FILON Auto-Heal CI"
-          embed-timestamp: ${{ github.event.head_commit.timestamp }}
+          content: |
+            {
+              "embeds": [{
+                "title": "❌ FILON CI Failed",
+                "description": "**Branch:** ${{ github.ref_name }}\n**Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\n**Status:** ❌ Failure\n**Action Required:** Check QA logs on GitHub.",
+                "color": 16711680,
+                "footer": { "text": "FILON Auto-Heal CI" },
+                "timestamp": "${{ github.event.head_commit.timestamp }}"
+              }]
+            }
