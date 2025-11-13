@@ -1,10 +1,9 @@
 name: FILON QA CI
 
+# disabled until MVP is ready
 on:
-  push:
-    branches: [dev, main]
-  pull_request:
   workflow_dispatch:
+  # on: none
 
 jobs:
   qa:

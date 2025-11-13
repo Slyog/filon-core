@@ -1,10 +1,9 @@
 name: 📡 Discord Commit Notify
 
+# disabled until MVP is ready
 on:
-  push:
-    branches:
-      - "**"
   workflow_dispatch:
+  # on: none
 
 jobs:
   notify:

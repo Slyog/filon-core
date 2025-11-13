@@ -1,9 +1,9 @@
 name: FILON Preview Deploy
 
+# disabled until MVP is ready
 on:
-  push:
-    branches: [dev, main]
   workflow_dispatch:
+  # on: none
 
 jobs:
   preview:
