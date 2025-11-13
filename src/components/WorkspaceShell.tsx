@@ -3,16 +3,15 @@ import { ReactNode, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { QAEntry } from "@/store/QAStore";
 import dynamic from "next/dynamic";
-import { ActiveNodeProvider } from "@/context/ActiveNodeContext";
-import { MindProgressProvider } from "@/context/MindProgressContext";
+// ActiveNodeProvider and MindProgressProvider removed in FILON v4
 import { useSessionStore } from "@/store/SessionStore";
 import Sidebar from "@/components/Sidebar";
 import SessionTabs from "@/components/SessionTabs";
 import WorkspaceList from "@/components/WorkspaceList";
 import WorkspaceHeader from "@/components/WorkspaceHeader";
 
-const GraphCanvas = dynamic(
-  () => import("@/components/GraphCanvas.client").then((mod) => mod.default),
+const GoalView = dynamic(
+  () => import("@/components/GoalView").then((mod) => mod.default),
   { ssr: false }
 );
 
@@ -70,41 +69,37 @@ export default function WorkspaceShell({
   }, []);
 
   return (
-    <ActiveNodeProvider>
-      <MindProgressProvider>
-        <div className="workspace-grid min-h-screen bg-[#0A0F12] text-white relative">
-          {/* Header */}
-          <header className="fixed top-0 left-0 w-full h-12 flex items-center justify-between px-6 border-b border-white/10 bg-[rgba(10,15,18,0.7)] backdrop-blur-md z-50">
-            <h1 className="font-semibold tracking-wide text-cyan-400">FILON</h1>
-            <div className="text-xs opacity-70">Visual Workspace Alpha</div>
-          </header>
+    <div className="workspace-grid min-h-screen bg-[#0A0F12] text-white relative">
+      {/* Header */}
+      <header className="fixed top-0 left-0 w-full h-12 flex items-center justify-between px-6 border-b border-white/10 bg-[rgba(10,15,18,0.7)] backdrop-blur-md z-50">
+        <h1 className="font-semibold tracking-wide text-cyan-400">FILON</h1>
+        <div className="text-xs opacity-70">FILON v4 Adaptive Step Engine</div>
+      </header>
 
-          {/* Workspace List */}
-          <div className="fixed top-12 left-0 w-full z-40">
-            <WorkspaceList />
-          </div>
+      {/* Workspace List */}
+      <div className="fixed top-12 left-0 w-full z-40">
+        <WorkspaceList />
+      </div>
 
-          {/* Workspace Header */}
-          <div className="fixed top-[60px] left-0 w-full z-[39]">
-            <WorkspaceHeader />
-          </div>
+      {/* Workspace Header */}
+      <div className="fixed top-[60px] left-0 w-full z-[39]">
+        <WorkspaceHeader />
+      </div>
 
-          {/* Session Tabs Bar - positioned below WorkspaceHeader */}
-          <div className="fixed top-[108px] left-0 w-full z-38">
-            <SessionTabs />
-          </div>
+      {/* Session Tabs Bar - positioned below WorkspaceHeader */}
+      <div className="fixed top-[108px] left-0 w-full z-38">
+        <SessionTabs />
+      </div>
 
-          {/* Body */}
-          <main className="flex flex-1 overflow-hidden pt-[140px]">
-            <aside className="w-64 border-r border-white/10">
-              <Sidebar />
-            </aside>
-            <section className="flex-1 relative overflow-hidden">
-              {children || <GraphCanvas sessionId={sessionId} />}
-            </section>
-          </main>
-        </div>
-      </MindProgressProvider>
-    </ActiveNodeProvider>
+      {/* Body */}
+      <main className="flex flex-1 overflow-hidden pt-[140px]">
+        <aside className="w-64 border-r border-white/10">
+          <Sidebar />
+        </aside>
+        <section className="flex-1 relative overflow-hidden">
+          {children || <GoalView goalId={sessionId} />}
+        </section>
+      </main>
+    </div>
   );
 }

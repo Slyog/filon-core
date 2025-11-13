@@ -3,8 +3,7 @@ import Automerge, { loadAutomerge } from "@/lib/automergeClient";
 import type { Doc } from "@automerge/automerge";
 import { syncLambdaHandler } from "./syncLambdaHandler";
 import type { SyncEvent } from "./syncSchema";
-import type { GraphDoc } from "@/types/graph";
-import { createEmptyGraphDoc } from "@/types/graph";
+import type { Goal } from "@/types/filon";
 
 // Ensure Automerge is loaded before use
 let automergeReady = false;
@@ -16,17 +15,22 @@ async function ensureAutomerge() {
   }
 }
 
-export type AutomergeGraphDoc = Doc<GraphDoc>;
+// FILON v4: Using Goal-based documents instead of GraphDoc
+export type AutomergeGoalDoc = Doc<{
+  goal: Goal;
+  sessionId: string;
+  docId?: string;
+}>;
 
 /**
  * Applies a change to an Automerge document
  */
-export type GraphChangeFn = (doc: GraphDoc) => void;
+export type GoalChangeFn = (doc: { goal: Goal; sessionId: string; docId?: string }) => void;
 
 export async function applyChange(
-  doc: AutomergeGraphDoc,
-  change: GraphChangeFn
-): Promise<AutomergeGraphDoc> {
+  doc: AutomergeGoalDoc,
+  change: GoalChangeFn
+): Promise<AutomergeGoalDoc> {
   try {
     await ensureAutomerge();
     return Automerge.change(doc, change);
@@ -39,7 +43,7 @@ export async function applyChange(
 /**
  * Converts Automerge document to binary format
  */
-export async function getBinary(doc: AutomergeGraphDoc): Promise<Uint8Array> {
+export async function getBinary(doc: AutomergeGoalDoc): Promise<Uint8Array> {
   try {
     await ensureAutomerge();
     return Automerge.save(doc);
@@ -54,10 +58,10 @@ export async function getBinary(doc: AutomergeGraphDoc): Promise<Uint8Array> {
  */
 export async function loadBinary(
   binary: Uint8Array
-): Promise<AutomergeGraphDoc> {
+): Promise<AutomergeGoalDoc> {
   try {
     await ensureAutomerge();
-    return Automerge.load<GraphDoc>(binary);
+    return Automerge.load<{ goal: Goal; sessionId: string; docId?: string }>(binary);
   } catch (err) {
     console.error("[SYNC] Error loading from binary:", err);
     throw err;
@@ -65,17 +69,24 @@ export async function loadBinary(
 }
 
 /**
- * Creates an empty Automerge document seeded with default graph metadata.
+ * Creates an empty Automerge document seeded with default goal metadata.
  */
-export async function createAutomergeGraphDoc(
+export async function createAutomergeGoalDoc(
   sessionId: string,
-  docId?: string
-): Promise<AutomergeGraphDoc> {
+  goalId?: string
+): Promise<AutomergeGoalDoc> {
   await ensureAutomerge();
-  const seed = createEmptyGraphDoc({ sessionId, docId });
-  return Automerge.from<GraphDoc & Record<string, unknown>>(
-    seed as GraphDoc & Record<string, unknown>
-  );
+  const seed = {
+    goal: {
+      id: goalId || crypto.randomUUID(),
+      title: "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Goal,
+    sessionId,
+    docId: goalId,
+  };
+  return Automerge.from<{ goal: Goal; sessionId: string; docId?: string }>(seed);
 }
 
 /**

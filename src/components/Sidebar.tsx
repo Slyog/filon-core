@@ -4,7 +4,7 @@ import { useSessionStore, type Session } from "@/store/SessionStore";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import GraphPreview from "./GraphPreview";
+// GraphPreview removed in FILON v4
 import QAPanel from "./QAPanel";
 import { useUIShellStore } from "@/store/UIShellStore";
 import FilonLogo from "@/app/filon-logo/filon-logo-transparent.png";
@@ -90,7 +90,7 @@ export default function Sidebar() {
         onClick={handleNew}
         className="w-full px-4 py-2 bg-[var(--accent)] text-black rounded-lg hover:opacity-90 transition mb-3"
       >
-        ➕ New Graph
+        ➕ New Goal
       </button>
 
       {/* Search Bar */}
@@ -121,7 +121,7 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto space-y-3">
         {filtered.length === 0 && (
           <p className="opacity-60 text-xs mt-4 text-center">
-            No matching graphs.
+            No matching goals.
           </p>
         )}
 
@@ -170,7 +170,7 @@ export default function Sidebar() {
               </p>
             )}
 
-            <GraphPreview nodes={[]} edges={[]} />
+            {/* GraphPreview removed in FILON v4 */}
           </div>
         ))}
       </div>
@@ -202,22 +202,29 @@ export default function Sidebar() {
             const store = useSessionStore.getState();
             const active = store.activeSessionId;
             if (!active) {
-              alert("No active graph.");
+              alert("No active goal.");
               return;
             }
             try {
-              const storage = await import("@/lib/sessionStorage");
-              const { loadGraphFromSession } = storage;
-              const graph = await loadGraphFromSession(active);
-              const io = await import("@/lib/graphIO");
-              io.downloadJSON(
-                io.exportGraphJSON(graph.nodes, graph.edges),
-                `filon-${active}.json`
-              );
+              // Export goal data (graphIO removed in FILON v4)
+              const response = await fetch(`/api/goals/${active}`);
+              if (!response.ok) {
+                throw new Error("Failed to fetch goal");
+              }
+              const { goal } = await response.json();
+              const blob = new Blob([JSON.stringify(goal, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `filon-goal-${active}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
             } catch (error) {
               console.error("Export error:", error);
               alert(
-                `Failed to export graph: ${
+                `Failed to export goal: ${
                   error instanceof Error ? error.message : "Unknown error"
                 }`
               );
@@ -238,25 +245,28 @@ export default function Sidebar() {
               const file = e.target.files?.[0];
               if (!file) return;
               try {
-                const io = await import("@/lib/graphIO");
-                const { nodes, edges } = await io.importGraphJSON(file);
-                const { activeSessionId } = useSessionStore.getState();
-                if (!activeSessionId) {
-                  alert("No active session. Please open a graph first.");
-                  e.target.value = ""; // Clear file input
-                  return;
-                }
-                const storage = await import("@/lib/sessionStorage");
-                await storage.saveGraphToSession(activeSessionId, {
-                  nodes,
-                  edges,
+                const text = await file.text();
+                const goal = JSON.parse(text);
+                // Import goal data (graphIO removed in FILON v4)
+                const response = await fetch("/api/goals", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    title: goal.title || "Imported Goal",
+                    description: goal.description,
+                    userProfileSnapshot: goal.userProfileSnapshot,
+                  }),
                 });
+                if (!response.ok) {
+                  throw new Error("Failed to import goal");
+                }
+                const { goal: newGoal } = await response.json();
                 e.target.value = ""; // Clear file input
-                location.reload();
+                router.push(`/f/${newGoal.id}`);
               } catch (error) {
                 console.error("Import error:", error);
                 alert(
-                  `Failed to import graph: ${
+                  `Failed to import goal: ${
                     error instanceof Error ? error.message : "Unknown error"
                   }`
                 );

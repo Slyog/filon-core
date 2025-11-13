@@ -2,7 +2,7 @@ import {
   applyChange,
   getBinary,
   loadBinary,
-  createAutomergeGraphDoc,
+  createAutomergeGoalDoc,
 } from "../sync/automergeAdapter";
 import { syncLambdaHandler } from "../sync/syncLambdaHandler";
 import fs from "fs";
@@ -14,8 +14,8 @@ async function testSyncFlow() {
   const mockChange = {
     userId: "testUser",
     sessionId: "s123",
-    diffSummary: "added node A",
-    change: { type: "addNode", nodeId: "A" },
+    diffSummary: "added goal",
+    change: { type: "addGoal", goalId: "g123" },
   };
 
   // Step 1 – Commit
@@ -50,19 +50,15 @@ async function testSyncFlow() {
 
   // Step 4 – Offline → Online merge simulation
   console.log("[TEST] Simulate offline merge");
-  const doc = await createAutomergeGraphDoc("s123");
+  const doc = await createAutomergeGoalDoc("s123", "g123");
   const updated = await applyChange(doc, (draft) => {
-    draft.nodes.push({
-      id: "A",
-      position: { x: 0, y: 0 },
-      type: "default",
-      data: {
-        label: "test",
-        thoughtType: "Idea",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    });
+    draft.goal = {
+      id: "g123",
+      title: "Test Goal",
+      description: "Test goal for sync flow",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   });
   const binary = await getBinary(updated);
   const reloaded = await loadBinary(binary);

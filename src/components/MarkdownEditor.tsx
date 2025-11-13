@@ -1,38 +1,43 @@
 "use client";
 
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import localforage from "localforage";
-import { useActiveNode } from "@/context/ActiveNodeContext";
-import { GraphContext } from "@/components/GraphCanvas.client";
+import { useGoalState } from "@/hooks/useGoalState";
 
 export default function MarkdownEditor() {
-  const { activeNodeId } = useActiveNode();
-  const graph = useContext(GraphContext);
+  const { currentGoal, activeStepId } = useGoalState();
   const [content, setContent] = useState("");
 
-  // 🔄 Notiz laden, wenn Node wechselt
+  // Load note when step changes
   useEffect(() => {
-    if (!activeNodeId) return;
-    localforage.getItem(`note-${activeNodeId}`).then((saved) => {
+    if (!activeStepId) return;
+    localforage.getItem(`note-${activeStepId}`).then((saved) => {
       setContent((saved as string) || "");
     });
-  }, [activeNodeId]);
+  }, [activeStepId]);
 
-  // 💾 Änderungen speichern
+  // Save changes
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
-    if (activeNodeId && graph) {
-      graph.updateNodeNote(activeNodeId, newContent);
-      localforage.setItem(`note-${activeNodeId}`, newContent);
+    if (activeStepId) {
+      localforage.setItem(`note-${activeStepId}`, newContent);
     }
   };
+
+  if (!currentGoal) {
+    return (
+      <div className="bg-[#1e1e1e] p-4 rounded-xl text-white">
+        <p className="text-gray-400">No goal selected</p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#1e1e1e] p-4 rounded-xl text-white">
       <textarea
         className="w-full h-40 bg-[#2d2d2d] text-white p-2 rounded-lg resize-none"
-        placeholder={`Notiz zu Node ${activeNodeId || "…"}`}
+        placeholder={`Note for step ${activeStepId || "…"}`}
         value={content}
         onChange={handleChange}
       />

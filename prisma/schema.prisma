@@ -8,26 +8,28 @@ datasource db {
 }
 
 model Goal {
-  id                  String        @id @default(cuid())
-  title               String
-  description         String?
+  id                 String @id @default(cuid())
+  title              String
+  description        String?
   userProfileSnapshot Json?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  tracks              Track[]
-  journeyState        JourneyState?
-  scores              Score[]
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tracks       Track[]
+  scores       Score[]
+  journeyState JourneyState?
 }
 
 model Track {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   goalId      String
-  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  goal        Goal @relation(fields: [goalId], references: [id])
   type        TrackType
-  score       Int      @default(0)
+  score       Int @default(0)
   aiReasoning String?
   createdAt   DateTime @default(now())
-  steps       Step[]
+
+  steps Step[]
 }
 
 enum TrackType {
@@ -38,17 +40,18 @@ enum TrackType {
 }
 
 model Step {
-  id           String   @id @default(cuid())
+  id           String @id @default(cuid())
   trackId      String
-  track        Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  track        Track @relation(fields: [trackId], references: [id])
   title        String
   detail       String?
-  difficulty   Int      @default(1)
-  timeEstimate Int      @default(15)
-  dependencies Json     @default("[]")
+  difficulty   Int @default(1)
+  timeEstimate Int @default(15)
+  dependencies Json
   state        StepState @default(todo)
   createdAt    DateTime @default(now())
-  actions      Action[]
+
+  actions Action[]
 }
 
 enum StepState {
@@ -58,15 +61,15 @@ enum StepState {
 }
 
 model Action {
-  id      String  @id @default(cuid())
+  id      String @id @default(cuid())
   stepId  String
-  step    Step    @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  step    Step @relation(fields: [stepId], references: [id])
   title   String
   done    Boolean @default(false)
 }
 
 model Score {
-  id            String      @id @default(cuid())
+  id            String @id @default(cuid())
   targetType    ScoreTarget
   targetId      String
   realism       Int
@@ -74,9 +77,10 @@ model Score {
   userFit       Int
   marketReality Int
   overallScore  Int
-  createdAt     DateTime    @default(now())
-  goalId        String?
-  goal          Goal?       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+
+  goalId String?
+  goal   Goal? @relation(fields: [goalId], references: [id])
 }
 
 enum ScoreTarget {
@@ -86,12 +90,12 @@ enum ScoreTarget {
 }
 
 model JourneyState {
-  id             String   @id @default(cuid())
-  goalId         String   @unique
-  goal           Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  activeStepId   String?
+  id            String @id @default(cuid())
+  goalId        String @unique
+  goal          Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  activeStepId  String?
   nextSuggestion String?
   stuckReason    String?
-  progress       Int      @default(0)
+  progress       Int @default(0)
   updatedAt      DateTime @updatedAt
 }

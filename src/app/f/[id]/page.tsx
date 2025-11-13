@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import WorkspaceLayout from "@/components/layout/WorkspaceLayout";
-import GraphCanvas from "@/components/GraphCanvas.client";
+import GoalView from "@/components/GoalView";
 import { useSessionStore } from "@/store/SessionStore";
 
 export default function WorkspacePage() {
@@ -94,7 +94,7 @@ export default function WorkspacePage() {
 
   return (
     <WorkspaceLayout>
-      <GraphCanvas sessionId={id} initialThought={initialThought ?? undefined} />
+      <GoalView goalId={id} />
     </WorkspaceLayout>
   );
 }

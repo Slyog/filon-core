@@ -7,30 +7,31 @@ export default function Home() {
   const [input, setInput] = useState("");
   const router = useRouter();
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const thought = input.trim();
-    if (!thought) return;
+    const goalTitle = input.trim();
+    if (!goalTitle) return;
 
-    const workspaceId =
-      typeof window !== "undefined" &&
-      typeof window.crypto?.randomUUID === "function"
-        ? window.crypto.randomUUID()
-        : `ws-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+    try {
+      // Create goal via API
+      const response = await fetch("/api/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: goalTitle }),
+      });
 
-    if (typeof window !== "undefined") {
-      try {
-        window.localStorage.setItem("lastWorkspaceId", workspaceId);
-        window.localStorage.setItem(
-          `workspaceTitle:${workspaceId}`,
-          thought
-        );
-      } catch (_error) {
-        // Ignore storage restrictions
+      if (!response.ok) {
+        console.error("Failed to create goal");
+        return;
       }
-    }
 
-    router.push(`/f/${workspaceId}?q=${encodeURIComponent(thought)}`);
+      const { goal } = await response.json();
+
+      // Navigate to goal page
+      router.push(`/f/${goal.id}`);
+    } catch (error) {
+      console.error("Failed to create goal:", error);
+    }
   };
 
   return (
@@ -45,7 +46,7 @@ export default function Home() {
           The mind that visualizes itself.
         </h2>
         <p className="mt-3 text-sm text-cyan-400/70">
-          Start with a single thought - we'll grow the workspace around it.
+          Start with a goal - we'll create an adaptive journey for you.
         </p>
       </div>
 
@@ -56,7 +57,7 @@ export default function Home() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Write a thought..."
+          placeholder="Enter your goal..."
           className="flex-1 bg-transparent border border-cyan-400/30 rounded-xl px-4 py-2 text-cyan-100 focus:outline-none focus:border-cyan-300 shadow-[0_0_12px_#2FF3FF22] transition-all"
         />
         <button

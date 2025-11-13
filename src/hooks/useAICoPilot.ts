@@ -5,19 +5,14 @@ import type { UIMessage } from "@ai-sdk/react"
 import type { ChangeEvent, FormEvent } from "react"
 import { useMemo, useState } from "react"
 
-const STREAM_PROTOCOL = "text" as const
-const CHAT_API_PATH = "/api/chat"
-
 export type CoPilotMessage = {
   role: "user" | "assistant" | "system"
   content: string
 }
 
 export function useAICoPilot() {
-  const { messages, status, sendMessage, stop, regenerate, error } = useChat({
-    api: CHAT_API_PATH,
-    streamProtocol: STREAM_PROTOCOL,
-  })
+  const chat = useChat()
+  const { messages, status, sendMessage, stop, regenerate, error } = chat
 
   const [input, setInput] = useState<string>("")
 
@@ -29,20 +24,23 @@ export function useAICoPilot() {
     event?.preventDefault()
     const trimmed = input.trim()
     if (!trimmed) return
-    await sendMessage({ text: trimmed })
+    
+    await sendMessage({
+      text: trimmed,
+    })
     setInput("")
   }
 
   const normalizedMessages = useMemo<CoPilotMessage[]>(() => {
     return messages.map((message: UIMessage) => {
       const content = message.parts
-        .map((part: UIMessage["parts"][number]): string => {
-          if (part.type === "text") {
-            return part.text
+        ?.map((part: unknown): string => {
+          if (typeof part === "object" && part !== null && "type" in part && part.type === "text" && "text" in part) {
+            return String(part.text)
           }
           return JSON.stringify(part)
         })
-        .join("")
+        .join("") || ""
 
       return {
         role: message.role,

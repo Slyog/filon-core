@@ -5,7 +5,7 @@ import type { CoreMessage } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { anthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
-import { runGraphToolchain } from "@/ai/toolchain/graphToolchain"
+import { runStepEngineToolchain } from "@/ai/toolchain/stepEngineToolchain"
 
 const chatMessageSchema = z.object({
   messages: z.array(
@@ -37,8 +37,19 @@ export async function POST(req: Request): Promise<Response> {
 
     const toolCall = messages.find((message) => message.role === "tool")
     if (toolCall) {
-      const result = await runGraphToolchain(toolCall.content)
-      return new Response(JSON.stringify(result), { status: 200 })
+      try {
+        const { command, payload } = JSON.parse(toolCall.content)
+        const result = await runStepEngineToolchain(command, payload)
+        return new Response(JSON.stringify(result), { status: 200 })
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: error.message || "Failed to process tool call",
+          }),
+          { status: 400 }
+        )
+      }
     }
 
     const start = Date.now()
