@@ -1,11 +1,12 @@
 "use client";
 
+import { AppFrame } from "@/components/layout/AppFrame";
 import { CanvasRoot } from "@/components/canvas/CanvasRoot";
 
 export default function Home() {
   return (
-    <main className="w-full h-screen">
+    <AppFrame>
       <CanvasRoot />
-    </main>
+    </AppFrame>
   );
 }
