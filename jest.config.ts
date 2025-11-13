@@ -21,6 +21,7 @@ const config: Config = {
 
   // --- Test-Suche ---------------------------------------------------------
   testMatch: ["**/__tests__/**/*.(test|spec).(ts|tsx)"],
+  testPathIgnorePatterns: ["/node_modules/", "/legacy/"],
 
   // --- Setup-Dateien ------------------------------------------------------
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
