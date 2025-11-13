@@ -23,10 +23,11 @@ const config: Config = {
         layer: "#101418",
         panel: "#1C2229",
         filon: {
-          bg: "var(--filon-bg)",
-          surface: "var(--filon-surface)",
-          accent: "var(--filon-accent, #2FF3FF)",
-          text: "var(--filon-text, #EAFDFF)",
+          bg: "#000000",
+          surface: "#ffffff",
+          accent: "#2FF3FF",
+          text: "#ffffff",
+          border: "#333333",
         },
         // FILON Step 16.9 - Unified Design Tokens (synced from filonTokens)
         brand: filonTokens.colors.brand,
@@ -63,7 +64,10 @@ const config: Config = {
       },
       transitionDuration: filonTokens.motion.duration,
       spacing: filonTokens.spacing,
-      borderRadius: filonTokens.radius,
+      borderRadius: {
+        ...filonTokens.radius,
+        filon: "0.75rem",
+      },
       zIndex: filonTokens.zIndex,
       transitionTimingFunction: {
         filon: filonTokens.motion.easingString.smooth,
@@ -87,6 +91,7 @@ const config: Config = {
     },
   },
   plugins: [
+    require("tailwindcss-animate"),
     // Note: Install @tailwindcss/forms, @tailwindcss/typography, and @tailwindcss/container-queries if needed
     // require("@tailwindcss/forms"),
     // require("@tailwindcss/typography"),
