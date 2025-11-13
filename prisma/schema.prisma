@@ -7,32 +7,91 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Node {
-  id        String   @id @default(cuid())
-  label     String
-  note      String?
-  x         Float
-  y         Float
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  edgesIn   Edge[]   @relation("InEdges")
-  edgesOut  Edge[]   @relation("OutEdges")
+model Goal {
+  id                  String        @id @default(cuid())
+  title               String
+  description         String?
+  userProfileSnapshot Json?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  tracks              Track[]
+  journeyState        JourneyState?
+  scores              Score[]
 }
 
-model Edge {
-  id        String   @id @default(cuid())
-  sourceId  String
-  targetId  String
-  type      String?
-  createdAt DateTime @default(now())
-  target    Node     @relation("InEdges", fields: [targetId], references: [id])
-  source    Node     @relation("OutEdges", fields: [sourceId], references: [id])
+model Track {
+  id          String   @id @default(cuid())
+  goalId      String
+  goal        Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  type        TrackType
+  score       Int      @default(0)
+  aiReasoning String?
+  createdAt   DateTime @default(now())
+  steps       Step[]
 }
 
-model Meta {
-  id          Int       @id @default(autoincrement())
-  lastSavedAt DateTime?
-  nodeCount   Int?
-  edgeCount   Int?
-  automerge   Bytes?
+enum TrackType {
+  learn
+  build
+  ship
+  business
+}
+
+model Step {
+  id           String   @id @default(cuid())
+  trackId      String
+  track        Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  title        String
+  detail       String?
+  difficulty   Int      @default(1)
+  timeEstimate Int      @default(15)
+  dependencies Json     @default("[]")
+  state        StepState @default(todo)
+  createdAt    DateTime @default(now())
+  actions      Action[]
+}
+
+enum StepState {
+  todo
+  active
+  done
+}
+
+model Action {
+  id      String  @id @default(cuid())
+  stepId  String
+  step    Step    @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  title   String
+  done    Boolean @default(false)
+}
+
+model Score {
+  id            String      @id @default(cuid())
+  targetType    ScoreTarget
+  targetId      String
+  realism       Int
+  clarity       Int
+  userFit       Int
+  marketReality Int
+  overallScore  Int
+  createdAt     DateTime    @default(now())
+  goalId        String?
+  goal          Goal?       @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+enum ScoreTarget {
+  goal
+  track
+  step
+}
+
+model JourneyState {
+  id             String   @id @default(cuid())
+  goalId         String   @unique
+  goal           Goal     @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  activeStepId   String?
+  nextSuggestion String?
+  stuckReason    String?
+  progress       Int      @default(0)
+  updatedAt      DateTime @updatedAt
 }
