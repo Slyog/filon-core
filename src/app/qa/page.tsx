@@ -3,8 +3,6 @@
 import latestReport from "@/../qa/reports/latest.json";
 import dashboardMeta from "@/../qa/reports/meta.json";
 
-type Report = typeof latestReport;
-
 type Suite = {
   title: string;
   specs?: Array<{
@@ -14,13 +12,50 @@ type Suite = {
   }>;
 };
 
-const suites: Suite[] = Array.isArray(latestReport.data?.suites)
-  ? (latestReport.data.suites as Suite[])
+type LegacyReport = {
+  data?: {
+    suites?: unknown;
+  };
+};
+
+const reportSuites =
+  (latestReport as LegacyReport).data?.suites ?? latestReport.suites;
+
+const suites: Suite[] = Array.isArray(reportSuites)
+  ? (reportSuites as Suite[])
   : [];
 
-const metaTotals = dashboardMeta?.totals ?? {};
-const expected = Number(metaTotals.expected ?? 0);
-const unexpected = Number(metaTotals.unexpected ?? 0);
+const stats = latestReport.stats ?? {};
+
+type Totals = {
+  expected: number;
+  unexpected: number;
+  skipped: number;
+  flaky: number;
+};
+
+const derivedTotals: Totals = {
+  expected: Number(stats.expected ?? 0),
+  unexpected: Number(stats.unexpected ?? 0),
+  skipped: Number(stats.skipped ?? 0),
+  flaky: Number(stats.flaky ?? 0),
+};
+
+const metaTotals: Totals = {
+  expected: Number(
+    dashboardMeta?.totals?.expected ?? derivedTotals.expected
+  ),
+  unexpected: Number(
+    dashboardMeta?.totals?.unexpected ?? derivedTotals.unexpected
+  ),
+  skipped: Number(dashboardMeta?.totals?.skipped ?? derivedTotals.skipped),
+  flaky: Number(
+    (dashboardMeta?.totals as Totals | undefined)?.flaky ?? derivedTotals.flaky
+  ),
+};
+
+const expected = metaTotals.expected;
+const unexpected = metaTotals.unexpected;
 const derivedPassRate =
   expected > 0 ? ((expected - unexpected) / expected) * 100 : 0;
 const rawPassRate =
@@ -34,6 +69,11 @@ const badgeColor = isPassing
   ? "bg-emerald-600/30 text-emerald-200 border-emerald-400/40"
   : "bg-rose-600/20 text-rose-200 border-rose-400/40";
 const badgeIcon = isPassing ? "✅" : "⚠️";
+
+const generatedAt = dashboardMeta?.generatedAt ?? stats.startTime ?? "N/A";
+const totalPassed = Number(stats.expected ?? expected);
+const totalTests =
+  totalPassed + metaTotals.unexpected + metaTotals.flaky + metaTotals.skipped;
 
 export default function QAReportPage() {
   return (
@@ -66,17 +106,16 @@ export default function QAReportPage() {
         <div className="grid gap-3 text-sm">
           <div className="flex justify-between">
             <span className="text-neutral-400">Generated</span>
-            <span>{latestReport.meta?.date ?? "N/A"}</span>
+            <span>{generatedAt}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-neutral-400">Commit</span>
-            <span>{latestReport.meta?.commit ?? "local-dev"}</span>
+            <span className="text-neutral-400">Command</span>
+            <span>{dashboardMeta?.command ?? "npm run qa:all"}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-neutral-400">Passed</span>
             <span>
-              {latestReport.meta?.passed ?? 0} /{" "}
-              {latestReport.meta?.total ?? 0}
+              {totalPassed} / {totalTests}
             </span>
           </div>
         </div>

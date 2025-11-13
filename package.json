@@ -57,12 +57,13 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.44",
     "@ai-sdk/openai": "^2.0.65",
+    "@ai-sdk/react": "^2.0.92",
     "@automerge/automerge": "^3.2.0",
     "@emotion/is-prop-valid": "^1.4.0",
     "@prisma/client": "^6.18.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-slot": "^1.2.4",
-    "ai": "^3.4.33",
+    "ai": "^5.0.92",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.2.1",
@@ -83,7 +84,7 @@
     "recharts": "^2.15.4",
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.3.1",
-    "zod": "^3.25.76",
+    "zod": "^4.1.12",
     "zustand": "^5.0.8"
   },
   "devDependencies": {

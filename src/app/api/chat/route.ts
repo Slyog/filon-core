@@ -1,6 +1,7 @@
 "use server"
 
-import { streamText, streamToResponse } from "ai"
+import { streamText } from "ai"
+import type { CoreMessage } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { anthropic } from "@ai-sdk/anthropic"
 import { z } from "zod"
@@ -15,38 +16,50 @@ const chatMessageSchema = z.object({
   ),
 })
 
-function selectModel() {
-  const provider = process.env.AI_PROVIDER ?? "openai"
-  return provider === "anthropic"
-    ? anthropic("claude-3-sonnet")
-    : openai("gpt-4o-mini")
+type ChatRequest = z.infer<typeof chatMessageSchema>
+type StreamTextModel = Parameters<typeof streamText>[0]["model"]
+
+function sanitizeMessages(messages: ChatRequest["messages"]): CoreMessage[] {
+  return messages.reduce<CoreMessage[]>((acc, message) => {
+    if (message.role === "tool") return acc
+    acc.push({
+      role: message.role,
+      content: message.content,
+    })
+    return acc
+  }, [])
 }
 
-export async function POST(req: Request) {
+export async function POST(req: Request): Promise<Response> {
   try {
     const body = await req.json()
     const { messages } = chatMessageSchema.parse(body)
 
-    // ✅ Correct: pass content only
-    const toolCall = messages.find((m) => m.role === "tool")
+    const toolCall = messages.find((message) => message.role === "tool")
     if (toolCall) {
       const result = await runGraphToolchain(toolCall.content)
       return new Response(JSON.stringify(result), { status: 200 })
     }
 
-    const model = selectModel()
     const start = Date.now()
 
-    const result = await streamText({ model, messages })
-    const response = streamToResponse(result)
+    const model =
+      ((process.env.AI_PROVIDER === "anthropic"
+        ? anthropic("claude-3-sonnet")
+        : openai("gpt-4o-mini")) as unknown) as StreamTextModel
+
+    const result = await streamText({
+      model,
+      messages: sanitizeMessages(messages),
+    })
 
     console.info(`[FILON AI] Stream complete in ${Date.now() - start} ms`)
-    return response
-  } catch (err: any) {
-    console.error("[FILON AI ERROR]", err)
-    return new Response(
-      JSON.stringify({ error: err?.message ?? "AI route error" }),
-      { status: 500 }
-    )
+    return result.toTextStreamResponse()
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "AI route error"
+    console.error("[FILON AI ERROR]", error)
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+    })
   }
 }

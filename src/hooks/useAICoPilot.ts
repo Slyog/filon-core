@@ -1,76 +1,66 @@
-import { useEffect, useRef } from "react";
-import { useChat } from "ai/react";
+"use client"
+
+import { useChat } from "@ai-sdk/react"
+import type { UIMessage } from "@ai-sdk/react"
+import type { ChangeEvent, FormEvent } from "react"
+import { useMemo, useState } from "react"
+
+const STREAM_PROTOCOL = "text" as const
+const CHAT_API_PATH = "/api/chat"
+
+export type CoPilotMessage = {
+  role: "user" | "assistant" | "system"
+  content: string
+}
 
 export function useAICoPilot() {
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit,
-    append,
-    isLoading,
-  } = useChat({
-    api: "/api/chat",
-    initialMessages: [
-      {
-        id: "filon-co-pilot-system",
-        role: "system",
-        content: "FILON Co-Pilot ready.",
-      },
-    ],
-  });
+  const { messages, status, sendMessage, stop, regenerate, error } = useChat({
+    api: CHAT_API_PATH,
+    streamProtocol: STREAM_PROTOCOL,
+  })
 
-  const lastAssistantBuffer = useRef("");
-  const lastAssistantId = useRef<string | undefined>(undefined);
+  const [input, setInput] = useState<string>("")
 
-  useEffect(() => {
-    const latest = messages.at(-1);
-    if (latest?.role === "assistant" && latest.content) {
-      if (latest.id && latest.id !== lastAssistantId.current) {
-        lastAssistantBuffer.current = "";
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setInput(event.target.value)
+  }
+
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault()
+    const trimmed = input.trim()
+    if (!trimmed) return
+    await sendMessage({ text: trimmed })
+    setInput("")
+  }
+
+  const normalizedMessages = useMemo<CoPilotMessage[]>(() => {
+    return messages.map((message: UIMessage) => {
+      const content = message.parts
+        .map((part: UIMessage["parts"][number]): string => {
+          if (part.type === "text") {
+            return part.text
+          }
+          return JSON.stringify(part)
+        })
+        .join("")
+
+      return {
+        role: message.role,
+        content,
       }
+    })
+  }, [messages])
 
-      const contentText = Array.isArray(latest.content)
-        ? latest.content
-            .map((segment) => {
-              if (typeof segment === "string") {
-                return segment;
-              }
-              if (
-                segment &&
-                typeof segment === "object" &&
-                "text" in segment &&
-                typeof (segment as { text?: unknown }).text === "string"
-              ) {
-                return (segment as { text: string }).text;
-              }
-              return "";
-            })
-            .join("")
-        : typeof latest.content === "string"
-        ? latest.content
-        : "";
-
-      if (contentText) {
-        const delta = contentText.slice(lastAssistantBuffer.current.length);
-        if (delta) {
-          console.info("[FILON AI]", delta);
-        }
-        lastAssistantBuffer.current = contentText;
-        lastAssistantId.current = latest.id;
-      }
-    } else if (latest?.role === "user") {
-      lastAssistantBuffer.current = "";
-      lastAssistantId.current = undefined;
-    }
-  }, [messages]);
+  const isLoading = status === "submitted" || status === "streaming"
 
   return {
-    messages,
+    messages: normalizedMessages,
     input,
     handleInputChange,
     handleSubmit,
-    append,
     isLoading,
-  };
+    error,
+    stop,
+    reload: regenerate,
+  }
 }
