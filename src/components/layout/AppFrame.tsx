@@ -1,24 +1,30 @@
 "use client";
 
 import { Sidebar } from "./Sidebar";
+import ContextStream from "./ContextStream";
 import { Brainbar } from "./Brainbar";
-import { ContextStream } from "./ContextStream";
 
-export function AppFrame({ children }: { children: React.ReactNode }) {
+export default function AppFrame({ children }) {
   return (
-    <div className="grid h-full w-full grid-cols-[280px_1fr_320px] bg-filon-bg text-filon-text">
-      <div className="col-start-1 col-span-1 h-full overflow-hidden">
+    <div className="h-screen w-screen grid grid-cols-[280px_minmax(0,1fr)_320px]">
+      
+      {/* LEFT SIDEBAR */}
+      <div className="col-start-1 col-span-1 h-full border-r border-filon-border overflow-y-auto">
         <Sidebar />
       </div>
 
-      <div className="col-start-2 col-span-1 flex h-full w-full flex-col overflow-hidden relative z-0 border-x border-filon-border">
+      {/* MAIN AREA */}
+      <div className="col-start-2 col-span-1 relative flex flex-col min-h-0 min-w-0 overflow-hidden">
         <Brainbar />
-        <main className="flex-1 w-full h-full overflow-hidden relative" role="main" aria-label="Main content">
+        <main className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
           {children}
         </main>
       </div>
 
-      <ContextStream className="col-start-3 col-span-1" />
+      {/* RIGHT SIDEBAR */}
+      <div className="col-start-3 col-span-1 h-full border-l border-filon-border overflow-hidden flex flex-col min-h-0">
+        <ContextStream />
+      </div>
     </div>
   );
 }

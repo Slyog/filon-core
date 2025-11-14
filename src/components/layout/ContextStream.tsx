@@ -1,76 +1,44 @@
-"use client";
+You are in FIX MODE for ReactFlow + Next.js 16.
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+Goal:
+Move the viewport-centering useEffect OUT of FlowCanvas and INTO CanvasRoot
+to prevent ReactFlow internal useEffect ordering mismatch.
 
-export interface ContextStreamItem {
-  id: string;
-  title: string;
-  summary: string;
-  confidence: number;
-  ts: number;
-}
+Rules:
+- Do NOT modify any ReactFlow props.
+- Do NOT touch nodeTypes, edges, stores.
+- Do NOT add dependencies to the effect.
+- It must run ONLY once after mount.
 
-interface ContextStreamProps {
-  items?: ContextStreamItem[];
-  onSelect?: (id: string) => void;
-  position?: "card" | "bottom";
-  className?: string;
-}
+──────────────────────────
+FILE: src/components/canvas/FlowCanvas.tsx
+──────────────────────────
+1) REMOVE the entire useEffect block that calls setViewport.
+2) KEEP everything else unchanged.
 
-export function ContextStream({
-  items,
-  onSelect,
-  position,
-  className,
-}: ContextStreamProps) {
-  return (
-    <aside
-      className={cn(
-        "col-start-3 col-span-1 h-full w-[320px] border-l border-filon-border bg-filon-surface text-filon-text flex flex-col overflow-hidden relative z-10",
-        className
-      )}
-      role="complementary"
-      aria-label="Context stream"
-    >
-      <div className="px-4 pt-4 pb-3">
-        <h2 className="text-sm font-semibold text-filon-text">Context</h2>
-        <Separator className="mt-3 bg-filon-border" />
-      </div>
+──────────────────────────
+FILE: src/components/canvas/CanvasRoot.tsx
+──────────────────────────
+ADD this useEffect AFTER the opening <div> wrapper:
 
-      <div className="px-4 pb-4 [height:calc(100%-88px)]">
-        <ScrollArea className="h-full overflow-y-auto pr-2">
-          {items && items.length > 0 ? (
-            <div className="space-y-2">
-              {items.map((item) => (
-                <button
-                  key={item.id}
-                  className={cn(
-                    "w-full rounded border border-filon-border bg-filon-bg/40 p-2 text-left text-xs transition-colors",
-                    "hover:bg-filon-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent focus-visible:ring-offset-2 focus-visible:ring-offset-filon-surface"
-                  )}
-                  onClick={() => onSelect?.(item.id)}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`Select context: ${item.title}`}
-                >
-                  <div className="font-medium text-filon-text">{item.title}</div>
-                  {item.summary && (
-                    <div className="mt-1 text-[11px] text-filon-text/70 line-clamp-2">
-                      {item.summary}
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-xs text-filon-text/50">
-              Context insights will appear here.
-            </div>
-          )}
-        </ScrollArea>
-      </div>
-    </aside>
-  );
-}
+  useEffect(() => {
+    const host = document.querySelector<HTMLElement>("[data-id='canvas-host']");
+    if (!host) return;
+
+    const cx = host.clientWidth / 2;
+    const cy = host.clientHeight / 2;
+
+    const reactflow = window.__reactflow;
+    if (reactflow?.setViewport) {
+      reactflow.setViewport({ x: cx, y: cy, zoom: 1 }, { duration: 0 });
+    }
+  }, []); // must remain empty
+
+Also in ReactFlow component inside CanvasRoot:
+ADD this prop:
+  onInit={(instance) => (window.__reactflow = instance)}
+
+──────────────────────────
+
+After patch completion:
+Return ONLY unified diff + summary.

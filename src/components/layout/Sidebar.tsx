@@ -5,7 +5,6 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { useUIShellStore, useHydrateUIShell } from "@/store/UIShellStore";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 export function Sidebar() {
   useHydrateUIShell();
@@ -20,8 +19,7 @@ export function Sidebar() {
   if (!mounted) {
     return (
       <aside
-        className="hidden md:flex h-full flex-col bg-filon-surface text-filon-text border-r border-filon-border transition-all duration-300 relative z-20 pointer-events-auto"
-        style={{ width: "64px" }}
+        className="hidden md:flex flex-col w-[280px] bg-filon-surface border-r border-filon-border text-filon-text transition-all duration-300 relative z-20 pointer-events-auto"
         aria-label="Sidebar"
       >
         <div className="h-full flex items-center justify-center">
@@ -33,10 +31,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className={cn(
-        "hidden md:flex h-full flex-col bg-filon-surface text-filon-text border-r border-filon-border transition-all duration-300 relative z-20 pointer-events-auto",
-        sidebarOpen ? "w-64 min-w-[240px]" : "w-16 min-w-[64px]"
-      )}
+      className="hidden md:flex flex-col w-[280px] bg-filon-surface border-r border-filon-border text-filon-text transition-all duration-300 relative z-20 pointer-events-auto"
       role="navigation"
       aria-label="Main navigation"
     >

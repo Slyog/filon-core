@@ -17,8 +17,20 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     {
       id: "1",
       type: "default",
+      position: { x: 0, y: -150 },
+      data: { label: "Welcome to FILON" },
+    },
+    {
+      id: "2",
+      type: "goal",
       position: { x: 0, y: 0 },
-      data: { label: "Canvas Ready" },
+      data: { label: "Create Your First Goal" },
+    },
+    {
+      id: "3",
+      type: "track",
+      position: { x: 0, y: 150 },
+      data: { label: "Add a Track" },
     },
   ],
   edges: [],

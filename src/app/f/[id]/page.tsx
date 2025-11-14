@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { AppFrame } from "@/components/layout/AppFrame";
+import AppFrame from "@/components/layout/AppFrame";
 import GoalView from "@/components/GoalView";
 import { useSessionStore } from "@/store/SessionStore";
 
