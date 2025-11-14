@@ -4,6 +4,7 @@ import { useCallback, useState, useRef, forwardRef, useImperativeHandle } from "
 import { Input } from "@/components/ui/input";
 import { Chip } from "@/components/ui/chip";
 import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type ChipMode = "goal" | "link" | "summarize" | null;
 
@@ -32,6 +33,8 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
 ) {
   const [inputValue, setInputValue] = useState("");
   const [activeMode, setActiveMode] = useState<ChipMode>(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [isCommittedPulse, setIsCommittedPulse] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   
   const isDisabled = disabled || isLoading;
@@ -54,18 +57,26 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
     },
   }));
 
+  const handleCommit = useCallback(() => {
+    if (isDisabled) return;
+    const trimmedValue = inputValue.trim();
+    if (trimmedValue && onSubmit) {
+      onSubmit(trimmedValue);
+      setInputValue("");
+      setActiveMode(null);
+      setIsCommittedPulse(true);
+      window.setTimeout(() => {
+        setIsCommittedPulse(false);
+      }, 180);
+    }
+  }, [inputValue, onSubmit, isDisabled]);
+
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      if (isDisabled) return;
-      const trimmedValue = inputValue.trim();
-      if (trimmedValue && onSubmit) {
-        onSubmit(trimmedValue);
-        setInputValue("");
-        setActiveMode(null);
-      }
+      handleCommit();
     },
-    [inputValue, onSubmit, isDisabled]
+    [handleCommit]
   );
 
   const handleKeyDown = useCallback(
@@ -73,16 +84,11 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
       if (isDisabled) return;
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
-        const trimmedValue = inputValue.trim();
-        if (trimmedValue && onSubmit) {
-          onSubmit(trimmedValue);
-          setInputValue("");
-          setActiveMode(null);
-        }
+        handleCommit();
       }
       // Shift+Enter allows newline (default behavior)
     },
-    [inputValue, onSubmit, isDisabled]
+    [handleCommit, isDisabled]
   );
 
   const handleChipClick = useCallback(
@@ -133,17 +139,27 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
         aria-label="Brainbar"
         className="flex flex-col gap-3.5"
       >
-        <div className="relative w-full">
+        <div
+          className={cn(
+            "relative w-full rounded-filon border bg-filon-surface/95",
+            "transition-colors transition-shadow transition-transform duration-150 ease-out",
+            isFocused && "border-filon-accent/80 shadow-[0_0_15px_rgba(47,243,255,0.18)]",
+            isCommittedPulse && "scale-[1.01] shadow-glow",
+            !isFocused && !isCommittedPulse && "border-filon-border/60 shadow-none"
+          )}
+        >
           <Input
             ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             disabled={isDisabled}
             placeholder="What are you thinking about?"
             aria-label="Brainbar input for thoughts, goals, and links"
             aria-disabled={isDisabled}
-            className="w-full bg-filon-surface/70 text-filon-text placeholder:text-filon-text/60 py-5 px-6 pr-14 rounded-filon border border-filon-border/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/40 focus-visible:border-filon-accent/60 focus-visible:shadow-glow transition-all text-base disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full bg-transparent text-filon-text placeholder:text-filon-text/60 py-5 px-6 pr-14 rounded-filon border-0 focus-visible:outline-none focus-visible:ring-0 text-base disabled:cursor-not-allowed disabled:opacity-60"
           />
           <Sparkles
             className="absolute right-5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-filon-text/60 pointer-events-none"

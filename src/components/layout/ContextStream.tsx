@@ -78,8 +78,13 @@ export default function ContextStream({
 
       <ScrollArea className="flex-1 px-6 pb-6">
         <div className="flex flex-col gap-4 py-5 pr-2">
-          {streamItems.map((item) => (
-            <ContextStreamItemCard key={item.id} item={item} onSelect={onSelect} />
+          {streamItems.map((item, index) => (
+            <ContextStreamItemCard
+              key={item.id}
+              item={item}
+              onSelect={onSelect}
+              index={index}
+            />
           ))}
         </div>
       </ScrollArea>
@@ -101,10 +106,12 @@ function formatRelativeTime(timestamp: number) {
 function ContextStreamItemCard({
   item,
   onSelect,
+  index = 0,
 }: {
   item: ContextStreamItem;
   // eslint-disable-next-line no-unused-vars
   onSelect?: (id: string) => void;
+  index?: number;
 }) {
   const [timeAgo, setTimeAgo] = useState<string | null>(null);
 
@@ -118,6 +125,9 @@ function ContextStreamItemCard({
     }
   }, [item.timestamp]);
 
+  // Stagger animation delay: 30ms per card
+  const animationDelay = index * 30;
+
   return (
     <article
       role="button"
@@ -129,7 +139,17 @@ function ContextStreamItemCard({
           onSelect?.(item.id);
         }
       }}
-      className="group relative rounded-filon border border-filon-border/60 bg-filon-surface/70 px-3 py-2.5 transition-all cursor-pointer hover:bg-filon-surface/80 hover:border-filon-accent/60 hover:border-l-2 hover:border-l-filon-accent hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/60 focus-visible:ring-offset-0"
+      className={cn(
+        "group relative rounded-filon border bg-filon-surface/70 px-3 py-2.5 cursor-pointer",
+        "transition-colors transition-shadow transition-transform duration-150 ease-out",
+        "opacity-0 translate-y-[2px]",
+        "hover:bg-filon-surface hover:border-filon-accent/60 hover:border-l-2 hover:border-l-filon-accent hover:shadow-[0_0_15px_rgba(47,243,255,0.18)] hover:scale-[1.01]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0",
+        "border-filon-border/60"
+      )}
+      style={{
+        animation: `contextStreamIn 180ms ease-out ${animationDelay}ms forwards`,
+      }}
     >
       <div className="flex flex-col space-y-2.5">
         {/* Label */}
