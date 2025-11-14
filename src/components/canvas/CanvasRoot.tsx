@@ -6,15 +6,9 @@ import { FlowCanvas } from "./FlowCanvas";
 
 export function CanvasRoot() {
   useEffect(() => {
-    const host = document.querySelector<HTMLElement>("[data-id='canvas-host']");
-    if (!host) return;
-
-    const cx = host.clientWidth / 2;
-    const cy = host.clientHeight / 2;
-
     const reactflow = (window as any).__reactflow;
     if (reactflow?.setViewport) {
-      reactflow.setViewport({ x: cx, y: cy, zoom: 1 }, { duration: 0 });
+      reactflow.setViewport({ x: 0, y: 0, zoom: 1 }, { duration: 0 });
     }
   }, []);
 
@@ -24,7 +18,16 @@ export function CanvasRoot() {
       data-id="canvas-host"
     >
       <ReactFlowProvider>
-        <FlowCanvas onInit={(instance) => ((window as any).__reactflow = instance)} />
+        <div className="relative w-full h-full overflow-hidden min-h-0 min-w-0">
+          <div
+            data-id="rf-clip-2"
+            className="relative w-full h-full overflow-hidden min-h-0 min-w-0"
+          >
+            <FlowCanvas
+              onInit={(instance) => ((window as any).__reactflow = instance)}
+            />
+          </div>
+        </div>
       </ReactFlowProvider>
     </div>
   );

@@ -1,44 +1,46 @@
-You are in FIX MODE for ReactFlow + Next.js 16.
+"use client";
 
-Goal:
-Move the viewport-centering useEffect OUT of FlowCanvas and INTO CanvasRoot
-to prevent ReactFlow internal useEffect ordering mismatch.
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
-Rules:
-- Do NOT modify any ReactFlow props.
-- Do NOT touch nodeTypes, edges, stores.
-- Do NOT add dependencies to the effect.
-- It must run ONLY once after mount.
+export interface ContextStreamItem {
+  id: string;
+  title: string;
+  summary: string;
+  confidence: number;
+  ts: number;
+}
 
-──────────────────────────
-FILE: src/components/canvas/FlowCanvas.tsx
-──────────────────────────
-1) REMOVE the entire useEffect block that calls setViewport.
-2) KEEP everything else unchanged.
+interface ContextStreamProps {
+  items?: ContextStreamItem[];
+  onSelect?: (id: string) => void;
+  position?: "card" | "bottom";
+  className?: string;
+}
 
-──────────────────────────
-FILE: src/components/canvas/CanvasRoot.tsx
-──────────────────────────
-ADD this useEffect AFTER the opening <div> wrapper:
-
-  useEffect(() => {
-    const host = document.querySelector<HTMLElement>("[data-id='canvas-host']");
-    if (!host) return;
-
-    const cx = host.clientWidth / 2;
-    const cy = host.clientHeight / 2;
-
-    const reactflow = window.__reactflow;
-    if (reactflow?.setViewport) {
-      reactflow.setViewport({ x: cx, y: cy, zoom: 1 }, { duration: 0 });
-    }
-  }, []); // must remain empty
-
-Also in ReactFlow component inside CanvasRoot:
-ADD this prop:
-  onInit={(instance) => (window.__reactflow = instance)}
-
-──────────────────────────
-
-After patch completion:
-Return ONLY unified diff + summary.
+export default function ContextStream({
+  items,
+  onSelect,
+  position = "card",
+  className,
+}: ContextStreamProps) {
+  return (
+    <aside
+      className={cn(
+        "w-full h-full overflow-hidden flex flex-col bg-filon-surface",
+        className
+      )}
+    >
+      <div className="p-4 font-semibold text-filon-text">
+        Context
+      </div>
+      <Separator />
+      <ScrollArea className="flex-1 p-4">
+        <div className="text-sm text-filon-text-secondary">
+          Context insights will appear here.
+        </div>
+      </ScrollArea>
+    </aside>
+  );
+}
