@@ -1,18 +1,24 @@
 "use client";
 
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useState, useRef, forwardRef, useImperativeHandle } from "react";
 import { Input } from "@/components/ui/input";
 import { Chip } from "@/components/ui/chip";
 import { Sparkles } from "lucide-react";
 
 type ChipMode = "goal" | "link" | "summarize" | null;
 
-type BrainbarProps = {
+export interface BrainbarHandle {
+  focus: () => void;
+  // eslint-disable-next-line no-unused-vars
+  setValue: (value: string) => void;
+}
+
+export interface BrainbarProps {
   // eslint-disable-next-line no-unused-vars
   onSubmit?: (text: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
-};
+}
 
 const commandChips: Array<{ command: ChipMode; label: string }> = [
   { command: "goal", label: "/goal" },
@@ -20,12 +26,33 @@ const commandChips: Array<{ command: ChipMode; label: string }> = [
   { command: "summarize", label: "/summarize" },
 ];
 
-export function Brainbar({ onSubmit, isLoading = false, disabled = false }: BrainbarProps) {
+export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brainbar(
+  { onSubmit, isLoading = false, disabled = false },
+  ref
+) {
   const [inputValue, setInputValue] = useState("");
   const [activeMode, setActiveMode] = useState<ChipMode>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
   const isDisabled = disabled || isLoading;
+
+  useImperativeHandle(ref, () => ({
+    focus() {
+      inputRef.current?.focus();
+    },
+    setValue(nextValue: string) {
+      setInputValue(nextValue);
+      // Set cursor to end after React updates the DOM
+      setTimeout(() => {
+        if (inputRef.current) {
+          const length = nextValue.length;
+          inputRef.current.selectionStart = length;
+          inputRef.current.selectionEnd = length;
+          inputRef.current.focus();
+        }
+      }, 0);
+    },
+  }));
 
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -157,4 +184,4 @@ export function Brainbar({ onSubmit, isLoading = false, disabled = false }: Brai
       </form>
     </header>
   );
-}
+});

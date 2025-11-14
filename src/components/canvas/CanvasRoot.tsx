@@ -2,8 +2,15 @@
 
 import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "./FlowCanvas";
+import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
 
-export function CanvasRoot() {
+type CanvasRootProps = {
+  presetId?: OnboardingPresetId | null;
+  onCreateGoalClick?: () => void;
+  onAddTrackClick?: () => void;
+};
+
+export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: CanvasRootProps) {
   // Subtle grid pattern background
   const gridPattern = `data:image/svg+xml,${encodeURIComponent(`
     <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
@@ -35,6 +42,9 @@ export function CanvasRoot() {
           >
             <FlowCanvas
               onInit={(instance) => ((window as any).__reactflow = instance)}
+              presetId={presetId}
+              onCreateGoalClick={onCreateGoalClick}
+              onAddTrackClick={onAddTrackClick}
             />
           </div>
         </div>
