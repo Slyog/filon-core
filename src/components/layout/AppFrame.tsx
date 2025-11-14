@@ -6,7 +6,7 @@ import { ContextStream } from "./ContextStream";
 
 export function AppFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid h-full w-full grid-cols-[280px_1fr_320px] overflow-hidden bg-filon-bg text-filon-text">
+    <div className="grid h-full w-full grid-cols-[280px_1fr_320px] bg-filon-bg text-filon-text">
       <div className="col-start-1 col-span-1 h-full overflow-hidden">
         <Sidebar />
       </div>

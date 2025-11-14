@@ -20,7 +20,7 @@ export function Sidebar() {
   if (!mounted) {
     return (
       <aside
-        className="h-full flex flex-col bg-filon-surface text-filon-text border-r border-filon-border transition-all duration-300 relative z-20 pointer-events-auto"
+        className="hidden md:flex h-full flex-col bg-filon-surface text-filon-text border-r border-filon-border transition-all duration-300 relative z-20 pointer-events-auto"
         style={{ width: "64px" }}
         aria-label="Sidebar"
       >
@@ -34,7 +34,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "h-full flex flex-col bg-filon-surface text-filon-text border-r border-filon-border transition-all duration-300 relative z-20 pointer-events-auto",
+        "hidden md:flex h-full flex-col bg-filon-surface text-filon-text border-r border-filon-border transition-all duration-300 relative z-20 pointer-events-auto",
         sidebarOpen ? "w-64 min-w-[240px]" : "w-16 min-w-[64px]"
       )}
       role="navigation"
@@ -43,7 +43,7 @@ export function Sidebar() {
       {/* Toggle Button */}
       <button
         onClick={toggleSidebar}
-        className="absolute -right-3 top-4 z-30 w-6 h-6 rounded-full bg-filon-surface border border-filon-border flex items-center justify-center hover:bg-filon-bg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent focus-visible:ring-offset-2 focus-visible:ring-offset-filon-surface pointer-events-auto"
+        className="md:hidden absolute -right-3 top-4 z-30 w-6 h-6 rounded-full bg-filon-surface border border-filon-border flex items-center justify-center hover:bg-filon-bg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent focus-visible:ring-offset-2 focus-visible:ring-offset-filon-surface pointer-events-auto"
         aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
         aria-expanded={sidebarOpen}
         tabIndex={0}
