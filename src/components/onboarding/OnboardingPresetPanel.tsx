@@ -51,9 +51,14 @@ export function OnboardingPresetPanel({
   return (
     <div
       className={cn(
-        "bg-filon-surface border border-filon-border/40 rounded-filon p-5 max-w-xl w-full",
+        "bg-filon-surface/95 border border-filon-border/40 rounded-filon p-5 max-w-xl w-full",
+        "shadow-[0_0_40px_rgba(0,0,0,0.5)]",
+        "opacity-0 translate-y-[4px]",
         className
       )}
+      style={{
+        animation: "onboardingPanelIn 220ms ease-out forwards",
+      }}
     >
       {/* Title */}
       <h2 className="text-base font-semibold text-filon-text">
@@ -74,9 +79,10 @@ export function OnboardingPresetPanel({
             onClick={() => handlePresetClick(preset.id)}
             className={cn(
               "h-auto flex flex-col items-start justify-start p-4 text-left",
-              "bg-filon-surface/60 border border-filon-border/40 rounded-filon",
-              "hover:bg-filon-surface/80 hover:border-filon-accent/60 hover:shadow-glow",
-              "transition-all"
+              "rounded-filon border border-transparent bg-filon-surface/60",
+              "transition-colors transition-shadow transition-transform duration-150 ease-out",
+              "hover:bg-filon-surface hover:border-filon-accent/60 hover:shadow-[0_0_18px_rgba(47,243,255,0.16)] hover:scale-[1.01]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0"
             )}
             aria-label={`Select ${preset.title} preset`}
           >
