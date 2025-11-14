@@ -130,6 +130,13 @@ export function Brainbar({ onSubmit, isLoading = false, disabled = false }: Brai
           )}
         </div>
 
+        <p
+          id="brainbar-helper"
+          className="mt-1 text-[10px] font-medium tracking-[0.16em] uppercase text-filon-text/50 text-right"
+        >
+          Press Enter to commit
+        </p>
+
         <div className="flex flex-wrap gap-2 px-1">
           {commandChips.map(({ command, label }) => {
             const isActive = activeMode === command;

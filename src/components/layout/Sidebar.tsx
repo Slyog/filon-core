@@ -60,7 +60,7 @@ export function Sidebar() {
     <aside
       role="navigation"
       aria-label="Workspace navigation"
-      className="flex h-full flex-col bg-filon-surface/80 text-filon-text backdrop-blur-sm supports-[backdrop-filter]:bg-filon-surface/70 border-r border-filon-border/40"
+      className="flex h-full flex-col bg-filon-surface/80 text-filon-text backdrop-blur-sm supports-[backdrop-filter]:bg-filon-surface/70"
     >
       <div className="border-b border-filon-border/60 px-5 py-4">
         <p className="text-[11px] uppercase tracking-[0.35em] text-filon-text/50">
