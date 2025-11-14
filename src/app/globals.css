@@ -1,3 +1,5 @@
+@import "../styles/reactflow-override.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -307,6 +309,25 @@ select:focus-visible {
   100% {
     filter: brightness(1);
   }
+}
+
+/* Step 16 - Glow Sweep Animation for Page Transitions */
+@keyframes glow-sweep {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.glow-sweep {
+  animation: glow-sweep 350ms ease-out;
 }
 
 /* --- Animation --- */
@@ -715,12 +736,12 @@ body.motion-test * {
 }
 
 .react-flow__background {
-  background-color: #0a0f12 !important;
-  fill: #0a0f12 !important;
+  background-color: var(--filon-bg) !important;
+  fill: var(--filon-border) !important;
 }
 
 .react-flow__pane {
-  background-color: #0a0f12 !important;
+  background-color: var(--filon-bg) !important;
 }
 
 .react-flow__edges,
@@ -737,28 +758,36 @@ body.motion-test * {
 }
 
 .react-flow__background path {
-  stroke: rgba(47, 243, 255, 0.05);
+  stroke: var(--filon-border);
   stroke-width: 1;
+  opacity: 0.3;
 }
 
 .react-flow__edge-path {
-  stroke: rgba(47, 243, 255, 0.35);
+  stroke: var(--filon-accent);
   stroke-width: 1.5;
+  opacity: 0.5;
 }
 
 .react-flow__controls button {
-  background: rgba(10, 15, 18, 0.6);
-  border: 1px solid rgba(47, 243, 255, 0.2);
-  color: #2ff3ff;
+  background: var(--filon-surface) !important;
+  border: 1px solid var(--filon-border) !important;
+  color: var(--filon-text) !important;
 }
 
 .react-flow__controls button:hover {
-  background: rgba(47, 243, 255, 0.15);
+  background: var(--filon-bg) !important;
+  border-color: var(--filon-accent) !important;
+}
+
+.react-flow__minimap {
+  background: var(--filon-surface) !important;
+  border: 1px solid var(--filon-border) !important;
 }
 
 /* === FILON ReactFlow Visibility Fix === */
 .react-flow__background {
-  background-color: #0a0f12 !important;
+  background-color: var(--filon-bg) !important;
 }
 
 .react-flow__nodes * {
@@ -831,7 +860,7 @@ body.motion-test * {
 
 /* === FILON ReactFlow Visual Fix v5 === */
 .react-flow {
-  background-color: #0a0f12 !important;
+  background-color: var(--filon-bg) !important;
   overflow: hidden !important;
 }
 

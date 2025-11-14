@@ -1,0 +1,15 @@
+/* Force ReactFlow renderer layer below sidebar + UI */
+.react-flow__renderer {
+  position: relative !important;
+  z-index: 5 !important;
+  pointer-events: auto !important;
+}
+
+/* ReactFlow panels (zoom, minimap, controls) oben halten */
+.react-flow__controls,
+.react-flow__minimap,
+.react-flow__panel {
+  z-index: 2147483649 !important;
+  pointer-events: auto !important;
+}
+

@@ -13,7 +13,7 @@ type UIShellState = {
 const STORAGE_KEY = "filon:sidebarOpen";
 
 export const useUIShellStore = create<UIShellState>((set, get) => ({
-  sidebarOpen: true,
+  sidebarOpen: false, // Collapsed by default (Step 16)
   hydrated: false,
   setSidebarOpen: (value: boolean) => {
     set({ sidebarOpen: value });
@@ -39,7 +39,7 @@ export function useHydrateUIShell() {
     if (typeof window === "undefined") return;
 
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    const sidebarOpen = raw === null ? true : raw === "true";
+    const sidebarOpen = raw === null ? false : raw === "true"; // Collapsed by default
 
     useUIShellStore.setState({
       sidebarOpen,

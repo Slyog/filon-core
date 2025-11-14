@@ -6,18 +6,19 @@ import { ContextStream } from "./ContextStream";
 
 export function AppFrame({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full h-screen bg-filon-bg text-filon-text grid grid-cols-[260px_1fr_320px]">
-      <Sidebar />
-
-      <div className="flex flex-col border-x border-filon-border">
-        <Brainbar />
-        <div className="flex-1 overflow-hidden">
-          {children}
-        </div>
+    <div className="grid h-full w-full grid-cols-[280px_1fr_320px] overflow-hidden bg-filon-bg text-filon-text">
+      <div className="col-start-1 col-span-1 h-full overflow-hidden">
+        <Sidebar />
       </div>
 
-      <ContextStream />
+      <div className="col-start-2 col-span-1 flex h-full w-full flex-col overflow-hidden relative z-0 border-x border-filon-border">
+        <Brainbar />
+        <main className="flex-1 w-full h-full overflow-hidden relative" role="main" aria-label="Main content">
+          {children}
+        </main>
+      </div>
+
+      <ContextStream className="col-start-3 col-span-1" />
     </div>
   );
 }
-
