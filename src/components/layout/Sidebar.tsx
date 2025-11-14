@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type SidebarListItem = {
   id: string;
@@ -101,10 +102,10 @@ function SidebarSectionBlock({ section }: { section: SidebarSection }) {
       <ul className="mt-3 space-y-1.5">
         {section.items.map((item) => (
           <li key={item.id}>
-            <button
-              type="button"
+            <Button
+              variant="ghost"
               className={cn(
-                "group flex w-full items-center justify-between rounded-lg border border-transparent px-3 py-2 text-left text-sm text-filon-text/65 transition hover:border-filon-border/70 hover:text-filon-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/70 focus-visible:ring-offset-0",
+                "group flex w-full items-center justify-between rounded-filon border px-3 py-2 text-left text-sm text-filon-text/65",
                 item.active &&
                   "border-filon-accent/50 bg-filon-border/40 text-filon-text shadow-[0_0_30px_rgba(47,243,255,0.15)]"
               )}
@@ -114,7 +115,7 @@ function SidebarSectionBlock({ section }: { section: SidebarSection }) {
               {item.meta && (
                 <span className="text-xs text-filon-text/45">{item.meta}</span>
               )}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

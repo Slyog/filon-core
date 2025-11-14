@@ -15,6 +15,7 @@ export interface ContextStreamItem {
 
 interface ContextStreamProps {
   items?: ContextStreamItem[];
+  // eslint-disable-next-line no-unused-vars
   onSelect?: (id: string) => void;
   className?: string;
 }
@@ -88,31 +89,42 @@ export default function ContextStream({
                   onSelect?.(item.id);
                 }
               }}
-              className="rounded-2xl border border-filon-border/70 bg-filon-bg/40 p-4 shadow-[0_0_35px_rgba(0,0,0,0.35)] transition hover:border-filon-accent/40 hover:shadow-[0_0_30px_rgba(47,243,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/70"
+              className="group rounded-xl border border-filon-border/60 bg-filon-surface/40 px-3 py-2.5 transition-colors hover:bg-filon-surface/60 hover:border-filon-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/60 focus-visible:ring-offset-0"
             >
-              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-filon-text/45">
-                <span>{item.type}</span>
-                <span>{formatRelativeTime(item.timestamp)}</span>
-              </div>
-
-              <h3 className="mt-3 text-sm font-semibold text-filon-text">
-                {item.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-filon-text/70">
-                {item.summary}
-              </p>
-
-              <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-filon-text/60">
-                {typeof item.confidence === "number" && (
-                  <span className="rounded-full border border-filon-border/70 px-3 py-1">
-                    {Math.round(item.confidence * 100)}% confidence
+              <div className="flex flex-col space-y-2.5">
+                {/* Label */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-medium uppercase tracking-widest text-filon-text/65">
+                    {item.type.toUpperCase()}
                   </span>
-                )}
-                {item.source && (
-                  <span className="rounded-full border border-filon-border/60 px-3 py-1 text-filon-text/55">
-                    {item.source}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-sm font-semibold leading-snug text-filon-text">
+                  {item.title}
+                </h3>
+
+                {/* Body */}
+                <p className="text-sm leading-relaxed text-filon-text/80">
+                  {item.summary}
+                </p>
+
+                {/* Meta area */}
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <span className="text-[11px] text-filon-text/60">
+                    {formatRelativeTime(item.timestamp)}
                   </span>
-                )}
+                  {typeof item.confidence === "number" && (
+                    <span className="rounded-full border border-filon-border/60 bg-filon-surface/40 px-2.5 py-0.5 text-[11px] text-filon-text/60">
+                      {Math.round(item.confidence * 100)}% confidence
+                    </span>
+                  )}
+                  {item.source && (
+                    <span className="rounded-full border border-filon-border/60 bg-filon-surface/40 px-2.5 py-0.5 text-[11px] text-filon-text/60">
+                      {item.source}
+                    </span>
+                  )}
+                </div>
               </div>
             </article>
           ))}
