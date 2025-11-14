@@ -4,11 +4,29 @@ import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "./FlowCanvas";
 
 export function CanvasRoot() {
+  // Subtle grid pattern background
+  const gridPattern = `data:image/svg+xml,${encodeURIComponent(`
+    <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(26,26,26,0.3)" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)" />
+    </svg>
+  `)}`;
+
   return (
     <div
-      className="relative w-full h-full min-h-0 min-w-0 overflow-hidden"
+      className="relative w-full h-full min-h-0 min-w-0 overflow-hidden bg-[#050509]"
       data-id="canvas-host"
     >
+      <div
+        className="absolute inset-0 opacity-30 pointer-events-none"
+        style={{
+          backgroundImage: `url("${gridPattern}")`,
+        }}
+      />
       <ReactFlowProvider>
         <div className="absolute inset-0 w-full h-full overflow-hidden">
           <div

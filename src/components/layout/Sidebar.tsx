@@ -60,7 +60,7 @@ export function Sidebar() {
     <aside
       role="navigation"
       aria-label="Workspace navigation"
-      className="flex h-full flex-col bg-filon-surface/80 text-filon-text backdrop-blur-sm supports-[backdrop-filter]:bg-filon-surface/70"
+      className="flex h-full flex-col bg-filon-surface/80 text-filon-text backdrop-blur-sm supports-[backdrop-filter]:bg-filon-surface/70 border-r border-filon-border/40"
     >
       <div className="border-b border-filon-border/60 px-5 py-4">
         <p className="text-[11px] uppercase tracking-[0.35em] text-filon-text/50">
@@ -105,9 +105,9 @@ function SidebarSectionBlock({ section }: { section: SidebarSection }) {
             <Button
               variant="ghost"
               className={cn(
-                "group flex w-full items-center justify-between rounded-filon border px-3 py-2 text-left text-sm text-filon-text/65",
+                "group relative flex w-full items-center justify-between rounded-filon border px-3 py-2 text-left text-sm text-filon-text/65 transition-all",
                 item.active &&
-                  "border-filon-accent/50 bg-filon-border/40 text-filon-text shadow-[0_0_30px_rgba(47,243,255,0.15)]"
+                  "border-l-2 border-l-filon-accent bg-filon-surface/80 text-filon-text"
               )}
               aria-current={item.active ? "page" : undefined}
             >
