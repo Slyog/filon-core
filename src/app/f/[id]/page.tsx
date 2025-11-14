@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import WorkspaceLayout from "@/components/layout/WorkspaceLayout";
+import { AppFrame } from "@/components/layout/AppFrame";
 import GoalView from "@/components/GoalView";
 import { useSessionStore } from "@/store/SessionStore";
 
@@ -93,8 +93,8 @@ export default function WorkspacePage() {
   }
 
   return (
-    <WorkspaceLayout>
+    <AppFrame>
       <GoalView goalId={id} />
-    </WorkspaceLayout>
+    </AppFrame>
   );
 }

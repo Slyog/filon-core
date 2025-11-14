@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  background-color: var(--filon-bg) !important;
+}
+
+body {
+  --background: var(--filon-bg) !important;
+}
+
 @layer base {
   :root {
     --sidebar-w: 15rem; /* 240px */
