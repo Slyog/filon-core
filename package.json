@@ -10,7 +10,7 @@
   },
   "private": false,
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NEXT_WEBPACK_USEPOLLING=1 next dev",
     "dev:timeout": "node scripts/dev-timeout.js",
     "build": "next build --webpack",
     "start": "next start",

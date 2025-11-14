@@ -26,11 +26,12 @@ const config: Config = {
         layer: "#101418",
         panel: "#1C2229",
         filon: {
-          bg: "#000000",
-          surface: "#ffffff",
-          accent: "#2FF3FF",
-          text: "#ffffff",
-          border: "#333333",
+          bg: "var(--filon-bg)",
+          surface: "var(--filon-surface)",
+          text: "var(--filon-text)",
+          accent: "var(--filon-accent)",
+          border: "var(--filon-border)",
+          glow: "var(--filon-glow)",
         },
         // FILON Step 16.9 - Unified Design Tokens (synced from filonTokens)
         brand: filonTokens.colors.brand,

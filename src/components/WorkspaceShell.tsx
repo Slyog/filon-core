@@ -5,7 +5,6 @@ import type { QAEntry } from "@/store/QAStore";
 import dynamic from "next/dynamic";
 // ActiveNodeProvider and MindProgressProvider removed in FILON v4
 import { useSessionStore } from "@/store/SessionStore";
-import Sidebar from "@/components/Sidebar";
 import SessionTabs from "@/components/SessionTabs";
 import WorkspaceList from "@/components/WorkspaceList";
 import WorkspaceHeader from "@/components/WorkspaceHeader";
@@ -93,9 +92,6 @@ export default function WorkspaceShell({
 
       {/* Body */}
       <main className="flex flex-1 overflow-hidden pt-[140px]">
-        <aside className="w-64 border-r border-white/10">
-          <Sidebar />
-        </aside>
         <section className="flex-1 relative overflow-hidden">
           {children || <GoalView goalId={sessionId} />}
         </section>

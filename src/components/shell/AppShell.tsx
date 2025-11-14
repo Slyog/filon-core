@@ -9,9 +9,8 @@ import SidebarNav from "./Sidebar";
 import SidebarPeek from "./SidebarPeek";
 import AhaTour from "@/components/tour/AhaTour";
 import { useHydrateUIShell } from "@/store/UIShellStore";
-import ContextStream, {
-  type ContextStreamItem,
-} from "@/components/ContextStream";
+import { ContextStream } from "@/components/layout/ContextStream";
+import type { ContextStreamItem } from "@/components/layout/ContextStream";
 import { usePanelHotkeys } from "@/hooks/usePanelHotkeys";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useExplainCache } from "@/store/ExplainCache";

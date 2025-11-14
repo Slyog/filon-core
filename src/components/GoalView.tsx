@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useGoalState } from "@/hooks/useGoalState";
-import Brainbar from "@/components/Brainbar";
 import type { Goal, Track, Step } from "@/types/filon";
 
 interface GoalViewProps {
@@ -47,8 +46,6 @@ export default function GoalView({ goalId }: GoalViewProps) {
   return (
     <div className="flex flex-col min-h-screen bg-[#0A0F12] text-cyan-200 p-6">
       <div className="max-w-4xl mx-auto w-full space-y-6">
-        <Brainbar />
-
         {currentGoal && (
           <div className="space-y-6">
             <div className="border border-cyan-500/20 rounded-xl p-6 bg-surface-base/70">

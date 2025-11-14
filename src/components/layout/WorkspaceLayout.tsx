@@ -1,7 +1,7 @@
 "use client";
 
 import { useUIShellStore } from "@/store/UIShellStore";
-import ContextStream from "@/components/panels/ContextStream";
+import { ContextStream } from "@/components/layout/ContextStream";
 import AISummarizer from "@/components/panels/AISummarizer";
 
 export default function WorkspaceLayout({

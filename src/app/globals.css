@@ -5,17 +5,18 @@
 @layer base {
   :root {
     --sidebar-w: 15rem; /* 240px */
-    --filon-bg: #0a0f12;
+    --filon-bg: #000000;
+    --filon-surface: #0c0c0c;
+    --filon-text: #eaeaea;
+    --filon-accent: #2FF3FF;
+    --filon-border: #1a1a1a;
+    --filon-glow: rgba(47, 243, 255, 0.6);
     --filon-bg-hsl: 210 15% 8%;
-    --filon-surface: #11161b;
     --filon-surface-hsl: 210 15% 11%;
-    --filon-accent: #2ff3ff;
     --filon-accent-hsl: 180 100% 60%;
-    --filon-text: #eafcff;
     --filon-text-hsl: 0 0% 92%;
     --filon-text-dim: 0 0% 60%;
     --filon-primary: 180 100% 50%;
-    --filon-glow: rgba(47, 243, 255, 0.6);
     --filon-glow-hsl: 180 100% 60%;
   }
 
@@ -693,6 +694,13 @@ body.motion-test * {
 }
 
 /* --- ReactFlow Theme Overrides (FILON) --- */
+.react-flow,
+.react-flow__panel,
+.react-flow__node,
+.react-flow__controls {
+  background-color: transparent !important;
+}
+
 .react-flow__node,
 .react-flow__renderer {
   background: none !important;
