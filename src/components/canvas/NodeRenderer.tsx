@@ -5,7 +5,7 @@ import type { NodeProps } from "reactflow";
 export const nodeTypes = {
   default: ({ data }: NodeProps<{ label?: string }>) => (
     <div
-      className="p-3 rounded-lg border border-filon-border bg-filon-surface text-filon-text text-sm shadow-sm min-w-[120px] hover:border-filon-accent transition-colors"
+      className="px-4 py-3 rounded-filon border border-filon-border/60 bg-filon-bg/90 text-filon-text text-sm font-semibold leading-snug min-w-[120px] cursor-pointer transition-colors transition-shadow duration-150 ease-out hover:border-filon-accent/70 hover:bg-filon-bg hover:shadow-[0_0_18px_rgba(47,243,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0"
       role="button"
       tabIndex={0}
       aria-label={data.label || "Node"}
@@ -15,17 +15,17 @@ export const nodeTypes = {
   ),
   goal: ({ data }: NodeProps<{ label?: string }>) => (
     <div
-      className="p-3 rounded-lg border-2 border-filon-accent bg-filon-bg text-filon-accent text-sm shadow-sm shadow-filon-glow min-w-[120px] font-semibold hover:shadow-[0_0_12px_var(--filon-glow)] transition-shadow"
+      className="px-4 py-3 rounded-filon border border-filon-accent/70 bg-filon-bg/90 text-filon-text text-sm font-semibold leading-snug min-w-[120px] cursor-pointer transition-colors transition-shadow duration-150 ease-out hover:border-filon-accent/70 hover:bg-filon-bg hover:shadow-[0_0_18px_rgba(47,243,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0"
       role="button"
       tabIndex={0}
       aria-label={`Goal: ${data.label || "Untitled"}`}
     >
-      {data.label || "Goal"}
+      <span className="text-filon-accent">{data.label || "Goal"}</span>
     </div>
   ),
   track: ({ data }: NodeProps<{ label?: string }>) => (
     <div
-      className="p-3 rounded-lg border border-filon-border bg-filon-surface/80 text-filon-text text-sm shadow-sm min-w-[120px] hover:bg-filon-surface transition-colors"
+      className="px-4 py-3 rounded-filon border border-filon-border/60 bg-filon-bg/90 text-filon-text text-sm font-semibold leading-snug min-w-[120px] cursor-pointer transition-colors transition-shadow duration-150 ease-out hover:border-filon-accent/70 hover:bg-filon-bg hover:shadow-[0_0_18px_rgba(47,243,255,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0"
       role="button"
       tabIndex={0}
       aria-label={`Track: ${data.label || "Untitled"}`}
