@@ -3,6 +3,7 @@ import { db } from "@/store/db";
 import type { SyncEvent } from "@/sync/syncSchema";
 import { registerOnlineSync, isOnline } from "@/utils/network";
 import { logTelemetry } from "@/utils/telemetryLogger";
+import { markSessionClean } from "@/lib/session";
 
 interface SyncJob {
   id: string;
@@ -126,6 +127,12 @@ export function useAutosaveQueue(
         await db.snapshots.delete(job.id).catch(() => {
           // Ignore errors on cleanup
         });
+
+        // If this was a manual save (triggered via forceSync), mark session as clean
+        // Manual saves have diffSummary starting with "Manual sync"
+        if (job.diffSummary.startsWith("Manual sync")) {
+          markSessionClean();
+        }
 
         // Performance tracking: end timestamp and log diff
         const endTime = performance.now();

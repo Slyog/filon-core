@@ -7,7 +7,7 @@ import { render, screen, act, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { CanvasRoot } from "../CanvasRoot";
 import { useFlowStore } from "../useFlowStore";
-import { saveCanvasSession, clearCanvasSession, hasCanvasSession } from "@/lib/session";
+import { saveCanvasSession, clearCanvasSession, hasCanvasSession, hasDirtySession, markSessionClean } from "@/lib/session";
 import type { CanvasRestoreHandle } from "@/components/layout/AppFrame";
 
 // Mock ReactFlow components
@@ -74,8 +74,8 @@ describe("CanvasRoot Restore Functionality", () => {
     });
   });
 
-  it("should show RestoreToast when session exists", async () => {
-    // Save a session
+  it("should show RestoreToast when dirty session exists", async () => {
+    // Save a session (which will be marked as dirty by default)
     const testNodes = [
       { id: "test-1", type: "default", position: { x: 100, y: 100 }, data: { label: "Test Node" } },
     ];
@@ -85,7 +85,7 @@ describe("CanvasRoot Restore Functionality", () => {
       presetId: null,
     });
 
-    expect(hasCanvasSession()).toBe(true);
+    expect(hasDirtySession()).toBe(true);
 
     render(<CanvasRoot />);
 

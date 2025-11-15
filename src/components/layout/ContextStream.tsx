@@ -63,21 +63,21 @@ export default function ContextStream({
   return (
     <aside
       className={cn(
-        "flex h-full w-full flex-col bg-filon-surface/80 text-filon-text backdrop-blur-sm supports-[backdrop-filter]:bg-filon-surface/70",
+        "flex h-full w-full flex-col bg-filon-surface text-filon-text border-l border-filon-border/60",
         className
       )}
     >
-      <div className="border-b border-filon-border/60 px-6 py-4">
-        <p className="text-[11px] uppercase tracking-[0.35em] text-filon-text/50">
-          Context Stream
+      <div className="sticky top-0 z-10 border-b border-filon-border/60 bg-filon-surface px-6 py-4">
+        <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-filon-text/65">
+          CONTEXT STREAM
         </p>
-        <p className="mt-2 text-sm text-filon-text/60">
-          Latest signals, summaries, and references for this workspace.
+        <p className="mt-1.5 text-xs text-filon-text/60">
+          Latest signals, summaries and references
         </p>
       </div>
 
-      <ScrollArea className="flex-1 px-6 pb-6">
-        <div className="flex flex-col gap-4 py-5 pr-2">
+      <ScrollArea className="flex-1">
+        <div className="flex flex-col gap-3 px-6 py-5">
           {streamItems.map((item, index) => (
             <ContextStreamItemCard
               key={item.id}
@@ -140,24 +140,21 @@ function ContextStreamItemCard({
         }
       }}
       className={cn(
-        "group relative rounded-filon border bg-filon-surface/70 px-3 py-2.5 cursor-pointer",
-        "transition-colors transition-shadow transition-transform duration-150 ease-out",
+        "group relative rounded-filon border border-filon-border/60 bg-filon-bg/90 p-3.5 cursor-pointer",
+        "transition-colors transition-shadow duration-150 ease-out",
         "opacity-0 translate-y-[2px]",
-        "hover:bg-filon-surface hover:border-filon-accent/60 hover:border-l-2 hover:border-l-filon-accent hover:shadow-[0_0_15px_rgba(47,243,255,0.18)] hover:scale-[1.01]",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0",
-        "border-filon-border/60"
+        "hover:border-filon-accent/60 hover:bg-filon-bg hover:shadow-[0_0_12px_rgba(47,243,255,0.12)]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent/80 focus-visible:ring-offset-0"
       )}
       style={{
         animation: `contextStreamIn 180ms ease-out ${animationDelay}ms forwards`,
       }}
     >
       <div className="flex flex-col space-y-2.5">
-        {/* Label */}
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-medium uppercase tracking-widest text-filon-text/65">
-            {item.type.toUpperCase()}
-          </span>
-        </div>
+        {/* Type label */}
+        <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-filon-text/65">
+          {item.type.toUpperCase()}
+        </span>
 
         {/* Title */}
         <h3 className="text-sm font-semibold leading-snug text-filon-text">
@@ -169,8 +166,8 @@ function ContextStreamItemCard({
           {item.summary}
         </p>
 
-        {/* Meta area */}
-        <div className="flex flex-wrap items-center gap-2 pt-1">
+        {/* Meta row */}
+        <div className="flex flex-wrap items-center gap-2 pt-0.5">
           <span className="text-[11px] text-filon-text/60">
             {timeAgo ?? ""}
           </span>

@@ -7,7 +7,7 @@ import { AutosaveStatus } from "./AutosaveStatus";
 import { RestoreToast } from "@/components/RestoreToast";
 import { useFlowStore } from "./useFlowStore";
 import { useCanvasAutosave } from "@/hooks/useCanvasAutosave";
-import { hasCanvasSession, clearCanvasSession } from "@/lib/session";
+import { hasDirtySession, clearCanvasSession } from "@/lib/session";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
 import type { CanvasRestoreHandle } from "@/components/layout/AppFrame";
 
@@ -30,12 +30,12 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
     presetId: presetId ?? null,
   });
 
-  // Check for saved canvas session on mount and show toast if exists
+  // Check for dirty (unsaved) session on mount and show toast if exists
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Check directly using hasCanvasSession
-    if (hasCanvasSession()) {
+    // Only show toast if there is a dirty (unsaved) session
+    if (hasDirtySession()) {
       setShowRestoreToast(true);
     }
   }, []);
@@ -45,12 +45,15 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
     if (restoreHandle) {
       const success = restoreHandle.restore();
       if (success) {
+        // Clear the session after restore to prevent toast from showing again on reload
+        clearCanvasSession();
         setShowRestoreToast(false);
       }
     }
   }, []);
 
   const handleDiscard = useCallback(() => {
+    // Clear the session when discarding to prevent toast from showing again
     clearCanvasSession();
     setShowRestoreToast(false);
   }, []);
