@@ -167,7 +167,8 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
               onBlur={() => setIsFocused(false)}
               disabled={isDisabled}
               placeholder="Type a thought, goal or command…"
-              aria-label="Brainbar input for thoughts, goals, and links"
+              aria-label="Brainbar input for thoughts, goals, and commands"
+              aria-describedby="brainbar-helper"
               aria-disabled={isDisabled}
               className="w-full bg-transparent text-filon-text placeholder:text-filon-text/60 py-3 px-4 pr-12 rounded-filon border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent focus-visible:ring-offset-1 focus-visible:ring-offset-filon-bg text-base disabled:cursor-not-allowed disabled:opacity-60"
             />
@@ -201,6 +202,7 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
               onClick={() => handleChipClick(command)}
               disabled={isDisabled}
               aria-label={`Insert ${label} command`}
+              aria-pressed={isActive}
               aria-disabled={isDisabled}
             >
               {label}
@@ -208,6 +210,14 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
           );
         })}
       </div>
+
+      {/* Helper text */}
+      <p
+        id="brainbar-helper"
+        className="px-4 pb-2 text-[10px] font-medium tracking-[0.16em] uppercase text-filon-text/50 text-right"
+      >
+        Press Enter to commit
+      </p>
     </header>
   );
 });
