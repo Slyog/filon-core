@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Chip } from "@/components/ui/chip";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SessionStatusIndicator } from "./SessionStatusIndicator";
 
 type ChipMode = "goal" | "link" | "summarize" | null;
 
@@ -187,7 +188,7 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
 
         {/* Right zone: quick actions */}
         <div className="flex items-center gap-2 min-w-[80px] justify-end">
-          {/* Quick actions / buttons - placeholder for now, visually balanced */}
+          <SessionStatusIndicator />
         </div>
       </form>
 

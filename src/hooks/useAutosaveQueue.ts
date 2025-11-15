@@ -4,6 +4,7 @@ import type { SyncEvent } from "@/sync/syncSchema";
 import { registerOnlineSync, isOnline } from "@/utils/network";
 import { logTelemetry } from "@/utils/telemetryLogger";
 import { markSessionClean } from "@/lib/session";
+import { setGlobalForceSync } from "./useSessionStatus";
 
 interface SyncJob {
   id: string;
@@ -58,6 +59,11 @@ export function useAutosaveQueue(
 
     isProcessing.current = true;
     setIsSyncing(true);
+
+    // Emit autosave start event
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("autosave:start"));
+    }
 
     const job = queue.current[0];
     if (!job) {
@@ -160,13 +166,29 @@ export function useAutosaveQueue(
           job.sessionId
         );
 
+        // Emit autosave success event
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("autosave:success"));
+        }
+
         console.log(`[AUTOSAVE] Sync successful: ${job.id} (${duration.toFixed(2)}ms)`);
+        
+        // Reset syncing state
+        isProcessing.current = false;
+        setIsSyncing(false);
       } else {
         // Error response but not a network error
         throw new Error(response.error || "Sync failed");
       }
     } catch (err: any) {
       console.warn("[AUTOSAVE] Sync error:", err);
+      
+      // Reset syncing state on error (will be set again if retrying)
+      const currentJob = queue.current[0];
+      if (!currentJob || currentJob.retryCount >= MAX_RETRIES) {
+        isProcessing.current = false;
+        setIsSyncing(false);
+      }
 
       const errorMessage = err.message || String(err);
       setLastError(errorMessage);
@@ -196,6 +218,21 @@ export function useAutosaveQueue(
         job.sessionId
       );
 
+      // Emit autosave error event
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("autosave:error", {
+            detail: { error: errorMessage },
+          })
+        );
+      }
+
+      // Reset syncing state on error (unless retrying)
+      if (job.retryCount >= MAX_RETRIES) {
+        isProcessing.current = false;
+        setIsSyncing(false);
+      }
+
       job.retryCount += 1;
       job.lastRetryAt = Date.now();
       setTotalRetries((prev) => prev + 1);
@@ -219,6 +256,10 @@ export function useAutosaveQueue(
         setTimeout(() => {
           if (isOnline()) {
             syncNextJob();
+          } else {
+            // Reset syncing state if offline
+            isProcessing.current = false;
+            setIsSyncing(false);
           }
         }, delay);
       } else {
@@ -238,6 +279,16 @@ export function useAutosaveQueue(
 
         queue.current.shift();
         setQueueSize(queue.current.length);
+        
+        // Emit autosave error event for max retries
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("autosave:error", {
+              detail: { error: "Max retries reached" },
+            })
+          );
+        }
+        
         // Keep in Dexie for manual retry later
       }
     } finally {
@@ -502,6 +553,14 @@ export function useAutosaveQueue(
   }, [sessionId, userId, syncNextJob]);
 
   forceSyncRef.current = forceSync;
+  
+  // Register forceSync globally for useSessionStatus hook
+  useEffect(() => {
+    setGlobalForceSync(forceSync);
+    return () => {
+      setGlobalForceSync(null);
+    };
+  }, [forceSync]);
 
   return {
     queue: queue.current,

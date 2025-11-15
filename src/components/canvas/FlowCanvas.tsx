@@ -53,15 +53,33 @@ export function FlowCanvas({
   );
 
   const handleInit = (instance: ReactFlowInstance) => {
-    // Center the nodes in the viewport
-    setTimeout(() => {
-      instance.fitView({ padding: 0.1, duration: 0 });
-      // Ensure zoom is not too small - adjust if needed
-      const { zoom } = instance.getViewport();
-      if (zoom < 0.8) {
-        instance.zoomTo(0.8, { duration: 0 });
-      }
-    }, 0);
+    // Check if there's a saved viewport to restore
+    const savedSession = typeof window !== "undefined" 
+      ? require("@/lib/session").loadCanvasSession()
+      : null;
+    
+    if (savedSession?.viewport) {
+      // Restore saved viewport
+      instance.setViewport(
+        {
+          x: savedSession.viewport.x,
+          y: savedSession.viewport.y,
+          zoom: savedSession.viewport.zoom,
+        },
+        { duration: 0 }
+      );
+    } else {
+      // Only fitView if there's no saved viewport
+      setTimeout(() => {
+        instance.fitView({ padding: 0.1, duration: 0 });
+        // Ensure zoom is not too small - adjust if needed
+        const { zoom } = instance.getViewport();
+        if (zoom < 0.8) {
+          instance.zoomTo(0.8, { duration: 0 });
+        }
+      }, 0);
+    }
+    
     onInit?.(instance);
   };
 

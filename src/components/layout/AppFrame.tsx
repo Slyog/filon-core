@@ -71,6 +71,22 @@ export default function AppFrame({ children }: AppFrameProps) {
 
     try {
       loadSnapshot(snapshot);
+      
+      // Restore viewport if available
+      if (snapshot.viewport) {
+        const reactFlowInstance = (window as any).__reactflow;
+        if (reactFlowInstance) {
+          reactFlowInstance.setViewport(
+            {
+              x: snapshot.viewport.x,
+              y: snapshot.viewport.y,
+              zoom: snapshot.viewport.zoom,
+            },
+            { duration: 0 }
+          );
+        }
+      }
+      
       return true;
     } catch (error) {
       console.warn("[AppFrame] Failed to restore canvas state:", error);

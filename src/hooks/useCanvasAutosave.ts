@@ -2,12 +2,17 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { saveCanvasSession } from "@/lib/session";
-import type { Node, Edge } from "reactflow";
+import type { Node, Edge, ReactFlowInstance } from "reactflow";
 
 export interface CanvasAutosaveData {
   nodes: Node[];
   edges: Edge[];
   presetId?: string | null;
+  viewport?: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
   metadata?: Record<string, unknown>;
 }
 
@@ -33,6 +38,7 @@ export function useCanvasAutosave(
       nodes: d.nodes,
       edges: d.edges,
       presetId: d.presetId,
+      viewport: d.viewport,
       metadata: d.metadata,
     });
   }, []);
@@ -41,13 +47,27 @@ export function useCanvasAutosave(
   const performSave = useCallback(
     (toSave: CanvasAutosaveData) => {
       try {
+        // Capture current viewport from ReactFlow instance if available
+        const reactFlowInstance = (window as any).__reactflow as ReactFlowInstance | undefined;
+        let viewport = toSave.viewport;
+        
+        if (reactFlowInstance) {
+          const currentViewport = reactFlowInstance.getViewport();
+          viewport = {
+            x: currentViewport.x,
+            y: currentViewport.y,
+            zoom: currentViewport.zoom,
+          };
+        }
+
         saveCanvasSession({
           nodes: toSave.nodes,
           edges: toSave.edges,
           presetId: toSave.presetId,
+          viewport,
           metadata: toSave.metadata,
         });
-        const serialized = serializeData(toSave);
+        const serialized = serializeData({ ...toSave, viewport });
         lastSavedRef.current = serialized;
         setHasUnsavedChanges(false);
       } catch (error) {
