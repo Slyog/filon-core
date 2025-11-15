@@ -1,3 +1,4 @@
+// Local development only. Never run during build.
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -22,3 +23,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

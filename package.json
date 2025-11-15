@@ -51,7 +51,8 @@
     "qa:update-dashboard": "node scripts/update-dashboard.mjs",
     "qa:report": "npm run qa:test && npm run qa:metrics && npm run qa:layout",
     "qa:axe": "jest --runTestsByPath src/__tests__/qa-unified-shell.spec.ts",
-    "db:reset": "ts-node prisma/reset.ts",
+    "db:reset": "ts-node scripts/reset.local.ts",
+    "postinstall": "prisma generate || true",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
