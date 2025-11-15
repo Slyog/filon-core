@@ -132,72 +132,82 @@ export const Brainbar = forwardRef<BrainbarHandle, BrainbarProps>(function Brain
   );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-filon-border/60 bg-filon-bg/95 px-6 py-4 backdrop-blur-sm supports-[backdrop-filter]:bg-filon-bg/80">
+    <header 
+      className="sticky top-0 z-40 border-b border-filon-border/60 bg-filon-surface shadow-sm"
+      role="banner"
+    >
       <form
         onSubmit={handleSubmit}
         role="search"
         aria-label="Brainbar"
-        className="flex flex-col gap-3.5"
+        className="flex items-center gap-3 px-4 py-2"
       >
-        <div
-          className={cn(
-            "relative w-full rounded-filon border bg-filon-surface/95",
-            "transition-colors transition-shadow transition-transform duration-150 ease-out",
-            isFocused && "border-filon-accent/80 shadow-[0_0_15px_rgba(47,243,255,0.18)]",
-            isCommittedPulse && "scale-[1.01] shadow-glow",
-            !isFocused && !isCommittedPulse && "border-filon-border/60 shadow-none"
-          )}
-        >
-          <Input
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            disabled={isDisabled}
-            placeholder="What are you thinking about?"
-            aria-label="Brainbar input for thoughts, goals, and links"
-            aria-disabled={isDisabled}
-            className="w-full bg-transparent text-filon-text placeholder:text-filon-text/60 py-5 px-6 pr-14 rounded-filon border-0 focus-visible:outline-none focus-visible:ring-0 text-base disabled:cursor-not-allowed disabled:opacity-60"
-          />
-          <Sparkles
-            className="absolute right-5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-filon-text/60 pointer-events-none"
-            aria-hidden="true"
-          />
-          {isLoading && (
-            <span 
-              className="absolute right-12 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-filon-accent animate-pulse" 
+        {/* Left zone: reserved for secondary controls */}
+        <div className="flex items-center gap-2 min-w-[80px]">
+          {/* Left slot: optional chips/filter/label (can be minimal for now) */}
+        </div>
+
+        {/* Center zone: main input (dominant) */}
+        <div className="flex-1">
+          <div
+            className={cn(
+              "relative w-full rounded-filon border bg-filon-bg",
+              "transition-colors transition-shadow transition-transform duration-150 ease-out",
+              isFocused && "border-filon-accent/80 shadow-[0_0_15px_rgba(47,243,255,0.18)]",
+              isCommittedPulse && "scale-[1.01] shadow-glow",
+              !isFocused && !isCommittedPulse && "border-filon-border/60 shadow-none"
+            )}
+          >
+            <Input
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              disabled={isDisabled}
+              placeholder="Type a thought, goal or command…"
+              aria-label="Brainbar input for thoughts, goals, and links"
+              aria-disabled={isDisabled}
+              className="w-full bg-transparent text-filon-text placeholder:text-filon-text/60 py-3 px-4 pr-12 rounded-filon border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-filon-accent focus-visible:ring-offset-1 focus-visible:ring-offset-filon-bg text-base disabled:cursor-not-allowed disabled:opacity-60"
+            />
+            <Sparkles
+              className="absolute right-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-filon-text/60 pointer-events-none"
               aria-hidden="true"
             />
-          )}
+            {isLoading && (
+              <span 
+                className="absolute right-10 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-filon-accent animate-pulse" 
+                aria-hidden="true"
+              />
+            )}
+          </div>
         </div>
 
-        <p
-          id="brainbar-helper"
-          className="mt-1 text-[10px] font-medium tracking-[0.16em] uppercase text-filon-text/50 text-right"
-        >
-          Press Enter to commit
-        </p>
-
-        <div className="flex flex-wrap gap-2 px-1">
-          {commandChips.map(({ command, label }) => {
-            const isActive = activeMode === command;
-            return (
-              <Chip
-                key={command}
-                variant={isActive ? "active" : "default"}
-                onClick={() => handleChipClick(command)}
-                disabled={isDisabled}
-                aria-label={`Insert ${label} command`}
-                aria-disabled={isDisabled}
-              >
-                {label}
-              </Chip>
-            );
-          })}
+        {/* Right zone: quick actions */}
+        <div className="flex items-center gap-2 min-w-[80px] justify-end">
+          {/* Quick actions / buttons - placeholder for now, visually balanced */}
         </div>
       </form>
+
+      {/* Command chips below the main bar */}
+      <div className="flex flex-wrap gap-2 px-4 pb-2">
+        {commandChips.map(({ command, label }) => {
+          const isActive = activeMode === command;
+          return (
+            <Chip
+              key={command}
+              variant={isActive ? "active" : "default"}
+              onClick={() => handleChipClick(command)}
+              disabled={isDisabled}
+              aria-label={`Insert ${label} command`}
+              aria-disabled={isDisabled}
+            >
+              {label}
+            </Chip>
+          );
+        })}
+      </div>
     </header>
   );
 });

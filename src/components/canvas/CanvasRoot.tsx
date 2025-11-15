@@ -1,11 +1,15 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
 import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "./FlowCanvas";
 import { AutosaveStatus } from "./AutosaveStatus";
+import { RestoreToast } from "@/components/RestoreToast";
 import { useFlowStore } from "./useFlowStore";
 import { useCanvasAutosave } from "@/hooks/useCanvasAutosave";
+import { hasCanvasSession, clearCanvasSession } from "@/lib/session";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
+import type { CanvasRestoreHandle } from "@/components/layout/AppFrame";
 
 type CanvasRootProps = {
   presetId?: OnboardingPresetId | null;
@@ -17,6 +21,7 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
   // Get canvas data for autosave status
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
+  const [showRestoreToast, setShowRestoreToast] = useState(false);
   
   // Get autosave status
   const { hasUnsavedChanges } = useCanvasAutosave({
@@ -24,6 +29,31 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
     edges,
     presetId: presetId ?? null,
   });
+
+  // Check for saved canvas session on mount and show toast if exists
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Check directly using hasCanvasSession
+    if (hasCanvasSession()) {
+      setShowRestoreToast(true);
+    }
+  }, []);
+
+  const handleRestore = useCallback(() => {
+    const restoreHandle = (window as any).__canvasRestore as CanvasRestoreHandle | undefined;
+    if (restoreHandle) {
+      const success = restoreHandle.restore();
+      if (success) {
+        setShowRestoreToast(false);
+      }
+    }
+  }, []);
+
+  const handleDiscard = useCallback(() => {
+    clearCanvasSession();
+    setShowRestoreToast(false);
+  }, []);
 
   // Subtle grid pattern background
   const gridPattern = `data:image/svg+xml,${encodeURIComponent(`
@@ -44,6 +74,16 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
     >
       {/* AUTOSAVE STATUS INDICATOR */}
       <AutosaveStatus hasUnsavedChanges={hasUnsavedChanges} />
+      
+      {/* RESTORE TOAST */}
+      <div className="absolute bottom-6 right-6 z-[60]">
+        <RestoreToast
+          isVisible={showRestoreToast}
+          onRestore={handleRestore}
+          onDiscard={handleDiscard}
+        />
+      </div>
+      
       <div
         className="absolute inset-0 opacity-30 pointer-events-none"
         style={{
