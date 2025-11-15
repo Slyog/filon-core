@@ -5,14 +5,32 @@ import type { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect, Connection } 
 import { applyNodeChanges, applyEdgeChanges, addEdge } from "reactflow";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
 
+export interface FlowSnapshot {
+  version: 1;
+  createdAt: number;
+  workspaceId?: string | null;
+  nodes: Node[];
+  edges: Edge[];
+  viewport?: {
+    x: number;
+    y: number;
+    zoom: number;
+  };
+  presetId?: OnboardingPresetId | null;
+}
+
 type FlowState = {
   nodes: Node[];
   edges: Edge[];
+  presetId: OnboardingPresetId | null;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   // eslint-disable-next-line no-unused-vars
   updateEmptyStateCopy: (presetId: OnboardingPresetId | null) => void;
+  getSnapshot: () => FlowSnapshot;
+  // eslint-disable-next-line no-unused-vars
+  loadSnapshot: (snapshot: FlowSnapshot) => void;
 };
 
 function getEmptyStateCopy(presetId?: OnboardingPresetId | null) {
@@ -67,6 +85,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     },
   ],
   edges: [],
+  presetId: null,
 
   onNodesChange: (changes) =>
     set({
@@ -95,7 +114,62 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       }
       return node;
     });
-    set({ nodes: updatedNodes });
+    set({ nodes: updatedNodes, presetId });
+  },
+
+  getSnapshot: (): FlowSnapshot => {
+    const state = get();
+    return {
+      version: 1,
+      createdAt: Date.now(),
+      workspaceId: null,
+      nodes: state.nodes,
+      edges: state.edges,
+      presetId: state.presetId,
+      // viewport is optional and not stored in flow store
+      // can be added later if needed
+    };
+  },
+
+  loadSnapshot: (snapshot: FlowSnapshot) => {
+    // Validate snapshot version
+    if (snapshot.version !== 1) {
+      console.warn(
+        `[FlowStore] Unsupported snapshot version: ${snapshot.version}. Expected version 1.`
+      );
+      return;
+    }
+
+    // Validate required fields
+    if (!Array.isArray(snapshot.nodes) || !Array.isArray(snapshot.edges)) {
+      console.warn("[FlowStore] Invalid snapshot: nodes and edges must be arrays.");
+      return;
+    }
+
+    // Load nodes and edges
+    set({
+      nodes: snapshot.nodes,
+      edges: snapshot.edges,
+      presetId: snapshot.presetId ?? null,
+    });
+
+    // If presetId is provided, update empty state copy
+    if (snapshot.presetId) {
+      const copy = getEmptyStateCopy(snapshot.presetId);
+      const updatedNodes = snapshot.nodes.map((node) => {
+        if (node.id === "1") {
+          return {
+            ...node,
+            data: { label: copy.title },
+          };
+        }
+        return node;
+      });
+      set({ nodes: updatedNodes });
+    }
+
+    // Note: viewport restoration would need to be handled separately
+    // via ReactFlow instance or UIStore, as it's not part of this store
   },
 }));
 

@@ -16,8 +16,32 @@ import {
   OnboardingPresetPanel,
   type OnboardingPresetId,
 } from "@/components/onboarding/OnboardingPresetPanel";
+import { loadCanvasSession, hasCanvasSession, clearCanvasSession } from "@/lib/session";
+import { useFlowStore } from "@/components/canvas/useFlowStore";
+import type { FlowSnapshot } from "@/components/canvas/useFlowStore";
+import { RestoreToast } from "@/components/RestoreToast";
 
 const ONBOARDING_PRESET_STORAGE_KEY = "filon.v4.onboardingPreset";
+
+export interface CanvasRestoreHandle {
+  hasSavedState: () => boolean;
+  restore: () => boolean;
+}
+
+function convertSessionToSnapshot(
+  sessionState: ReturnType<typeof loadCanvasSession>
+): FlowSnapshot | null {
+  if (!sessionState) return null;
+
+  return {
+    version: 1,
+    createdAt: sessionState.savedAt,
+    workspaceId: null,
+    nodes: sessionState.nodes as FlowSnapshot["nodes"],
+    edges: sessionState.edges as FlowSnapshot["edges"],
+    presetId: (sessionState.presetId as OnboardingPresetId | null) ?? null,
+  };
+}
 
 type AppFrameProps = {
   children: ReactNode;
@@ -26,7 +50,56 @@ type AppFrameProps = {
 export default function AppFrame({ children }: AppFrameProps) {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [selectedPreset, setSelectedPreset] = useState<OnboardingPresetId | null>(null);
+  const [showRestoreToast, setShowRestoreToast] = useState(false);
   const brainbarRef = useRef<BrainbarHandle | null>(null);
+  const restoreHandleRef = useRef<CanvasRestoreHandle | null>(null);
+  const loadSnapshot = useFlowStore((state) => state.loadSnapshot);
+
+  // Initial restore check (optional - exposed for UI to call later)
+  const checkForRestore = useCallback((): boolean => {
+    if (!hasCanvasSession()) {
+      return false;
+    }
+
+    const sessionState = loadCanvasSession();
+    if (!sessionState) {
+      return false;
+    }
+
+    const snapshot = convertSessionToSnapshot(sessionState);
+    if (!snapshot) {
+      return false;
+    }
+
+    try {
+      loadSnapshot(snapshot);
+      return true;
+    } catch (error) {
+      console.warn("[AppFrame] Failed to restore canvas state:", error);
+      return false;
+    }
+  }, [loadSnapshot]);
+
+  // Expose restore handle for UI to use later
+  useEffect(() => {
+    restoreHandleRef.current = {
+      hasSavedState: () => hasCanvasSession(),
+      restore: checkForRestore,
+    };
+
+    // Make available globally for later UI integration
+    (window as any).__canvasRestore = restoreHandleRef.current;
+  }, [checkForRestore]);
+
+  // Check for saved canvas session on mount and show toast if exists
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Check directly using hasCanvasSession - doesn't depend on restore handle
+    if (hasCanvasSession()) {
+      setShowRestoreToast(true);
+    }
+  }, []);
 
   const loadStoredPreset = (): OnboardingPresetId | null => {
     if (typeof window === "undefined") return null;
@@ -70,6 +143,21 @@ export default function AppFrame({ children }: AppFrameProps) {
     brainbarRef.current?.focus();
   }, []);
 
+  const handleRestore = useCallback(() => {
+    const restoreHandle = (window as any).__canvasRestore as CanvasRestoreHandle | undefined;
+    if (restoreHandle) {
+      const success = restoreHandle.restore();
+      if (success) {
+        setShowRestoreToast(false);
+      }
+    }
+  }, []);
+
+  const handleDiscard = useCallback(() => {
+    clearCanvasSession();
+    setShowRestoreToast(false);
+  }, []);
+
   return (
     <div className="grid h-screen w-screen grid-cols-[280px_minmax(0,1fr)_340px] bg-filon-bg text-filon-text">
       {/* LEFT SIDEBAR */}
@@ -102,6 +190,13 @@ export default function AppFrame({ children }: AppFrameProps) {
       <div className="col-span-1 col-start-3 h-full border-l border-filon-border/60">
         <ContextStream />
       </div>
+
+      {/* RESTORE TOAST */}
+      <RestoreToast
+        isVisible={showRestoreToast}
+        onRestore={handleRestore}
+        onDiscard={handleDiscard}
+      />
     </div>
   );
 }
