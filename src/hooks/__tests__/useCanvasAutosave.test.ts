@@ -278,14 +278,14 @@ describe("useCanvasAutosave", () => {
       ({ data }) => useCanvasAutosave(data, 100),
       {
         initialProps: {
-          data: { nodes, edges: [], presetId: null },
+          data: { nodes, edges: [], presetId: null as string | null },
         },
       }
     );
 
     // Change presetId
     act(() => {
-      rerender({ data: { nodes, edges: [], presetId: "career" } });
+      rerender({ data: { nodes, edges: [], presetId: "career" as string | null } });
     });
 
     expect(result.current.hasUnsavedChanges).toBe(true);
