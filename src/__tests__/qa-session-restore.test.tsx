@@ -3,10 +3,17 @@
  */
 
 import { saveCanvasSession, clearCanvasSession, hasDirtySession, markSessionClean, loadCanvasSession } from "@/lib/session";
+import { logTelemetry } from "@/utils/telemetryLogger";
+
+// Mock telemetry logger
+jest.mock("@/utils/telemetryLogger", () => ({
+  logTelemetry: jest.fn(() => Promise.resolve()),
+}));
 
 describe("Session Restore Logic", () => {
   beforeEach(() => {
     clearCanvasSession();
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -79,6 +86,17 @@ describe("Session Restore Logic", () => {
 
       const session = loadCanvasSession();
       expect(session?.dirty).toBe(false);
+
+      // Verify logging was called
+      expect(logTelemetry).toHaveBeenCalledWith(
+        "session:mark-clean",
+        "Session marked as clean after manual save",
+        expect.objectContaining({
+          source: "manual-save",
+          updatedAt: expect.any(Number),
+        }),
+        undefined
+      );
     });
   });
 

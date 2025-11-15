@@ -3,6 +3,8 @@
  * Used for temporary autosave/restore functionality
  */
 
+import { logTelemetry } from "@/utils/telemetryLogger";
+
 const CANVAS_STORAGE_KEY = "filon.v4.canvas.state";
 
 export interface CanvasSessionState {
@@ -55,6 +57,19 @@ export function markSessionClean(): void {
         updatedAt: Date.now(),
       };
       window.sessionStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify(cleanState));
+
+      // Log that session was marked as clean
+      logTelemetry(
+        "session:mark-clean",
+        "Session marked as clean after manual save",
+        {
+          source: "manual-save",
+          updatedAt: cleanState.updatedAt,
+        },
+        undefined
+      ).catch(() => {
+        // Non-blocking: ignore logging errors
+      });
     }
   } catch (error) {
     console.warn("[Session] Failed to mark session as clean:", error);

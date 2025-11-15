@@ -8,7 +8,13 @@ import "@testing-library/jest-dom";
 import { CanvasRoot } from "../CanvasRoot";
 import { useFlowStore } from "../useFlowStore";
 import { saveCanvasSession, clearCanvasSession, hasCanvasSession, hasDirtySession, markSessionClean } from "@/lib/session";
+import { logTelemetry } from "@/utils/telemetryLogger";
 import type { CanvasRestoreHandle } from "@/components/layout/AppFrame";
+
+// Mock telemetry logger
+jest.mock("@/utils/telemetryLogger", () => ({
+  logTelemetry: jest.fn(() => Promise.resolve()),
+}));
 
 // Mock ReactFlow components
 jest.mock("reactflow", () => {
@@ -34,6 +40,7 @@ describe("CanvasRoot Restore Functionality", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     clearCanvasSession();
+    (logTelemetry as jest.Mock).mockClear();
 
     // Setup mock restore handle
     mockRestoreHandle = {
@@ -96,6 +103,16 @@ describe("CanvasRoot Restore Functionality", () => {
       expect(screen.getByText("Unsaved session detected")).toBeInTheDocument();
       expect(screen.getByText(/A previously saved canvas was found. Restore it\?/)).toBeInTheDocument();
     });
+
+    // Verify logging was called
+    await waitFor(() => {
+      expect(logTelemetry).toHaveBeenCalledWith(
+        "session:restore:shown",
+        "Restore toast displayed",
+        {},
+        undefined
+      );
+    });
   });
 
   it("should NOT show RestoreToast when no session exists", () => {
@@ -146,6 +163,20 @@ describe("CanvasRoot Restore Functionality", () => {
     expect(state.nodes).toHaveLength(1);
     expect(state.nodes[0].id).toBe("restore-test-1");
     expect(state.nodes[0].data.label).toBe("Restored Node");
+
+    // Verify logging was called
+    expect(logTelemetry).toHaveBeenCalledWith(
+      "session:restore:requested",
+      "User requested session restore",
+      {},
+      undefined
+    );
+    expect(logTelemetry).toHaveBeenCalledWith(
+      "session:restore:success",
+      "Session restore succeeded",
+      {},
+      undefined
+    );
   });
 
   it("should clear sessionStorage when clicking Discard button", async () => {
@@ -183,6 +214,14 @@ describe("CanvasRoot Restore Functionality", () => {
     await waitFor(() => {
       expect(screen.queryByTestId("restore-toast")).not.toBeInTheDocument();
     });
+
+    // Verify logging was called
+    expect(logTelemetry).toHaveBeenCalledWith(
+      "session:restore:discard",
+      "User discarded session restore",
+      {},
+      undefined
+    );
   });
 
   it("should hide toast after Restore", async () => {

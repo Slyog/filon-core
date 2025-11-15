@@ -128,21 +128,35 @@ export function useAutosaveQueue(
           // Ignore errors on cleanup
         });
 
-        // If this was a manual save (triggered via forceSync), mark session as clean
-        // Manual saves have diffSummary starting with "Manual sync"
-        if (job.diffSummary.startsWith("Manual sync")) {
-          markSessionClean();
-        }
-
         // Performance tracking: end timestamp and log diff
         const endTime = performance.now();
         const duration = endTime - startTime;
 
-        // Log commit success with performance metrics
+        // Determine if this was a manual save
+        const isManual = job.diffSummary.startsWith("Manual sync");
+
+        // If this was a manual save (triggered via forceSync), mark session as clean
+        if (isManual) {
+          markSessionClean();
+        }
+
+        // Log commit success with performance metrics (existing log)
         await logTelemetry(
           "commit_success",
           "Commit synced successfully",
           { jobId: job.id, duration },
+          job.sessionId
+        );
+
+        // Log autosave/manual-save success event
+        await logTelemetry(
+          isManual ? "manual-save:success" : "autosave:success",
+          isManual ? "Manual save succeeded" : "Autosave succeeded",
+          {
+            jobId: job.id,
+            durationMs: duration,
+            mode: isManual ? "manual" : "autosave",
+          },
           job.sessionId
         );
 
@@ -158,11 +172,27 @@ export function useAutosaveQueue(
       setLastError(errorMessage);
       setErrorCount((prev) => prev + 1);
 
-      // Log error
+      // Determine if this was a manual save
+      const isManual = job.diffSummary.startsWith("Manual sync");
+
+      // Log error (existing log)
       await logTelemetry(
         "error",
         "Sync error occurred",
         { jobId: job.id, error: errorMessage, retryCount: job.retryCount },
+        job.sessionId
+      );
+
+      // Log autosave/manual-save error event
+      await logTelemetry(
+        isManual ? "manual-save:error" : "autosave:error",
+        isManual ? "Manual save failed" : "Autosave failed",
+        {
+          jobId: job.id,
+          mode: isManual ? "manual" : "autosave",
+          reason: errorMessage,
+          retryCount: job.retryCount,
+        },
         job.sessionId
       );
 
@@ -262,6 +292,21 @@ export function useAutosaveQueue(
 
         queue.current.push(job);
         setQueueSize(queue.current.length);
+
+        // Log queued event
+        const isManual = job.diffSummary.startsWith("Manual sync");
+        logTelemetry(
+          isManual ? "manual-save:queued" : "autosave:queued",
+          isManual ? "Manual save queued" : "Autosave queued",
+          {
+            jobId: job.id,
+            mode: isManual ? "manual" : "autosave",
+            snapshotSize: job.binary.length,
+          },
+          job.sessionId
+        ).catch(() => {
+          // Non-blocking: ignore logging errors
+        });
 
         // Save to Dexie immediately for offline persistence
         db.snapshots
@@ -437,6 +482,21 @@ export function useAutosaveQueue(
       };
       queue.current.push(job);
       setQueueSize(queue.current.length);
+
+      // Log manual save queued event
+      logTelemetry(
+        "manual-save:queued",
+        "Manual save queued",
+        {
+          jobId: job.id,
+          mode: "manual",
+          snapshotSize: job.binary.length,
+        },
+        job.sessionId
+      ).catch(() => {
+        // Non-blocking: ignore logging errors
+      });
+
       syncNextJob();
     }
   }, [sessionId, userId, syncNextJob]);

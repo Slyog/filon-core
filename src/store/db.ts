@@ -28,7 +28,7 @@ export interface KV {
 
 export interface TelemetryLog {
   id?: number;
-  type: 'commit_start' | 'commit_success' | 'retry' | 'error' | 'queue_flush' | 'network_change';
+  type: 'commit_start' | 'commit_success' | 'retry' | 'error' | 'queue_flush' | 'network_change' | 'autosave:queued' | 'autosave:success' | 'autosave:error' | 'manual-save:queued' | 'manual-save:success' | 'manual-save:error' | 'session:restore:shown' | 'session:restore:requested' | 'session:restore:success' | 'session:restore:error' | 'session:restore:discard' | 'session:mark-clean';
   sessionId?: string;
   message: string;
   detail?: any;
