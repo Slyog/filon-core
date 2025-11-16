@@ -20,9 +20,13 @@ export interface CanvasSessionState {
 
 /**
  * Save canvas state to sessionStorage
- * Always marks as dirty and updates updatedAt timestamp
+ * @param state - Canvas state to save (nodes, edges, presetId, metadata)
+ * @param dirty - Whether the session should be marked as dirty (default: false for autosave)
  */
-export function saveCanvasSession(state: Omit<CanvasSessionState, "version" | "savedAt" | "updatedAt" | "dirty">): void {
+export function saveCanvasSession(
+  state: Omit<CanvasSessionState, "version" | "savedAt" | "updatedAt" | "dirty">,
+  dirty: boolean = false
+): void {
   if (typeof window === "undefined") return;
 
   try {
@@ -31,7 +35,7 @@ export function saveCanvasSession(state: Omit<CanvasSessionState, "version" | "s
       version: 1,
       savedAt: now,
       updatedAt: now,
-      dirty: true,
+      dirty,
       ...state,
     };
     window.sessionStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify(sessionState));

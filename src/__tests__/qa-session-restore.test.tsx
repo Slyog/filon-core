@@ -41,12 +41,15 @@ describe("Session Restore Logic", () => {
     });
 
     it("should show toast when session has dirty = true", () => {
-      // Save a session (automatically marked as dirty)
-      saveCanvasSession({
-        nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
-        edges: [],
-        presetId: null,
-      });
+      // Save a session with dirty = true
+      saveCanvasSession(
+        {
+          nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
+          edges: [],
+          presetId: null,
+        },
+        true // explicitly mark as dirty
+      );
 
       // Should be dirty
       expect(hasDirtySession()).toBe(true);
@@ -54,8 +57,8 @@ describe("Session Restore Logic", () => {
   });
 
   describe("Save flow", () => {
-    it("should mark session as dirty when autosaving", () => {
-      // Save a session (autosave)
+    it("should mark session as clean when autosaving", () => {
+      // Save a session (autosave) - should be clean by default
       saveCanvasSession({
         nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
         edges: [],
@@ -64,17 +67,20 @@ describe("Session Restore Logic", () => {
 
       const session = loadCanvasSession();
       expect(session).not.toBeNull();
-      expect(session?.dirty).toBe(true);
+      expect(session?.dirty).toBe(false); // Autosave marks as clean
       expect(session?.updatedAt).toBeGreaterThan(0);
     });
 
     it("should mark session as clean after manual save", () => {
-      // Save a session (autosave)
-      saveCanvasSession({
-        nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
-        edges: [],
-        presetId: null,
-      });
+      // Save a session with dirty = true first
+      saveCanvasSession(
+        {
+          nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
+          edges: [],
+          presetId: null,
+        },
+        true // mark as dirty
+      );
 
       expect(hasDirtySession()).toBe(true);
 
@@ -103,11 +109,14 @@ describe("Session Restore Logic", () => {
   describe("Restore flow", () => {
     it("should clear session after restore", () => {
       // Save a dirty session
-      saveCanvasSession({
-        nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
-        edges: [],
-        presetId: null,
-      });
+      saveCanvasSession(
+        {
+          nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
+          edges: [],
+          presetId: null,
+        },
+        true // mark as dirty
+      );
 
       expect(hasDirtySession()).toBe(true);
 
@@ -122,11 +131,14 @@ describe("Session Restore Logic", () => {
   describe("Discard flow", () => {
     it("should clear session after discard", () => {
       // Save a dirty session
-      saveCanvasSession({
-        nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
-        edges: [],
-        presetId: null,
-      });
+      saveCanvasSession(
+        {
+          nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
+          edges: [],
+          presetId: null,
+        },
+        true // mark as dirty
+      );
 
       expect(hasDirtySession()).toBe(true);
 
@@ -140,11 +152,14 @@ describe("Session Restore Logic", () => {
 
   describe("Session state structure", () => {
     it("should include dirty and updatedAt fields", () => {
-      saveCanvasSession({
-        nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
-        edges: [],
-        presetId: null,
-      });
+      saveCanvasSession(
+        {
+          nodes: [{ id: "test-1", type: "default", position: { x: 0, y: 0 }, data: { label: "Test" } }],
+          edges: [],
+          presetId: null,
+        },
+        true // mark as dirty for this test
+      );
 
       const session = loadCanvasSession();
       expect(session).not.toBeNull();

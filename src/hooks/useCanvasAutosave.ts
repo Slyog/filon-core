@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import { saveCanvasSession } from "@/lib/session";
-import type { Node, Edge, ReactFlowInstance } from "reactflow";
+import type { Node, Edge } from "reactflow";
 
 export interface CanvasAutosaveData {
   nodes: Node[];
@@ -47,32 +47,44 @@ export function useCanvasAutosave(
   const performSave = useCallback(
     (toSave: CanvasAutosaveData) => {
       try {
-        // Capture current viewport from ReactFlow instance if available
-        const reactFlowInstance = (window as any).__reactflow as ReactFlowInstance | undefined;
-        let viewport = toSave.viewport;
-        
-        if (reactFlowInstance) {
-          const currentViewport = reactFlowInstance.getViewport();
-          viewport = {
-            x: currentViewport.x,
-            y: currentViewport.y,
-            zoom: currentViewport.zoom,
-          };
+        // Emit autosave start event for useSessionStatus
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("autosave:start"));
         }
 
-        saveCanvasSession({
-          nodes: toSave.nodes,
-          edges: toSave.edges,
-          presetId: toSave.presetId,
-          viewport,
-          metadata: toSave.metadata,
-        });
-        const serialized = serializeData({ ...toSave, viewport });
+        // Save nodes, edges, and presetId
+        // Note: viewport is not saved in CanvasSessionState interface
+        // Mark as clean (dirty: false) after successful autosave
+        saveCanvasSession(
+          {
+            nodes: toSave.nodes,
+            edges: toSave.edges,
+            presetId: toSave.presetId,
+            metadata: toSave.metadata,
+          },
+          false // dirty: false - session is clean after autosave
+        );
+        const serialized = serializeData(toSave);
         lastSavedRef.current = serialized;
         setHasUnsavedChanges(false);
+
+        // Emit autosave success event for useSessionStatus
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("autosave:success"));
+        }
       } catch (error) {
         console.warn("[CanvasAutosave] Failed to save:", error);
         // Keep unsaved state on error
+        
+        // Emit autosave error event
+        if (typeof window !== "undefined") {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          window.dispatchEvent(
+            new CustomEvent("autosave:error", {
+              detail: { error: errorMessage },
+            })
+          );
+        }
       }
     },
     [serializeData]
@@ -90,6 +102,23 @@ export function useCanvasAutosave(
     // Mark as unsaved
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasUnsavedChanges(true);
+
+    // Mark session as dirty immediately when changes are detected
+    // This ensures that if the user reloads before autosave completes,
+    // the session is marked as dirty and the restore toast will show
+    try {
+      saveCanvasSession(
+        {
+          nodes: data.nodes,
+          edges: data.edges,
+          presetId: data.presetId,
+          metadata: data.metadata,
+        },
+        true // dirty: true - mark as dirty until autosave completes
+      );
+    } catch (error) {
+      console.warn("[CanvasAutosave] Failed to mark session as dirty:", error);
+    }
 
     // Clear existing timer
     if (timerRef.current) {

@@ -82,15 +82,18 @@ describe("CanvasRoot Restore Functionality", () => {
   });
 
   it("should show RestoreToast when dirty session exists", async () => {
-    // Save a session (which will be marked as dirty by default)
+    // Save a session with dirty = true
     const testNodes = [
       { id: "test-1", type: "default", position: { x: 100, y: 100 }, data: { label: "Test Node" } },
     ];
-    saveCanvasSession({
-      nodes: testNodes,
-      edges: [],
-      presetId: null,
-    });
+    saveCanvasSession(
+      {
+        nodes: testNodes,
+        edges: [],
+        presetId: null,
+      },
+      true // mark as dirty
+    );
 
     expect(hasDirtySession()).toBe(true);
 
@@ -125,15 +128,18 @@ describe("CanvasRoot Restore Functionality", () => {
   });
 
   it("should load snapshot when clicking Restore button", async () => {
-    // Save a session with test nodes
+    // Save a session with test nodes (dirty = true)
     const testNodes = [
       { id: "restore-test-1", type: "default", position: { x: 200, y: 200 }, data: { label: "Restored Node" } },
     ];
-    saveCanvasSession({
-      nodes: testNodes,
-      edges: [],
-      presetId: null,
-    });
+    saveCanvasSession(
+      {
+        nodes: testNodes,
+        edges: [],
+        presetId: null,
+      },
+      true // mark as dirty
+    );
 
     render(<CanvasRoot />);
 
@@ -180,15 +186,18 @@ describe("CanvasRoot Restore Functionality", () => {
   });
 
   it("should clear sessionStorage when clicking Discard button", async () => {
-    // Save a session
+    // Save a session (dirty = true)
     const testNodes = [
       { id: "discard-test-1", type: "default", position: { x: 300, y: 300 }, data: { label: "Discarded Node" } },
     ];
-    saveCanvasSession({
-      nodes: testNodes,
-      edges: [],
-      presetId: null,
-    });
+    saveCanvasSession(
+      {
+        nodes: testNodes,
+        edges: [],
+        presetId: null,
+      },
+      true // mark as dirty
+    );
 
     expect(hasCanvasSession()).toBe(true);
 
@@ -228,11 +237,14 @@ describe("CanvasRoot Restore Functionality", () => {
     const testNodes = [
       { id: "hide-test-1", type: "default", position: { x: 400, y: 400 }, data: { label: "Hide Test" } },
     ];
-    saveCanvasSession({
-      nodes: testNodes,
-      edges: [],
-      presetId: null,
-    });
+    saveCanvasSession(
+      {
+        nodes: testNodes,
+        edges: [],
+        presetId: null,
+      },
+      true // mark as dirty
+    );
 
     render(<CanvasRoot />);
 
@@ -255,11 +267,14 @@ describe("CanvasRoot Restore Functionality", () => {
     const testNodes = [
       { id: "hide-discard-test-1", type: "default", position: { x: 500, y: 500 }, data: { label: "Hide Discard Test" } },
     ];
-    saveCanvasSession({
-      nodes: testNodes,
-      edges: [],
-      presetId: null,
-    });
+    saveCanvasSession(
+      {
+        nodes: testNodes,
+        edges: [],
+        presetId: null,
+      },
+      true // mark as dirty
+    );
 
     render(<CanvasRoot />);
 
@@ -279,15 +294,18 @@ describe("CanvasRoot Restore Functionality", () => {
   });
 
   it("should NOT trigger restore automatically", async () => {
-    // Save a session
+    // Save a session (dirty = true)
     const testNodes = [
       { id: "auto-test-1", type: "default", position: { x: 600, y: 600 }, data: { label: "Auto Test" } },
     ];
-    saveCanvasSession({
-      nodes: testNodes,
-      edges: [],
-      presetId: null,
-    });
+    saveCanvasSession(
+      {
+        nodes: testNodes,
+        edges: [],
+        presetId: null,
+      },
+      true // mark as dirty
+    );
 
     render(<CanvasRoot />);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { hasDirtySession, loadCanvasSession } from "@/lib/session";
+import { loadCanvasSession } from "@/lib/session";
 
 export type SessionStatus = "idle" | "saving" | "saved" | "error";
 
@@ -40,11 +40,18 @@ export function useSessionStatus(): UseSessionStatusReturn {
           setHasPendingChanges(session.dirty);
           setLastSavedAt(session.updatedAt);
           
-          // If there's a dirty session, status is "idle" (waiting to save)
-          // The actual "saving" state will be set by the autosave queue
-          if (session.dirty && status === "saved") {
+          // Update status based on session state and current status
+          // If status is "saving", don't override it (wait for success/error event)
+          if (status === "saving") {
+            // Keep saving state, wait for event
+            return;
+          }
+          
+          // If there's a dirty session and we're not saving, show "idle" (unsaved changes)
+          if (session.dirty) {
             setStatus("idle");
-          } else if (!session.dirty && status !== "saving") {
+          } else {
+            // Session is clean, show "saved"
             setStatus("saved");
           }
         } else {
@@ -65,7 +72,7 @@ export function useSessionStatus(): UseSessionStatusReturn {
     return () => clearInterval(interval);
   }, [status]);
 
-  // Listen for autosave events from the autosave queue
+  // Listen for autosave events from useCanvasAutosave and useAutosaveQueue
   useEffect(() => {
     const handleAutosaveStart = () => {
       setStatus("saving");
@@ -73,15 +80,23 @@ export function useSessionStatus(): UseSessionStatusReturn {
     };
 
     const handleAutosaveSuccess = () => {
+      // On success, check the actual session state
+      // The session might still be marked as dirty (for backend sync),
+      // but we show "saved" to indicate local save succeeded
       setStatus("saved");
       setError(null);
-      setHasPendingChanges(false);
-      setLastSavedAt(Date.now());
+      // Update hasPendingChanges based on actual session state
+      const session = loadCanvasSession();
+      setHasPendingChanges(session?.dirty ?? false);
+      setLastSavedAt(session?.updatedAt ?? Date.now());
     };
 
     const handleAutosaveError = (event: CustomEvent<{ error: string }>) => {
       setStatus("error");
       setError(event.detail.error);
+      // Keep hasPendingChanges true on error
+      const session = loadCanvasSession();
+      setHasPendingChanges(session?.dirty ?? true);
     };
 
     window.addEventListener("autosave:start", handleAutosaveStart as EventListener);

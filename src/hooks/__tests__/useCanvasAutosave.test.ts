@@ -54,7 +54,8 @@ describe("useCanvasAutosave", () => {
     });
 
     await waitFor(() => {
-      expect(saveCanvasSession).toHaveBeenCalledTimes(1);
+      // Initial save: first call with dirty: true, second with dirty: false
+      expect(saveCanvasSession).toHaveBeenCalledTimes(2);
       expect(result.current.hasUnsavedChanges).toBe(false);
     });
 
@@ -73,22 +74,34 @@ describe("useCanvasAutosave", () => {
     // Should immediately mark as unsaved
     expect(result.current.hasUnsavedChanges).toBe(true);
 
-    // Should not save immediately (throttled)
-    expect(saveCanvasSession).not.toHaveBeenCalled();
+    // Should immediately mark session as dirty when changes are detected
+    expect(saveCanvasSession).toHaveBeenCalledTimes(1);
+    expect(saveCanvasSession).toHaveBeenCalledWith(
+      {
+        nodes: updatedNodes,
+        edges: initialEdges,
+        presetId: undefined,
+        metadata: undefined,
+      },
+      true // dirty: true - marked as dirty immediately
+    );
 
     // Advance timer past throttle delay
     act(() => {
       jest.advanceTimersByTime(100);
     });
 
-    // Should save after throttle
-    expect(saveCanvasSession).toHaveBeenCalledTimes(1);
-    expect(saveCanvasSession).toHaveBeenCalledWith({
-      nodes: updatedNodes,
-      edges: initialEdges,
-      presetId: undefined,
-      metadata: undefined,
-    });
+    // Should save again after throttle with dirty: false
+    expect(saveCanvasSession).toHaveBeenCalledTimes(2);
+    expect(saveCanvasSession).toHaveBeenLastCalledWith(
+      {
+        nodes: updatedNodes,
+        edges: initialEdges,
+        presetId: undefined,
+        metadata: undefined,
+      },
+      false // dirty: false for autosave completion
+    );
 
     // Should mark as saved after save completes
     await waitFor(() => {
@@ -150,6 +163,14 @@ describe("useCanvasAutosave", () => {
       }
     );
 
+    // Wait for initial save to complete
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    // Clear initial save calls
+    (saveCanvasSession as jest.Mock).mockClear();
+
     // Change data
     act(() => {
       rerender({ data: { nodes: updatedNodes, edges: [] } });
@@ -157,7 +178,18 @@ describe("useCanvasAutosave", () => {
 
     // Should be unsaved immediately (before throttle completes)
     expect(result.current.hasUnsavedChanges).toBe(true);
-    expect(saveCanvasSession).not.toHaveBeenCalled();
+    
+    // Should immediately mark as dirty when changes are detected
+    expect(saveCanvasSession).toHaveBeenCalledTimes(1);
+    expect(saveCanvasSession).toHaveBeenCalledWith(
+      {
+        nodes: updatedNodes,
+        edges: [],
+        presetId: undefined,
+        metadata: undefined,
+      },
+      true // dirty: true - marked as dirty immediately
+    );
   });
 
   it("should set hasUnsavedChanges = false after save completes", async () => {
@@ -210,13 +242,32 @@ describe("useCanvasAutosave", () => {
       }
     );
 
+    // Wait for initial save to complete
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    // Clear initial save calls
+    (saveCanvasSession as jest.Mock).mockClear();
+
     // Change data (starts timer)
     act(() => {
       rerender({ data: { nodes: updatedNodes, edges: [] } });
     });
 
     expect(result.current.hasUnsavedChanges).toBe(true);
-    expect(saveCanvasSession).not.toHaveBeenCalled();
+    
+    // Should immediately mark as dirty when changes are detected
+    expect(saveCanvasSession).toHaveBeenCalledTimes(1);
+    expect(saveCanvasSession).toHaveBeenCalledWith(
+      {
+        nodes: updatedNodes,
+        edges: [],
+        presetId: undefined,
+        metadata: undefined,
+      },
+      true // dirty: true - marked as dirty immediately
+    );
 
     // Unmount before timer completes
     act(() => {
@@ -228,8 +279,8 @@ describe("useCanvasAutosave", () => {
       jest.advanceTimersByTime(200);
     });
 
-    // Should not save after unmount
-    expect(saveCanvasSession).not.toHaveBeenCalled();
+    // Should not save again after unmount (only the immediate dirty mark happened)
+    expect(saveCanvasSession).toHaveBeenCalledTimes(1);
   });
 
   it("should handle edge changes", () => {
@@ -258,17 +309,32 @@ describe("useCanvasAutosave", () => {
 
     expect(result.current.hasUnsavedChanges).toBe(true);
 
+    // Should immediately mark as dirty
+    expect(saveCanvasSession).toHaveBeenCalledWith(
+      {
+        nodes,
+        edges: updatedEdges,
+        presetId: undefined,
+        metadata: undefined,
+      },
+      true // dirty: true - marked as dirty immediately
+    );
+
     // Advance timer
     act(() => {
       jest.advanceTimersByTime(100);
     });
 
-    expect(saveCanvasSession).toHaveBeenCalledWith({
-      nodes,
-      edges: updatedEdges,
-      presetId: undefined,
-      metadata: undefined,
-    });
+    // Should save again after throttle with dirty: false
+    expect(saveCanvasSession).toHaveBeenLastCalledWith(
+      {
+        nodes,
+        edges: updatedEdges,
+        presetId: undefined,
+        metadata: undefined,
+      },
+      false // dirty: false for autosave completion
+    );
   });
 
   it("should handle presetId changes", () => {
@@ -283,6 +349,14 @@ describe("useCanvasAutosave", () => {
       }
     );
 
+    // Wait for initial save to complete
+    act(() => {
+      jest.advanceTimersByTime(100);
+    });
+
+    // Clear initial save calls
+    (saveCanvasSession as jest.Mock).mockClear();
+
     // Change presetId
     act(() => {
       rerender({ data: { nodes, edges: [], presetId: "career" as string | null } });
@@ -290,16 +364,33 @@ describe("useCanvasAutosave", () => {
 
     expect(result.current.hasUnsavedChanges).toBe(true);
 
+    // Should immediately mark as dirty when changes are detected
+    expect(saveCanvasSession).toHaveBeenCalledTimes(1);
+    expect(saveCanvasSession).toHaveBeenCalledWith(
+      {
+        nodes,
+        edges: [],
+        presetId: "career",
+        metadata: undefined,
+      },
+      true // dirty: true - marked as dirty immediately
+    );
+
     act(() => {
       jest.advanceTimersByTime(100);
     });
 
-    expect(saveCanvasSession).toHaveBeenCalledWith({
-      nodes,
-      edges: [],
-      presetId: "career",
-      metadata: undefined,
-    });
+    // Should save again after throttle with dirty: false
+    expect(saveCanvasSession).toHaveBeenCalledTimes(2);
+    expect(saveCanvasSession).toHaveBeenLastCalledWith(
+      {
+        nodes,
+        edges: [],
+        presetId: "career",
+        metadata: undefined,
+      },
+      false // dirty: false for autosave completion
+    );
   });
 });
 
