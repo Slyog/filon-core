@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { ReactFlowProvider } from "reactflow";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ReactFlowProvider, type ReactFlowInstance } from "reactflow";
 import { FlowCanvas } from "./FlowCanvas";
-import { RestoreToast } from "@/components/RestoreToast";
+import { EmptyWorkspacePanel } from "./EmptyWorkspacePanel";
 import { useFlowStore, type FlowSnapshot } from "./useFlowStore";
-import { useCanvasAutosave } from "@/hooks/useCanvasAutosave";
-import {
-  hasDirtySession,
-  clearCanvasSession,
-  loadCanvasSession,
-  markSessionClean,
-} from "@/lib/session";
+import { useSimpleCanvasAutosave } from "@/hooks/useSimpleCanvasAutosave";
+import { loadSimpleCanvasSnapshot } from "@/lib/simpleCanvasSession";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
-import type { Node, Edge } from "reactflow";
+
+type CanvasMode = "loading" | "onboarding" | "active";
 
 type CanvasRootProps = {
   presetId?: OnboardingPresetId | null;
@@ -22,98 +18,94 @@ type CanvasRootProps = {
 };
 
 export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: CanvasRootProps) {
-  // Get canvas data for autosave status
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
-  const presetFromStore = useFlowStore((state) => state.presetId);
+  const storePresetId = useFlowStore((state) => state.presetId ?? null);
   const loadSnapshot = useFlowStore((state) => state.loadSnapshot);
-  const [showRestoreToast, setShowRestoreToast] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return hasDirtySession();
-  });
-  
-  // Get autosave status
-  useCanvasAutosave({
-    nodes,
-    edges,
-    presetId: presetFromStore ?? presetId ?? null,
-  });
 
-  const handleRestore = useCallback(() => {
-    const session = loadCanvasSession();
-    if (!session) {
-      setShowRestoreToast(false);
-      return;
+  const [mode, setMode] = useState<CanvasMode>("loading");
+  const [autosaveEnabled, setAutosaveEnabled] = useState(false);
+  const hadSessionRef = useRef(false);
+  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+
+  useEffect(() => {
+    const snapshot = loadSimpleCanvasSnapshot();
+    if (snapshot) {
+      hadSessionRef.current = true;
+      const flowSnapshot: FlowSnapshot = {
+        version: 1,
+        createdAt: Date.now(),
+        workspaceId: null,
+        nodes: snapshot.nodes,
+        edges: snapshot.edges,
+        presetId: snapshot.presetId ?? null,
+      };
+      loadSnapshot(flowSnapshot);
+      setAutosaveEnabled(true);
+      setMode("active");
+    } else {
+      hadSessionRef.current = false;
+      setAutosaveEnabled(false);
+      setMode("onboarding");
     }
-
-    const snapshot: FlowSnapshot = {
-      version: 1,
-      createdAt: Date.now(),
-      workspaceId: null,
-      nodes: session.nodes as Node[],
-      edges: session.edges as Edge[],
-      presetId: (session.presetId as OnboardingPresetId | null) ?? null,
-    };
-
-    loadSnapshot(snapshot);
-
-    markSessionClean();
-    setShowRestoreToast(false);
   }, [loadSnapshot]);
 
-  const handleDiscard = useCallback(() => {
-    // Clear the session when discarding to prevent toast from showing again
-    clearCanvasSession();
-    setShowRestoreToast(false);
+  useSimpleCanvasAutosave({
+    nodes,
+    edges,
+    presetId: storePresetId ?? presetId ?? null,
+    enabled: autosaveEnabled,
+  });
+
+  const handleInit = useCallback((instance: ReactFlowInstance) => {
+    reactFlowInstanceRef.current = instance;
+    (window as any).__reactflow = instance;
+
+    if (!hadSessionRef.current) {
+      instance.fitView({ padding: 0.1, duration: 0 });
+      const { zoom } = instance.getViewport();
+      if (zoom < 0.8) {
+        instance.zoomTo(0.8, { duration: 0 });
+      }
+    }
   }, []);
 
-  // Subtle grid pattern background
-  const gridPattern = `data:image/svg+xml,${encodeURIComponent(`
-    <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(26,26,26,0.3)" stroke-width="1"/>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
-  `)}`;
+  const activateWorkspace = useCallback(() => {
+    setAutosaveEnabled(true);
+    setMode("active");
+  }, []);
+
+  const handleCreateGoal = useCallback(() => {
+    onCreateGoalClick?.();
+    activateWorkspace();
+  }, [onCreateGoalClick, activateWorkspace]);
+
+  const handleAddTrack = useCallback(() => {
+    onAddTrackClick?.();
+    activateWorkspace();
+  }, [onAddTrackClick, activateWorkspace]);
+
+  if (mode === "loading") {
+    return <div className="w-full h-full bg-[#050509]" />;
+  }
 
   return (
-    <div
-      className="relative w-full h-full min-h-0 min-w-0 overflow-hidden bg-[#050509]"
-      data-id="canvas-host"
-    >
-      {/* RESTORE TOAST */}
-      <div className="absolute bottom-6 right-6 z-[60]">
-        <RestoreToast
-          isVisible={showRestoreToast}
-          onRestore={handleRestore}
-          onDiscard={handleDiscard}
-        />
-      </div>
-      
-      <div
-        className="absolute inset-0 opacity-30 pointer-events-none"
-        style={{
-          backgroundImage: `url("${gridPattern}")`,
-        }}
-      />
+    <div className="relative w-full h-full min-h-0 min-w-0 overflow-hidden bg-[#050509]" data-id="canvas-host">
       <ReactFlowProvider>
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
-          <div
-            data-id="rf-clip-2"
-            className="absolute inset-0 w-full h-full overflow-hidden"
-          >
-            <FlowCanvas
-              onInit={(instance) => ((window as any).__reactflow = instance)}
-              presetId={presetId}
-              onCreateGoalClick={onCreateGoalClick}
-              onAddTrackClick={onAddTrackClick}
-            />
-          </div>
-        </div>
+        <FlowCanvas
+          onInit={handleInit}
+          presetId={presetId}
+          onCreateGoalClick={onCreateGoalClick}
+          onAddTrackClick={onAddTrackClick}
+        />
       </ReactFlowProvider>
+
+      {mode === "onboarding" && (
+        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-[#050509]/80 via-[#050509]/70 to-[#050509]/80">
+          <EmptyWorkspacePanel onCreateGoalClick={handleCreateGoal} onAddTrackClick={handleAddTrack} />
+        </div>
+      )}
     </div>
   );
 }
+

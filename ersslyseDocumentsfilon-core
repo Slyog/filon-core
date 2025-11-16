@@ -1,0 +1,204 @@
+warning: in the working copy of 'src/components/canvas/CanvasRoot.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/src/components/canvas/CanvasRoot.tsx b/src/components/canvas/CanvasRoot.tsx[m
+[1mindex c7c810e..8d12429 100644[m
+[1m--- a/src/components/canvas/CanvasRoot.tsx[m
+[1m+++ b/src/components/canvas/CanvasRoot.tsx[m
+[36m@@ -1,19 +1,15 @@[m
+ "use client";[m
+ [m
+[31m-import { useState, useCallback } from "react";[m
+[31m-import { ReactFlowProvider } from "reactflow";[m
+[32m+[m[32mimport { useCallback, useEffect, useRef, useState } from "react";[m
+[32m+[m[32mimport { ReactFlowProvider, type ReactFlowInstance } from "reactflow";[m
+ import { FlowCanvas } from "./FlowCanvas";[m
+[31m-import { RestoreToast } from "@/components/RestoreToast";[m
+[32m+[m[32mimport { EmptyWorkspacePanel } from "./EmptyWorkspacePanel";[m
+ import { useFlowStore, type FlowSnapshot } from "./useFlowStore";[m
+[31m-import { useCanvasAutosave } from "@/hooks/useCanvasAutosave";[m
+[31m-import {[m
+[31m-  hasDirtySession,[m
+[31m-  clearCanvasSession,[m
+[31m-  loadCanvasSession,[m
+[31m-  markSessionClean,[m
+[31m-} from "@/lib/session";[m
+[32m+[m[32mimport { useSimpleCanvasAutosave } from "@/hooks/useSimpleCanvasAutosave";[m
+[32m+[m[32mimport { loadSimpleCanvasSnapshot } from "@/lib/simpleCanvasSession";[m
+ import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";[m
+[31m-import type { Node, Edge } from "reactflow";[m
+[32m+[m
+[32m+[m[32mtype CanvasMode = "loading" | "onboarding" | "active";[m
+ [m
+ type CanvasRootProps = {[m
+   presetId?: OnboardingPresetId | null;[m
+[36m@@ -22,98 +18,99 @@[m [mtype CanvasRootProps = {[m
+ };[m
+ [m
+ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: CanvasRootProps) {[m
+[31m-  // Get canvas data for autosave status[m
+   const nodes = useFlowStore((state) => state.nodes);[m
+   const edges = useFlowStore((state) => state.edges);[m
+[31m-  const presetFromStore = useFlowStore((state) => state.presetId);[m
+[32m+[m[32m  const storePresetId = useFlowStore((state) => state.presetId ?? null);[m
+   const loadSnapshot = useFlowStore((state) => state.loadSnapshot);[m
+[31m-  const [showRestoreToast, setShowRestoreToast] = useState(() => {[m
+[31m-    if (typeof window === "undefined") return false;[m
+[31m-    return hasDirtySession();[m
+[31m-  });[m
+[31m-  [m
+[31m-  // Get autosave status[m
+[31m-  useCanvasAutosave({[m
+[32m+[m
+[32m+[m[32m  const [mode, setMode] = useState<CanvasMode>("loading");[m
+[32m+[m[32m  const [autosaveEnabled, setAutosaveEnabled] = useState(false);[m
+[32m+[m[32m  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);[m
+[32m+[m[32m  const hadSessionRef = useRef(false);[m
+[32m+[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    const snapshot = loadSimpleCanvasSnapshot();[m
+[32m+[m[32m    if (snapshot) {[m
+[32m+[m[32m      hadSessionRef.current = true;[m
+[32m+[m[32m      const flowSnapshot: FlowSnapshot = {[m
+[32m+[m[32m        version: 1,[m
+[32m+[m[32m        createdAt: Date.now(),[m
+[32m+[m[32m        workspaceId: null,[m
+[32m+[m[32m        nodes: snapshot.nodes,[m
+[32m+[m[32m        edges: snapshot.edges,[m
+[32m+[m[32m        presetId: snapshot.presetId ?? null,[m
+[32m+[m[32m      };[m
+[32m+[m[32m      loadSnapshot(flowSnapshot);[m
+[32m+[m[32m      setAutosaveEnabled(true);[m
+[32m+[m[32m      setMode("active");[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      hadSessionRef.current = false;[m
+[32m+[m[32m      setAutosaveEnabled(false);[m
+[32m+[m[32m      setMode("onboarding");[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }, [loadSnapshot]);[m
+[32m+[m
+[32m+[m[32m  useSimpleCanvasAutosave({[m
+     nodes,[m
+     edges,[m
+[31m-    presetId: presetFromStore ?? presetId ?? null,[m
+[32m+[m[32m    presetId: storePresetId ?? presetId ?? null,[m
+[32m+[m[32m    enabled: autosaveEnabled,[m
+   });[m
+ [m
+[31m-  const handleRestore = useCallback(() => {[m
+[31m-    const session = loadCanvasSession();[m
+[31m-    if (!session) {[m
+[31m-      setShowRestoreToast(false);[m
+[31m-      return;[m
+[31m-    }[m
+[32m+[m[32m  const handleInit = useCallback((instance: ReactFlowInstance) => {[m
+[32m+[m[32m    reactFlowInstanceRef.current = instance;[m
+[32m+[m[32m    (window as any).__reactflow = instance;[m
+ [m
+[31m-    const snapshot: FlowSnapshot = {[m
+[31m-      version: 1,[m
+[31m-      createdAt: Date.now(),[m
+[31m-      workspaceId: null,[m
+[31m-      nodes: session.nodes as Node[],[m
+[31m-      edges: session.edges as Edge[],[m
+[31m-      presetId: (session.presetId as OnboardingPresetId | null) ?? null,[m
+[31m-    };[m
+[32m+[m[32m    if (!hadSessionRef.current) {[m
+[32m+[m[32m      instance.fitView({ padding: 0.1, duration: 0 });[m
+[32m+[m[32m      const { zoom } = instance.getViewport();[m
+[32m+[m[32m      if (zoom < 0.8) {[m
+[32m+[m[32m        instance.zoomTo(0.8, { duration: 0 });[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }, []);[m
+ [m
+[31m-    loadSnapshot(snapshot);[m
+[32m+[m[32m  const activateWorkspace = useCallback(() => {[m
+[32m+[m[32m    setAutosaveEnabled(true);[m
+[32m+[m[32m    setMode("active");[m
+[32m+[m[32m  }, []);[m
+ [m
+[31m-    markSessionClean();[m
+[31m-    setShowRestoreToast(false);[m
+[31m-  }, [loadSnapshot]);[m
+[32m+[m[32m  const handleCreateGoal = useCallback(() => {[m
+[32m+[m[32m    onCreateGoalClick?.();[m
+[32m+[m[32m    activateWorkspace();[m
+[32m+[m[32m  }, [onCreateGoalClick, activateWorkspace]);[m
+ [m
+[31m-  const handleDiscard = useCallback(() => {[m
+[31m-    // Clear the session when discarding to prevent toast from showing again[m
+[31m-    clearCanvasSession();[m
+[31m-    setShowRestoreToast(false);[m
+[31m-  }, []);[m
+[32m+[m[32m  const handleAddTrack = useCallback(() => {[m
+[32m+[m[32m    onAddTrackClick?.();[m
+[32m+[m[32m    activateWorkspace();[m
+[32m+[m[32m  }, [onAddTrackClick, activateWorkspace]);[m
+ [m
+[31m-  // Subtle grid pattern background[m
+[31m-  const gridPattern = `data:image/svg+xml,${encodeURIComponent(`[m
+[31m-    <svg width="40" height="40" xmlns="http://www.w3.org/2000/svg">[m
+[31m-      <defs>[m
+[31m-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">[m
+[31m-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(26,26,26,0.3)" stroke-width="1"/>[m
+[31m-        </pattern>[m
+[31m-      </defs>[m
+[31m-      <rect width="100%" height="100%" fill="url(#grid)" />[m
+[31m-    </svg>[m
+[31m-  `)}`;[m
+[32m+[m[32m  if (mode === "loading") {[m
+[32m+[m[32m    return <div className="w-full h-full bg-[#050509]" />;[m
+[32m+[m[32m  }[m
+ [m
+   return ([m
+     <div[m
+       className="relative w-full h-full min-h-0 min-w-0 overflow-hidden bg-[#050509]"[m
+       data-id="canvas-host"[m
+     >[m
+[31m-      {/* RESTORE TOAST */}[m
+[31m-      <div className="absolute bottom-6 right-6 z-[60]">[m
+[31m-        <RestoreToast[m
+[31m-          isVisible={showRestoreToast}[m
+[31m-          onRestore={handleRestore}[m
+[31m-          onDiscard={handleDiscard}[m
+[31m-        />[m
+[31m-      </div>[m
+[31m-      [m
+[31m-      <div[m
+[31m-        className="absolute inset-0 opacity-30 pointer-events-none"[m
+[31m-        style={{[m
+[31m-          backgroundImage: `url("${gridPattern}")`,[m
+[31m-        }}[m
+[31m-      />[m
+       <ReactFlowProvider>[m
+[31m-        <div className="absolute inset-0 w-full h-full overflow-hidden">[m
+[31m-          <div[m
+[31m-            data-id="rf-clip-2"[m
+[31m-            className="absolute inset-0 w-full h-full overflow-hidden"[m
+[31m-          >[m
+[31m-            <FlowCanvas[m
+[31m-              onInit={(instance) => ((window as any).__reactflow = instance)}[m
+[31m-              presetId={presetId}[m
+[31m-              onCreateGoalClick={onCreateGoalClick}[m
+[31m-              onAddTrackClick={onAddTrackClick}[m
+[31m-            />[m
+[31m-          </div>[m
+[31m-        </div>[m
+[32m+[m[32m        <FlowCanvas[m
+[32m+[m[32m          onInit={handleInit}[m
+[32m+[m[32m          presetId={presetId}[m
+[32m+[m[32m          onCreateGoalClick={onCreateGoalClick}[m
+[32m+[m[32m          onAddTrackClick={onAddTrackClick}[m
+[32m+[m[32m        />[m
+       </ReactFlowProvider>[m
+[32m+[m
+[32m+[m[32m      {mode === "onboarding" && ([m
+[32m+[m[32m        <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-[#050509]/80 via-[#050509]/70 to-[#050509]/80">[m
+[32m+[m[32m          <EmptyWorkspacePanel[m
+[32m+[m[32m            onCreateGoalClick={handleCreateGoal}[m
+[32m+[m[32m            onAddTrackClick={handleAddTrack}[m
+[32m+[m[32m          />[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      )}[m
+     </div>[m
+   );[m
+ }[m

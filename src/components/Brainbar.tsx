@@ -1,7 +1,7 @@
 /**
  * Shim file for backward compatibility with tests and legacy imports.
- * Re-exports the actual Brainbar component from layout/.
+ * Re-exports the actual Brainbar component.
  */
-export * from "@/components/layout/Brainbar";
-export { Brainbar as default } from "@/components/layout/Brainbar";
+export * from "@/components/brainbar/Brainbar";
+export { Brainbar as default } from "@/components/brainbar/Brainbar";
 

@@ -1,68 +1,26 @@
 "use client";
 
 import {
-  useEffect,
-  useState,
-  useRef,
   useCallback,
+  useEffect,
+  useRef,
   type ReactNode,
   cloneElement,
   isValidElement,
 } from "react";
 import { Sidebar } from "./Sidebar";
 import ContextStream from "./ContextStream";
-import { Brainbar as GlowBrainbar } from "@/components/brainbar/Brainbar";
-import type { BrainbarHandle } from "./Brainbar";
-import { AutosaveIndicator } from "@/components/canvas/AutosaveIndicator";
-import { useSessionStatus } from "@/hooks/useSessionStatus";
-import {
-  OnboardingPresetPanel,
-  type OnboardingPresetId,
-} from "@/components/onboarding/OnboardingPresetPanel";
-import { loadCanvasSession } from "@/lib/session";
-import { useFlowStore } from "@/components/canvas/useFlowStore";
-import type { FlowSnapshot } from "@/components/canvas/useFlowStore";
-
-const ONBOARDING_PRESET_STORAGE_KEY = "filon.v4.onboardingPreset";
-
-export interface CanvasRestoreHandle {
-  hasSavedState: () => boolean;
-  restore: () => boolean;
-}
-
-function convertSessionToSnapshot(
-  sessionState: ReturnType<typeof loadCanvasSession>
-): FlowSnapshot | null {
-  if (!sessionState) return null;
-
-  return {
-    version: 1,
-    createdAt: sessionState.savedAt,
-    workspaceId: null,
-    nodes: sessionState.nodes as FlowSnapshot["nodes"],
-    edges: sessionState.edges as FlowSnapshot["edges"],
-    presetId: (sessionState.presetId as OnboardingPresetId | null) ?? null,
-  };
-}
+import { Brainbar, type BrainbarHandle } from "@/components/brainbar/Brainbar";
 
 type AppFrameProps = {
   children: ReactNode;
 };
 
 export default function AppFrame({ children }: AppFrameProps) {
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [selectedPreset, setSelectedPreset] = useState<OnboardingPresetId | null>(null);
   const brainbarRef = useRef<BrainbarHandle | null>(null);
-  const restoreHandleRef = useRef<CanvasRestoreHandle | null>(null);
-  const loadSnapshot = useFlowStore((state) => state.loadSnapshot);
-  const { status } = useSessionStatus();
-  const isSaving = status === "saving";
 
-  // Optionally enable debug via env in client runtime
   useEffect(() => {
     try {
-      // Public env; set NEXT_PUBLIC_FILON_DEBUG_SESSION=true to auto-enable
-      // eslint-disable-next-line no-underscore-dangle, no-restricted-globals
       const flag = (process as any)?.env?.NEXT_PUBLIC_FILON_DEBUG_SESSION;
       if (flag === "true" && typeof window !== "undefined") {
         (window as any).__FILON_SESSION_DEBUG__ = true;
@@ -73,133 +31,6 @@ export default function AppFrame({ children }: AppFrameProps) {
       // ignore
     }
   }, []);
-
-  // Auto-apply a clean stored session on initial mount to make session the source of truth
-  useEffect(() => {
-    try {
-      const sessionState = loadCanvasSession();
-      if (sessionState && sessionState.dirty === false) {
-        const snapshot = convertSessionToSnapshot(sessionState);
-        if (snapshot) {
-          loadSnapshot(snapshot);
-          // Optionally restore viewport if present
-          if (snapshot.viewport) {
-            const reactFlowInstance = (window as any).__reactflow;
-            if (reactFlowInstance) {
-              reactFlowInstance.setViewport(
-                {
-                  x: snapshot.viewport.x,
-                  y: snapshot.viewport.y,
-                  zoom: snapshot.viewport.zoom,
-                },
-                { duration: 0 }
-              );
-            }
-          }
-          // Hide onboarding if we loaded a session
-          setShowOnboarding(false);
-        }
-      }
-    } catch {
-      // no-op; fallback to default onboarding flow
-    }
-  }, [loadSnapshot]);
-
-  // Initial restore check (optional - exposed for UI to call later)
-  const checkForRestore = useCallback((): boolean => {
-    const SESSION_DEBUG =
-      typeof window !== "undefined" && (window as any).__FILON_SESSION_DEBUG__ === true;
-    const sessionState = loadCanvasSession();
-    if (SESSION_DEBUG) {
-      // eslint-disable-next-line no-console
-      console.debug("[SessionDebug] checkForRestore: hasCanvasSession =", sessionState !== null);
-    }
-    if (!sessionState) {
-      return false;
-    }
-
-    const snapshot = convertSessionToSnapshot(sessionState);
-    if (!snapshot) {
-      return false;
-    }
-
-    try {
-      if (SESSION_DEBUG) {
-        // eslint-disable-next-line no-console
-        console.debug("[SessionDebug] checkForRestore: applying snapshot", {
-          nodes: snapshot.nodes.length,
-          edges: snapshot.edges.length,
-          presetId: snapshot.presetId ?? null,
-          viewport: snapshot.viewport ?? null,
-          dirty: sessionState.dirty,
-        });
-      }
-      loadSnapshot(snapshot);
-      
-      // Restore viewport if available
-      if (snapshot.viewport) {
-        const reactFlowInstance = (window as any).__reactflow;
-        if (reactFlowInstance) {
-          reactFlowInstance.setViewport(
-            {
-              x: snapshot.viewport.x,
-              y: snapshot.viewport.y,
-              zoom: snapshot.viewport.zoom,
-            },
-            { duration: 0 }
-          );
-        }
-      }
-      
-      return true;
-    } catch (error) {
-      console.warn("[AppFrame] Failed to restore canvas state:", error);
-      return false;
-    }
-  }, [loadSnapshot]);
-
-  // Expose restore handle for UI to use later
-  useEffect(() => {
-    restoreHandleRef.current = {
-      hasSavedState: () => loadCanvasSession() !== null,
-      restore: checkForRestore,
-    };
-
-    // Make available globally for later UI integration
-    (window as any).__canvasRestore = restoreHandleRef.current;
-  }, [checkForRestore]);
-
-  const loadStoredPreset = (): OnboardingPresetId | null => {
-    if (typeof window === "undefined") return null;
-    const value = window.localStorage.getItem(ONBOARDING_PRESET_STORAGE_KEY);
-    if (!value) return null;
-
-    if (value === "career" || value === "health" || value === "deep_work" || value === "custom") {
-      return value;
-    }
-    return null;
-  };
-
-  const storePreset = (presetId: OnboardingPresetId) => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(ONBOARDING_PRESET_STORAGE_KEY, presetId);
-  };
-
-  useEffect(() => {
-    const storedPreset = loadStoredPreset();
-    if (storedPreset) {
-      // Synchronizing with external system (localStorage) - this is a valid use of useEffect
-      setSelectedPreset(storedPreset);
-      setShowOnboarding(false);
-    }
-  }, []);
-
-  const handleOnboardingPresetSelect = (presetId: OnboardingPresetId) => {
-    console.log("[Onboarding] preset selected:", presetId);
-    setSelectedPreset(presetId);
-    setShowOnboarding(false);
-    storePreset(presetId);
-  };
 
   const handleCreateGoalFromEmptyState = useCallback(() => {
     brainbarRef.current?.setValue("/goal ");
@@ -213,38 +44,18 @@ export default function AppFrame({ children }: AppFrameProps) {
 
   return (
     <div className="grid h-screen w-screen grid-cols-[280px_minmax(0,1fr)_340px] bg-filon-bg text-filon-text">
-      {/* LEFT SIDEBAR */}
       <div className="col-span-1 col-start-1 h-full">
         <Sidebar />
       </div>
 
-      {/* MAIN AREA */}
       <div className="relative col-span-1 col-start-2 flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-gradient-to-b from-filon-bg via-filon-bg to-[#050505] border-l border-filon-border/30 shadow-[inset_1px_0_0_rgba(0,0,0,0.6)]">
-        {/* Header area for Brainbar */}
-        <div className="relative w-full h-[72px] px-4 pt-3 pb-1 z-50">
-          <GlowBrainbar
-            onSubmit={(value) => {
-              // eslint-disable-next-line no-console
-              console.log("[Brainbar] submit:", value);
-            }}
-          />
+        <div className="relative w-full h-[64px] px-4 pt-2 pb-1 z-50">
+          <Brainbar ref={brainbarRef} />
         </div>
 
-        {/* Autosave indicator below Brainbar, aligned to right */}
-        <div className="absolute right-4 top-[76px] z-40">
-          <AutosaveIndicator isSaving={isSaving} />
-        </div>
-        {showOnboarding && (
-          <div className="mt-4 flex justify-center px-6">
-            <OnboardingPresetPanel onSelectPreset={handleOnboardingPresetSelect} />
-          </div>
-        )}
-        <main className="relative flex-1 min-h-0 min-w-0 overflow-hidden pt-[72px]">
+        <main className="relative flex-1 min-h-0 min-w-0 overflow-hidden pt-[88px]">
           {isValidElement(children)
-            ? // Handlers only access refs when called (in event handlers), not during render
-              // eslint-disable-next-line react-hooks/refs
-              cloneElement(children, {
-                presetId: selectedPreset,
+            ? cloneElement(children, {
                 onCreateGoalClick: handleCreateGoalFromEmptyState,
                 onAddTrackClick: handleAddTrackFromEmptyState,
               } as any)
@@ -252,7 +63,6 @@ export default function AppFrame({ children }: AppFrameProps) {
         </main>
       </div>
 
-      {/* RIGHT SIDEBAR */}
       <div className="col-span-1 col-start-3 h-full border-l border-filon-border/60">
         <ContextStream />
       </div>

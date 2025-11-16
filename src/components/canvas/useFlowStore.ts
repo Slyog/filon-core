@@ -1,7 +1,14 @@
 "use client";
 
 import { create } from "zustand";
-import type { Node, Edge, OnNodesChange, OnEdgesChange, OnConnect, Connection } from "reactflow";
+import type {
+  Node,
+  Edge,
+  OnNodesChange,
+  OnEdgesChange,
+  OnConnect,
+  Connection,
+} from "reactflow";
 import { applyNodeChanges, applyEdgeChanges, addEdge } from "reactflow";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
 
@@ -11,11 +18,6 @@ export interface FlowSnapshot {
   workspaceId?: string | null;
   nodes: Node[];
   edges: Edge[];
-  viewport?: {
-    x: number;
-    y: number;
-    zoom: number;
-  };
   presetId?: OnboardingPresetId | null;
 }
 
@@ -23,15 +25,15 @@ type FlowState = {
   nodes: Node[];
   edges: Edge[];
   presetId: OnboardingPresetId | null;
+  hasLoadedSnapshot: boolean;
+  setNodes: (updater: (nodes: Node[]) => Node[]) => void;
+  setEdges: (updater: (edges: Edge[]) => Edge[]) => void;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
-  // eslint-disable-next-line no-unused-vars
   onNodeDragStop: (nodeId: string, position: Node["position"]) => void;
-  // eslint-disable-next-line no-unused-vars
   updateEmptyStateCopy: (presetId: OnboardingPresetId | null) => void;
   getSnapshot: () => FlowSnapshot;
-  // eslint-disable-next-line no-unused-vars
   loadSnapshot: (snapshot: FlowSnapshot) => void;
 };
 
@@ -88,42 +90,59 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   ],
   edges: [],
   presetId: null,
+  hasLoadedSnapshot: false,
+
+  setNodes: (updater) =>
+    set((state) => ({
+      nodes: updater(state.nodes),
+    })),
+
+  setEdges: (updater) =>
+    set((state) => ({
+      edges: updater(state.edges),
+    })),
 
   onNodesChange: (changes) =>
-    set({
-      nodes: applyNodeChanges(changes, get().nodes),
-    }),
+    set((state) => ({
+      nodes: applyNodeChanges(changes, state.nodes),
+    })),
 
   onEdgesChange: (changes) =>
-    set({
-      edges: applyEdgeChanges(changes, get().edges),
-    }),
+    set((state) => ({
+      edges: applyEdgeChanges(changes, state.edges),
+    })),
 
   onConnect: (connection: Connection) =>
-    set({
-      edges: addEdge(connection, get().edges),
-    }),
+    set((state) => ({
+      edges: addEdge(connection, state.edges),
+    })),
 
   onNodeDragStop: (nodeId, position) =>
-    set({
-      nodes: get().nodes.map((node) =>
+    set((state) => ({
+      nodes: state.nodes.map((node) =>
         node.id === nodeId ? { ...node, position: { ...position } } : node
       ),
-    }),
+    })),
 
   updateEmptyStateCopy: (presetId: OnboardingPresetId | null) => {
+    const state = get();
+    if (state.hasLoadedSnapshot) {
+      return;
+    }
+
     const copy = getEmptyStateCopy(presetId);
-    const currentNodes = get().nodes;
-    const updatedNodes = currentNodes.map((node) => {
-      if (node.id === "1") {
-        return {
-          ...node,
-          data: { label: copy.title },
-        };
-      }
-      return node;
+    set((current) => {
+      const updatedNodes = current.nodes.map((node) => {
+        if (node.id === "1") {
+          return {
+            ...node,
+            data: { label: copy.title },
+          };
+        }
+        return node;
+      });
+      return { nodes: updatedNodes, presetId: presetId ?? null };
     });
-    set({ nodes: updatedNodes, presetId });
   },
 
   getSnapshot: (): FlowSnapshot => {
@@ -135,50 +154,40 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       nodes: state.nodes,
       edges: state.edges,
       presetId: state.presetId,
-      // viewport is optional and not stored in flow store
-      // can be added later if needed
     };
   },
 
   loadSnapshot: (snapshot: FlowSnapshot) => {
-    // Validate snapshot version
     if (snapshot.version !== 1) {
-      console.warn(
-        `[FlowStore] Unsupported snapshot version: ${snapshot.version}. Expected version 1.`
-      );
+      if (
+        typeof window !== "undefined" &&
+        (window as any).__FILON_SESSION_DEBUG__ === true
+      ) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[FlowStore] Unsupported snapshot version: ${snapshot.version}. Expected version 1.`
+        );
+      }
       return;
     }
 
-    // Validate required fields
     if (!Array.isArray(snapshot.nodes) || !Array.isArray(snapshot.edges)) {
-      console.warn("[FlowStore] Invalid snapshot: nodes and edges must be arrays.");
+      if (
+        typeof window !== "undefined" &&
+        (window as any).__FILON_SESSION_DEBUG__ === true
+      ) {
+        // eslint-disable-next-line no-console
+        console.warn("[FlowStore] Invalid snapshot: nodes and edges must be arrays.");
+      }
       return;
     }
 
-    // Load nodes and edges
     set({
       nodes: snapshot.nodes,
       edges: snapshot.edges,
       presetId: snapshot.presetId ?? null,
+      hasLoadedSnapshot: true,
     });
-
-    // If presetId is provided, update empty state copy
-    if (snapshot.presetId) {
-      const copy = getEmptyStateCopy(snapshot.presetId);
-      const updatedNodes = snapshot.nodes.map((node) => {
-        if (node.id === "1") {
-          return {
-            ...node,
-            data: { label: copy.title },
-          };
-        }
-        return node;
-      });
-      set({ nodes: updatedNodes });
-    }
-
-    // Note: viewport restoration would need to be handled separately
-    // via ReactFlow instance or UIStore, as it's not part of this store
   },
 }));
 

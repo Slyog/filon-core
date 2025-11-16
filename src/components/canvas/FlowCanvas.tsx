@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import ReactFlow, {
   Background,
   Controls,
@@ -10,15 +10,13 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
+import { nodeTypes } from "./NodeRenderer";
 import { edgeTypes } from "./EdgeRenderer";
 import { flowConfig } from "./flowConfig";
-import { nodeTypes } from "./NodeRenderer";
 import { useFlowStore } from "./useFlowStore";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
-import { loadCanvasSession } from "@/lib/session";
 
 type FlowCanvasProps = {
-  // eslint-disable-next-line no-unused-vars
   onInit?: (instance: ReactFlowInstance) => void;
   presetId?: OnboardingPresetId | null;
   onCreateGoalClick?: () => void;
@@ -31,15 +29,12 @@ export function FlowCanvas({
   onCreateGoalClick,
   onAddTrackClick,
 }: FlowCanvasProps) {
-  const {
-    nodes,
-    edges,
-    onNodesChange,
-    onEdgesChange,
-    onConnect,
-    onNodeDragStop,
-    updateEmptyStateCopy,
-  } = useFlowStore();
+  const nodes = useFlowStore((state) => state.nodes);
+  const edges = useFlowStore((state) => state.edges);
+  const onNodesChange = useFlowStore((state) => state.onNodesChange);
+  const onEdgesChange = useFlowStore((state) => state.onEdgesChange);
+  const onConnect = useFlowStore((state) => state.onConnect);
+  const updateEmptyStateCopy = useFlowStore((state) => state.updateEmptyStateCopy);
 
   useEffect(() => {
     if (presetId !== undefined) {
@@ -50,48 +45,18 @@ export function FlowCanvas({
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       if (node.id === "2" && onCreateGoalClick) {
-        // "Create Your First Goal" node
         onCreateGoalClick();
       } else if (node.id === "3" && onAddTrackClick) {
-        // "Add a Track" node
         onAddTrackClick();
       }
     },
     [onCreateGoalClick, onAddTrackClick]
   );
 
-  const handleInit = (instance: ReactFlowInstance) => {
-    const savedSession =
-      typeof window !== "undefined" ? loadCanvasSession() : null;
-
-    if (savedSession?.viewport) {
-      // Restore saved viewport
-      instance.setViewport(
-        {
-          x: savedSession.viewport.x,
-          y: savedSession.viewport.y,
-          zoom: savedSession.viewport.zoom,
-        },
-        { duration: 0 }
-      );
-    } else {
-      // Only fitView if there's no saved viewport
-      setTimeout(() => {
-        instance.fitView({ padding: 0.1, duration: 0 });
-        // Ensure zoom is not too small - adjust if needed
-        const { zoom } = instance.getViewport();
-        if (zoom < 0.8) {
-          instance.zoomTo(0.8, { duration: 0 });
-        }
-      }, 0);
-    }
-    
-    onInit?.(instance);
-  };
-
   return (
     <ReactFlow
       data-id="flow-wrapper"
+      data-testid="flow-canvas"
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -100,8 +65,7 @@ export function FlowCanvas({
       onEdgesChange={onEdgesChange}
       onConnect={onConnect}
       onNodeClick={handleNodeClick}
-      onInit={handleInit}
-      onNodeDragStop={(_event, node) => onNodeDragStop(node.id, node.position)}
+      onInit={onInit}
       defaultEdgeOptions={flowConfig.defaultEdgeOptions}
       snapToGrid
       snapGrid={flowConfig.snapGrid}
@@ -129,5 +93,4 @@ export function FlowCanvas({
     </ReactFlow>
   );
 }
-
 
