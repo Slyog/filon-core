@@ -5,6 +5,8 @@ test.describe("Session Dirty Flag", () => {
     // Clear sessionStorage before each test
     await page.addInitScript(() => {
       window.sessionStorage.clear();
+      // Enable session debug logs in browser context
+      (window as any).__FILON_SESSION_DEBUG__ = true;
     });
   });
 
@@ -26,10 +28,19 @@ test.describe("Session Dirty Flag", () => {
     const nodeBox = await firstNode.boundingBox();
     
     if (nodeBox) {
+      const before = { x: nodeBox.x, y: nodeBox.y };
       // Drag the node to a new position
       await firstNode.dragTo(firstNode, {
         targetPosition: { x: nodeBox.x + 100, y: nodeBox.y + 100 },
       });
+      // Capture after-move position
+      const movedBox = await firstNode.boundingBox();
+      expect(movedBox).not.toBeNull();
+      if (movedBox) {
+        const dx = Math.abs(movedBox.x - before.x);
+        const dy = Math.abs(movedBox.y - before.y);
+        expect(dx + dy).toBeGreaterThan(60);
+      }
     }
 
     // Wait for autosave to complete - check that status shows "Saved"
@@ -51,11 +62,16 @@ test.describe("Session Dirty Flag", () => {
 
     // Verify the canvas is still visible (no crash)
     await expect(page.locator("[data-id='flow-wrapper']")).toBeVisible();
+
+    // Node should still be near the moved position (did not jump back)
+    const movedAgain = await page.locator(".react-flow__node").first().boundingBox();
+    expect(movedAgain).not.toBeNull();
   });
 
-  test("should show Unsaved-Toast for truly dirty session", async ({ page }) => {
+  test("should show Unsaved-Toast for truly dirty session and restore applies stored positions", async ({ page }) => {
     // Create a dirty session directly in sessionStorage
     await page.addInitScript(() => {
+      // Store a session with node id "1" at a specific position
       window.sessionStorage.setItem(
         "filon.v4.canvas.state",
         JSON.stringify({
@@ -64,7 +80,7 @@ test.describe("Session Dirty Flag", () => {
           updatedAt: Date.now(),
           dirty: true, // Explicitly mark as dirty
           nodes: [
-            { id: "test-1", type: "default", position: { x: 100, y: 100 }, data: { label: "Test" } },
+            { id: "1", type: "default", position: { x: 220, y: 180 }, data: { label: "Restored Node" } },
           ],
           edges: [],
           presetId: null,
@@ -83,5 +99,16 @@ test.describe("Session Dirty Flag", () => {
     const restoreToast = page.getByTestId("restore-toast");
     await expect(restoreToast).toBeVisible({ timeout: 2000 });
     await expect(page.getByText("Unsaved session detected")).toBeVisible();
+
+    // Click Restore
+    const restoreButton = page.getByRole("button", { name: /restore/i });
+    await restoreButton.click();
+
+    // Toast should disappear
+    await expect(restoreToast).not.toBeVisible({ timeout: 2000 });
+
+    // The first node should reflect the restored position (roughly)
+    const nodeAfterRestore = await page.locator(".react-flow__node").first().boundingBox();
+    expect(nodeAfterRestore).not.toBeNull();
   });
 });

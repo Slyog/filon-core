@@ -16,7 +16,7 @@ import {
   OnboardingPresetPanel,
   type OnboardingPresetId,
 } from "@/components/onboarding/OnboardingPresetPanel";
-import { loadCanvasSession, hasCanvasSession } from "@/lib/session";
+import { loadCanvasSession } from "@/lib/session";
 import { useFlowStore } from "@/components/canvas/useFlowStore";
 import type { FlowSnapshot } from "@/components/canvas/useFlowStore";
 
@@ -53,13 +53,62 @@ export default function AppFrame({ children }: AppFrameProps) {
   const restoreHandleRef = useRef<CanvasRestoreHandle | null>(null);
   const loadSnapshot = useFlowStore((state) => state.loadSnapshot);
 
+  // Optionally enable debug via env in client runtime
+  useEffect(() => {
+    try {
+      // Public env; set NEXT_PUBLIC_FILON_DEBUG_SESSION=true to auto-enable
+      // eslint-disable-next-line no-underscore-dangle, no-restricted-globals
+      const flag = (process as any)?.env?.NEXT_PUBLIC_FILON_DEBUG_SESSION;
+      if (flag === "true" && typeof window !== "undefined") {
+        (window as any).__FILON_SESSION_DEBUG__ = true;
+        // eslint-disable-next-line no-console
+        console.log("[SessionDebug] enabled via NEXT_PUBLIC_FILON_DEBUG_SESSION");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Auto-apply a clean stored session on initial mount to make session the source of truth
+  useEffect(() => {
+    try {
+      const sessionState = loadCanvasSession();
+      if (sessionState && sessionState.dirty === false) {
+        const snapshot = convertSessionToSnapshot(sessionState);
+        if (snapshot) {
+          loadSnapshot(snapshot);
+          // Optionally restore viewport if present
+          if (snapshot.viewport) {
+            const reactFlowInstance = (window as any).__reactflow;
+            if (reactFlowInstance) {
+              reactFlowInstance.setViewport(
+                {
+                  x: snapshot.viewport.x,
+                  y: snapshot.viewport.y,
+                  zoom: snapshot.viewport.zoom,
+                },
+                { duration: 0 }
+              );
+            }
+          }
+          // Hide onboarding if we loaded a session
+          setShowOnboarding(false);
+        }
+      }
+    } catch {
+      // no-op; fallback to default onboarding flow
+    }
+  }, [loadSnapshot]);
+
   // Initial restore check (optional - exposed for UI to call later)
   const checkForRestore = useCallback((): boolean => {
-    if (!hasCanvasSession()) {
-      return false;
-    }
-
+    const SESSION_DEBUG =
+      typeof window !== "undefined" && (window as any).__FILON_SESSION_DEBUG__ === true;
     const sessionState = loadCanvasSession();
+    if (SESSION_DEBUG) {
+      // eslint-disable-next-line no-console
+      console.debug("[SessionDebug] checkForRestore: hasCanvasSession =", sessionState !== null);
+    }
     if (!sessionState) {
       return false;
     }
@@ -70,6 +119,16 @@ export default function AppFrame({ children }: AppFrameProps) {
     }
 
     try {
+      if (SESSION_DEBUG) {
+        // eslint-disable-next-line no-console
+        console.debug("[SessionDebug] checkForRestore: applying snapshot", {
+          nodes: snapshot.nodes.length,
+          edges: snapshot.edges.length,
+          presetId: snapshot.presetId ?? null,
+          viewport: snapshot.viewport ?? null,
+          dirty: sessionState.dirty,
+        });
+      }
       loadSnapshot(snapshot);
       
       // Restore viewport if available
@@ -97,7 +156,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   // Expose restore handle for UI to use later
   useEffect(() => {
     restoreHandleRef.current = {
-      hasSavedState: () => hasCanvasSession(),
+      hasSavedState: () => loadCanvasSession() !== null,
       restore: checkForRestore,
     };
 

@@ -15,6 +15,7 @@ import { flowConfig } from "./flowConfig";
 import { nodeTypes } from "./NodeRenderer";
 import { useFlowStore } from "./useFlowStore";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
+import { loadCanvasSession } from "@/lib/session";
 
 type FlowCanvasProps = {
   // eslint-disable-next-line no-unused-vars
@@ -30,8 +31,15 @@ export function FlowCanvas({
   onCreateGoalClick,
   onAddTrackClick,
 }: FlowCanvasProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, updateEmptyStateCopy } =
-    useFlowStore();
+  const {
+    nodes,
+    edges,
+    onNodesChange,
+    onEdgesChange,
+    onConnect,
+    onNodeDragStop,
+    updateEmptyStateCopy,
+  } = useFlowStore();
 
   useEffect(() => {
     if (presetId !== undefined) {
@@ -53,11 +61,9 @@ export function FlowCanvas({
   );
 
   const handleInit = (instance: ReactFlowInstance) => {
-    // Check if there's a saved viewport to restore
-    const savedSession = typeof window !== "undefined" 
-      ? require("@/lib/session").loadCanvasSession()
-      : null;
-    
+    const savedSession =
+      typeof window !== "undefined" ? loadCanvasSession() : null;
+
     if (savedSession?.viewport) {
       // Restore saved viewport
       instance.setViewport(
@@ -95,6 +101,7 @@ export function FlowCanvas({
       onConnect={onConnect}
       onNodeClick={handleNodeClick}
       onInit={handleInit}
+      onNodeDragStop={(_event, node) => onNodeDragStop(node.id, node.position)}
       defaultEdgeOptions={flowConfig.defaultEdgeOptions}
       snapToGrid
       snapGrid={flowConfig.snapGrid}

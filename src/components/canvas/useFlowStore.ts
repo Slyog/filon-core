@@ -27,6 +27,8 @@ type FlowState = {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   // eslint-disable-next-line no-unused-vars
+  onNodeDragStop: (nodeId: string, position: Node["position"]) => void;
+  // eslint-disable-next-line no-unused-vars
   updateEmptyStateCopy: (presetId: OnboardingPresetId | null) => void;
   getSnapshot: () => FlowSnapshot;
   // eslint-disable-next-line no-unused-vars
@@ -100,6 +102,13 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   onConnect: (connection: Connection) =>
     set({
       edges: addEdge(connection, get().edges),
+    }),
+
+  onNodeDragStop: (nodeId, position) =>
+    set({
+      nodes: get().nodes.map((node) =>
+        node.id === nodeId ? { ...node, position: { ...position } } : node
+      ),
     }),
 
   updateEmptyStateCopy: (presetId: OnboardingPresetId | null) => {

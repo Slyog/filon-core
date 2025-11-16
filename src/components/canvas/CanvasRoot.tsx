@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "./FlowCanvas";
 import { AutosaveStatus } from "./AutosaveStatus";
 import { RestoreToast } from "@/components/RestoreToast";
-import { useFlowStore } from "./useFlowStore";
+import { useFlowStore, type FlowSnapshot } from "./useFlowStore";
 import { useCanvasAutosave } from "@/hooks/useCanvasAutosave";
-import { hasDirtySession, clearCanvasSession } from "@/lib/session";
-import { logTelemetry } from "@/utils/telemetryLogger";
+import {
+  hasDirtySession,
+  clearCanvasSession,
+  loadCanvasSession,
+  markSessionClean,
+} from "@/lib/session";
 import type { OnboardingPresetId } from "@/components/onboarding/OnboardingPresetPanel";
-import type { CanvasRestoreHandle } from "@/components/layout/AppFrame";
+import type { Node, Edge } from "reactflow";
 
 type CanvasRootProps = {
   presetId?: OnboardingPresetId | null;
@@ -22,99 +26,43 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
   // Get canvas data for autosave status
   const nodes = useFlowStore((state) => state.nodes);
   const edges = useFlowStore((state) => state.edges);
-  const [showRestoreToast, setShowRestoreToast] = useState(false);
+  const presetFromStore = useFlowStore((state) => state.presetId);
+  const loadSnapshot = useFlowStore((state) => state.loadSnapshot);
+  const [showRestoreToast, setShowRestoreToast] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return hasDirtySession();
+  });
   
   // Get autosave status
   const { hasUnsavedChanges } = useCanvasAutosave({
     nodes,
     edges,
-    presetId: presetId ?? null,
+    presetId: presetFromStore ?? presetId ?? null,
   });
 
-  // Check for dirty (unsaved) session on mount and show toast if exists
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Only show toast if there is a dirty (unsaved) session
-    if (hasDirtySession()) {
-      setShowRestoreToast(true);
-      // Log that restore toast was shown
-      logTelemetry(
-        "session:restore:shown",
-        "Restore toast displayed",
-        {},
-        undefined
-      ).catch(() => {
-        // Non-blocking: ignore logging errors
-      });
-    }
-  }, []);
-
   const handleRestore = useCallback(() => {
-    const restoreHandle = (window as any).__canvasRestore as CanvasRestoreHandle | undefined;
-    if (restoreHandle) {
-      // Log restore requested
-      logTelemetry(
-        "session:restore:requested",
-        "User requested session restore",
-        {},
-        undefined
-      ).catch(() => {
-        // Non-blocking: ignore logging errors
-      });
-
-      try {
-        const success = restoreHandle.restore();
-        if (success) {
-          // Clear the session after restore to prevent toast from showing again on reload
-          clearCanvasSession();
-          setShowRestoreToast(false);
-          // Log restore success
-          logTelemetry(
-            "session:restore:success",
-            "Session restore succeeded",
-            {},
-            undefined
-          ).catch(() => {
-            // Non-blocking: ignore logging errors
-          });
-        } else {
-          // Log restore error
-          logTelemetry(
-            "session:restore:error",
-            "Session restore failed",
-            { reason: "restore() returned false" },
-            undefined
-          ).catch(() => {
-            // Non-blocking: ignore logging errors
-          });
-        }
-      } catch (error) {
-        // Log restore error
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logTelemetry(
-          "session:restore:error",
-          "Session restore failed",
-          { reason: errorMessage },
-          undefined
-        ).catch(() => {
-          // Non-blocking: ignore logging errors
-        });
-      }
+    const session = loadCanvasSession();
+    if (!session) {
+      setShowRestoreToast(false);
+      return;
     }
-  }, []);
+
+    const snapshot: FlowSnapshot = {
+      version: 1,
+      createdAt: Date.now(),
+      workspaceId: null,
+      nodes: session.nodes as Node[],
+      edges: session.edges as Edge[],
+      presetId: (session.presetId as OnboardingPresetId | null) ?? null,
+    };
+
+    loadSnapshot(snapshot);
+
+    markSessionClean();
+    setShowRestoreToast(false);
+  }, [loadSnapshot]);
 
   const handleDiscard = useCallback(() => {
-    // Log discard event
-    logTelemetry(
-      "session:restore:discard",
-      "User discarded session restore",
-      {},
-      undefined
-    ).catch(() => {
-      // Non-blocking: ignore logging errors
-    });
-
     // Clear the session when discarding to prevent toast from showing again
     clearCanvasSession();
     setShowRestoreToast(false);

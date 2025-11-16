@@ -1,9 +1,4 @@
-/**
- * Simple sessionStorage wrapper for canvas state
- * Used for temporary autosave/restore functionality
- */
-
-import { logTelemetry } from "@/utils/telemetryLogger";
+"use client";
 
 const CANVAS_STORAGE_KEY = "filon.v4.canvas.state";
 
@@ -18,145 +13,88 @@ export interface CanvasSessionState {
   metadata?: Record<string, unknown>;
 }
 
-/**
- * Save canvas state to sessionStorage
- * @param state - Canvas state to save (nodes, edges, presetId, metadata)
- * @param dirty - Whether the session should be marked as dirty (default: false for autosave)
- */
-export function saveCanvasSession(
-  state: Omit<CanvasSessionState, "version" | "savedAt" | "updatedAt" | "dirty">,
-  dirty: boolean = false
-): void {
-  if (typeof window === "undefined") return;
-
+function safeParse<T>(raw: string | null): T | null {
+  if (!raw) return null;
   try {
-    const now = Date.now();
-    const sessionState: CanvasSessionState = {
-      version: 1,
-      savedAt: now,
-      updatedAt: now,
-      dirty,
-      ...state,
-    };
-    window.sessionStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify(sessionState));
-  } catch (error) {
-    // sessionStorage may be full or unavailable (private browsing, etc.)
-    console.warn("[Session] Failed to save canvas state:", error);
-  }
-}
-
-/**
- * Mark the current session as clean (not dirty)
- * Call this after a successful manual save to prevent toast from showing
- */
-export function markSessionClean(): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    const existing = loadCanvasSession();
-    if (existing) {
-      const cleanState: CanvasSessionState = {
-        ...existing,
-        dirty: false,
-        updatedAt: Date.now(),
-      };
-      window.sessionStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify(cleanState));
-
-      // Log that session was marked as clean
-      logTelemetry(
-        "session:mark-clean",
-        "Session marked as clean after manual save",
-        {
-          source: "manual-save",
-          updatedAt: cleanState.updatedAt,
-        },
-        undefined
-      ).catch(() => {
-        // Non-blocking: ignore logging errors
-      });
-    }
-  } catch (error) {
-    console.warn("[Session] Failed to mark session as clean:", error);
-  }
-}
-
-/**
- * Load canvas state from sessionStorage
- * @returns Canvas state or null if not found/invalid
- */
-export function loadCanvasSession(): CanvasSessionState | null {
-  if (typeof window === "undefined") return null;
-
-  try {
-    const stored = window.sessionStorage.getItem(CANVAS_STORAGE_KEY);
-    if (!stored) return null;
-
-    const parsed = JSON.parse(stored) as CanvasSessionState;
-
-    // Validate version
-    if (parsed.version !== 1) {
-      console.warn(`[Session] Unsupported canvas state version: ${parsed.version}`);
-      return null;
-    }
-
-    // Validate required fields
-    if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
-      console.warn("[Session] Invalid canvas state: nodes and edges must be arrays");
-      return null;
-    }
-
-    // Migrate old sessions that don't have dirty/updatedAt fields
-    if (typeof parsed.dirty !== "boolean") {
-      parsed.dirty = true; // Assume old sessions are dirty
-    }
-    if (typeof parsed.updatedAt !== "number") {
-      parsed.updatedAt = parsed.savedAt; // Fallback to savedAt
-    }
-
-    return parsed;
-  } catch (error) {
-    console.warn("[Session] Failed to load canvas state:", error);
+    return JSON.parse(raw) as T;
+  } catch {
     return null;
   }
 }
 
-/**
- * Clear canvas state from sessionStorage
- */
-export function clearCanvasSession(): void {
+function writeSnapshot(snapshot: CanvasSessionState): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(CANVAS_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // ignore quota/private-mode errors
+  }
+}
+
+export function saveCanvasSession(
+  state: Omit<CanvasSessionState, "version" | "savedAt" | "updatedAt" | "dirty">,
+  dirty: boolean
+): void {
   if (typeof window === "undefined") return;
 
+  const now = Date.now();
+  const existing = safeParse<CanvasSessionState>(
+    window.sessionStorage.getItem(CANVAS_STORAGE_KEY)
+  );
+  const savedAt = existing?.savedAt ?? now;
+
+  const snapshot: CanvasSessionState = {
+    version: 1,
+    savedAt,
+    updatedAt: now,
+    dirty,
+    nodes: state.nodes,
+    edges: state.edges,
+    presetId: state.presetId ?? null,
+    metadata: state.metadata,
+  };
+
+  writeSnapshot(snapshot);
+}
+
+export function loadCanvasSession(): CanvasSessionState | null {
+  if (typeof window === "undefined") return null;
+
+  const parsed = safeParse<CanvasSessionState>(
+    window.sessionStorage.getItem(CANVAS_STORAGE_KEY)
+  );
+  if (!parsed) return null;
+  if (parsed.version !== 1) return null;
+  if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) {
+    return null;
+  }
+
+  return parsed;
+}
+
+export function clearCanvasSession(): void {
+  if (typeof window === "undefined") return;
   try {
     window.sessionStorage.removeItem(CANVAS_STORAGE_KEY);
-  } catch (error) {
-    console.warn("[Session] Failed to clear canvas state:", error);
-  }
-}
-
-/**
- * Check if canvas state exists in sessionStorage
- */
-export function hasCanvasSession(): boolean {
-  if (typeof window === "undefined") return false;
-
-  try {
-    return window.sessionStorage.getItem(CANVAS_STORAGE_KEY) !== null;
   } catch {
-    return false;
+    // ignore
   }
 }
 
-/**
- * Check if there is a dirty (unsaved) session that should trigger the restore toast
- */
 export function hasDirtySession(): boolean {
-  if (typeof window === "undefined") return false;
-
-  try {
-    const session = loadCanvasSession();
-    return session !== null && session.dirty === true;
-  } catch {
-    return false;
-  }
+  const session = loadCanvasSession();
+  return Boolean(session && session.dirty === true);
 }
 
+export function markSessionClean(): void {
+  const session = loadCanvasSession();
+  if (!session) return;
+
+  const snapshot: CanvasSessionState = {
+    ...session,
+    dirty: false,
+    updatedAt: Date.now(),
+  };
+
+  writeSnapshot(snapshot);
+}
