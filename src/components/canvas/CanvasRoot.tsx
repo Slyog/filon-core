@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import { ReactFlowProvider } from "reactflow";
 import { FlowCanvas } from "./FlowCanvas";
-import { AutosaveIndicator } from "./AutosaveIndicator";
 import { RestoreToast } from "@/components/RestoreToast";
 import { useFlowStore, type FlowSnapshot } from "./useFlowStore";
 import { useCanvasAutosave } from "@/hooks/useCanvasAutosave";
@@ -34,7 +33,7 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
   });
   
   // Get autosave status
-  const { isSaving } = useCanvasAutosave({
+  useCanvasAutosave({
     nodes,
     edges,
     presetId: presetFromStore ?? presetId ?? null,
@@ -85,9 +84,6 @@ export function CanvasRoot({ presetId, onCreateGoalClick, onAddTrackClick }: Can
       className="relative w-full h-full min-h-0 min-w-0 overflow-hidden bg-[#050509]"
       data-id="canvas-host"
     >
-      {/* AUTOSAVE INDICATOR (minimal, high-contrast) */}
-      <AutosaveIndicator isSaving={isSaving} />
-      
       {/* RESTORE TOAST */}
       <div className="absolute bottom-6 right-6 z-[60]">
         <RestoreToast

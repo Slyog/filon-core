@@ -11,7 +11,10 @@ import {
 } from "react";
 import { Sidebar } from "./Sidebar";
 import ContextStream from "./ContextStream";
-import { Brainbar, type BrainbarHandle } from "./Brainbar";
+import { Brainbar as GlowBrainbar } from "@/components/brainbar/Brainbar";
+import type { BrainbarHandle } from "./Brainbar";
+import { AutosaveIndicator } from "@/components/canvas/AutosaveIndicator";
+import { useSessionStatus } from "@/hooks/useSessionStatus";
 import {
   OnboardingPresetPanel,
   type OnboardingPresetId,
@@ -52,6 +55,8 @@ export default function AppFrame({ children }: AppFrameProps) {
   const brainbarRef = useRef<BrainbarHandle | null>(null);
   const restoreHandleRef = useRef<CanvasRestoreHandle | null>(null);
   const loadSnapshot = useFlowStore((state) => state.loadSnapshot);
+  const { status } = useSessionStatus();
+  const isSaving = status === "saving";
 
   // Optionally enable debug via env in client runtime
   useEffect(() => {
@@ -215,13 +220,26 @@ export default function AppFrame({ children }: AppFrameProps) {
 
       {/* MAIN AREA */}
       <div className="relative col-span-1 col-start-2 flex h-full min-h-0 min-w-0 flex-col overflow-hidden bg-gradient-to-b from-filon-bg via-filon-bg to-[#050505] border-l border-filon-border/30 shadow-[inset_1px_0_0_rgba(0,0,0,0.6)]">
-        <Brainbar ref={brainbarRef} />
+        {/* Header area for Brainbar */}
+        <div className="relative w-full h-[72px] px-4 pt-3 pb-1 z-50">
+          <GlowBrainbar
+            onSubmit={(value) => {
+              // eslint-disable-next-line no-console
+              console.log("[Brainbar] submit:", value);
+            }}
+          />
+        </div>
+
+        {/* Autosave indicator below Brainbar, aligned to right */}
+        <div className="absolute right-4 top-[76px] z-40">
+          <AutosaveIndicator isSaving={isSaving} />
+        </div>
         {showOnboarding && (
           <div className="mt-4 flex justify-center px-6">
             <OnboardingPresetPanel onSelectPreset={handleOnboardingPresetSelect} />
           </div>
         )}
-        <main className="relative flex-1 min-h-0 min-w-0 overflow-hidden">
+        <main className="relative flex-1 min-h-0 min-w-0 overflow-hidden pt-[72px]">
           {isValidElement(children)
             ? // Handlers only access refs when called (in event handlers), not during render
               // eslint-disable-next-line react-hooks/refs
