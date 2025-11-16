@@ -35,11 +35,12 @@ function autosaveDebug(...args: unknown[]) {
 export function useCanvasAutosave(
   data: CanvasAutosaveData,
   throttleMs: number = DEFAULT_THROTTLE_MS
-): { hasUnsavedChanges: boolean } {
+): { hasUnsavedChanges: boolean; isSaving: boolean } {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedRef = useRef<string | null>(null);
   const hasInteractedRef = useRef(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const serializeData = useCallback((d: CanvasAutosaveData): string => {
     return JSON.stringify({
@@ -76,6 +77,7 @@ export function useCanvasAutosave(
     });
 
     setHasUnsavedChanges(true);
+    setIsSaving(true);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new CustomEvent("autosave:start"));
     }
@@ -115,12 +117,14 @@ export function useCanvasAutosave(
         );
         lastSavedRef.current = serialized;
         setHasUnsavedChanges(false);
+        setIsSaving(false);
 
         if (typeof window !== "undefined") {
           window.dispatchEvent(new CustomEvent("autosave:success"));
         }
       } catch (error) {
         console.warn("[CanvasAutosave] Failed to save:", error);
+        setIsSaving(false);
         if (typeof window !== "undefined") {
           const errorMessage = error instanceof Error ? error.message : String(error);
           window.dispatchEvent(
@@ -154,9 +158,10 @@ export function useCanvasAutosave(
       if (timerRef.current) {
         clearTimeout(timerRef.current);
       }
+      setIsSaving(false);
     };
   }, []);
 
-  return { hasUnsavedChanges };
+  return { hasUnsavedChanges, isSaving };
 }
 
